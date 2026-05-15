@@ -1,0 +1,365 @@
+/**
+ * Engine de recálculo do Bolão.
+ *
+ * Responsabilidades:
+ *  1) Calcular pontos_calculados de cada palpite_grupos a partir dos
+ *     placares finalizados.
+ *  2) Determinar "até onde foi" cada seleção no mata-mata e marcar
+ *     palpites_mata como acertou/errou.
+ *  3) Calcular acerto do palpite_artilheiro (jogador com mais gols).
+ *  4) Gerar ranking_snapshots para cada rodada (1..8) com posição/pontos.
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { PontuacaoConfig, FasePalpiteMata } from "@/types/database";
+import {
+  PONTUACAO_DEFAULT,
+  classificarPalpiteMata,
+  pontosPalpiteGrupo,
+  pontosPalpiteMata,
+} from "./scoring";
+
+// Cliente sem generic de schema — chamadas usam type assertions.
+type SB = SupabaseClient;
+
+const ROUND_LABELS = [
+  { ordem: 1, label: "Grupos R1", filtro: { fase: "grupos" as const, rodada: 1 } },
+  { ordem: 2, label: "Grupos R2", filtro: { fase: "grupos" as const, rodada: 2 } },
+  { ordem: 3, label: "Grupos R3", filtro: { fase: "grupos" as const, rodada: 3 } },
+  { ordem: 4, label: "16 avos", filtro: { fase: "16avos" as const } },
+  { ordem: 5, label: "Oitavas", filtro: { fase: "8avos" as const } },
+  { ordem: 6, label: "Quartas", filtro: { fase: "quartas" as const } },
+  { ordem: 7, label: "Semi", filtro: { fase: "semi" as const } },
+  { ordem: 8, label: "Final", filtro: { fase: "final" as const } },
+];
+
+export async function recalcularTudo(supabase: SB) {
+  const cfg = await carregarPontuacao(supabase);
+
+  await recalcularPalpitesGrupos(supabase, cfg);
+  const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase);
+  await recalcularPalpitesMata(supabase, cfg, faseAlcancada);
+  await recalcularPalpiteArtilheiro(supabase);
+  await gerarSnapshots(supabase, cfg, faseAlcancada);
+  return { ok: true };
+}
+
+async function carregarPontuacao(supabase: SB): Promise<PontuacaoConfig> {
+  const { data } = await supabase.from("config").select("valor").eq("chave", "pontuacao").single();
+  return (data?.valor as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+}
+
+async function recalcularPalpitesGrupos(supabase: SB, cfg: PontuacaoConfig) {
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("id, placar_casa, placar_fora, status, fase")
+    .eq("fase", "grupos")
+    .eq("status", "finalizado");
+  if (!matches || matches.length === 0) return;
+
+  const matchMap = new Map(
+    matches.map((m) => [m.id, { casa: m.placar_casa ?? 0, fora: m.placar_fora ?? 0 }]),
+  );
+
+  const { data: palpites } = await supabase
+    .from("palpites_grupos")
+    .select("id, match_id, placar_casa, placar_fora")
+    .in("match_id", [...matchMap.keys()]);
+
+  if (!palpites) return;
+
+  // Agrupa ids por valor de pontos pra fazer um UPDATE por valor (muito mais rápido
+  // que update por linha, e funciona com chunks de até 200 ids por request).
+  const byPoints = new Map<number, string[]>();
+  for (const p of palpites) {
+    const r = matchMap.get(p.match_id);
+    if (!r) continue;
+    const pts = pontosPalpiteGrupo(
+      { casa: p.placar_casa, fora: p.placar_fora },
+      r,
+      cfg,
+    );
+    const arr = byPoints.get(pts) ?? [];
+    arr.push(p.id);
+    byPoints.set(pts, arr);
+  }
+  for (const [pts, ids] of byPoints) {
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const { error } = await supabase
+        .from("palpites_grupos")
+        .update({ pontos_calculados: pts })
+        .in("id", chunk);
+      if (error) throw error;
+    }
+  }
+}
+
+/**
+ * Determina a fase mais profunda alcançada por cada time.
+ *  - Se time aparece em "final" e foi vencedor → "campeao"
+ *  - Se time aparece em "final" mas perdeu → "final"
+ *  - Senão, a fase mais profunda em que aparece (mesmo que tenha perdido)
+ *  - Se nunca aparece no mata-mata → "grupos"
+ */
+const ORDEM_FASES = ["16avos", "8avos", "quartas", "semi", "final"] as const;
+
+export async function calcularFaseAlcancadaPorTime(
+  supabase: SB,
+): Promise<Map<string, FasePalpiteMata | "grupos">> {
+  const { data: matches } = await supabase
+    .from("matches")
+    .select("fase, time_casa_id, time_fora_id, placar_casa, placar_fora, status")
+    .in("fase", ["16avos", "8avos", "quartas", "semi", "3lugar", "final"])
+    .eq("status", "finalizado");
+  if (!matches) return new Map();
+
+  const { data: teams } = await supabase.from("teams").select("id");
+  const fases = new Map<string, FasePalpiteMata | "grupos">();
+  for (const t of teams ?? []) fases.set(t.id, "grupos");
+
+  function bump(timeId: string | null, fase: FasePalpiteMata) {
+    if (!timeId) return;
+    const atual = fases.get(timeId) ?? "grupos";
+    const idxAtual =
+      atual === "grupos" ? -1 : atual === "campeao" ? 99 : ORDEM_FASES.indexOf(atual);
+    if (fase === "campeao") {
+      fases.set(timeId, fase);
+      return;
+    }
+    const idxNovo = ORDEM_FASES.indexOf(fase as (typeof ORDEM_FASES)[number]);
+    if (idxNovo > idxAtual) fases.set(timeId, fase);
+  }
+
+  for (const m of matches) {
+    if (m.fase === "3lugar") continue;
+    bump(m.time_casa_id, m.fase as FasePalpiteMata);
+    bump(m.time_fora_id, m.fase as FasePalpiteMata);
+    if (m.fase === "final" && m.placar_casa !== null && m.placar_fora !== null) {
+      const vencedor =
+        m.placar_casa > m.placar_fora
+          ? m.time_casa_id
+          : m.placar_casa < m.placar_fora
+            ? m.time_fora_id
+            : null;
+      if (vencedor) fases.set(vencedor, "campeao");
+    }
+  }
+
+  return fases;
+}
+
+async function recalcularPalpitesMata(
+  supabase: SB,
+  cfg: PontuacaoConfig,
+  faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
+) {
+  const { data: palpites } = await supabase
+    .from("palpites_mata")
+    .select("id, time_id, fase");
+  if (!palpites) return;
+
+  // Agrupa por valor de acertou (true/false) e atualiza em massa
+  const acertaram: string[] = [];
+  const erraram: string[] = [];
+  for (const p of palpites) {
+    const real = faseAlcancada.get(p.time_id) ?? "grupos";
+    const r = classificarPalpiteMata(p.fase as FasePalpiteMata, real);
+    if (r.acertou) acertaram.push(p.id);
+    else erraram.push(p.id);
+  }
+  for (const [valor, ids] of [[true, acertaram] as const, [false, erraram] as const]) {
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200);
+      const { error } = await supabase
+        .from("palpites_mata")
+        .update({ acertou: valor })
+        .in("id", chunk);
+      if (error) throw error;
+    }
+  }
+}
+
+async function recalcularPalpiteArtilheiro(supabase: SB) {
+  const { data: jogadores } = await supabase
+    .from("players")
+    .select("id, gols_torneio")
+    .order("gols_torneio", { ascending: false });
+  if (!jogadores || jogadores.length === 0) return;
+
+  const top = jogadores[0].gols_torneio;
+  if (top === 0) {
+    // ainda não há artilheiro definido
+    return;
+  }
+  const idsArtilheiros = new Set(jogadores.filter((p) => p.gols_torneio === top).map((p) => p.id));
+
+  const { data: palpites } = await supabase.from("palpites_artilheiro").select("id, player_id");
+  if (!palpites) return;
+
+  const acertou: string[] = [];
+  const errou: string[] = [];
+  for (const p of palpites) {
+    if (idsArtilheiros.has(p.player_id)) acertou.push(p.id);
+    else errou.push(p.id);
+  }
+  for (const [v, ids] of [[true, acertou] as const, [false, errou] as const]) {
+    if (ids.length === 0) continue;
+    const { error } = await supabase.from("palpites_artilheiro").update({ acertou: v }).in("id", ids);
+    if (error) throw error;
+  }
+}
+
+/**
+ * Calcula pontos do mata-mata por usuário, agrupados pela fase do palpite.
+ * Os pontos são creditados na rodada em que a fase do palpite é jogada
+ * (não na fase real do time) — assim o gráfico mostra cada conquista
+ * no momento certo.
+ */
+function pontosMataPorUsuario(
+  palpites: { user_id: string; time_id: string; fase: FasePalpiteMata }[],
+  faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
+  cfg: PontuacaoConfig,
+): Map<string, Map<FasePalpiteMata, number>> {
+  const out = new Map<string, Map<FasePalpiteMata, number>>();
+  for (const p of palpites) {
+    const real = faseAlcancada.get(p.time_id) ?? "grupos";
+    const cls = classificarPalpiteMata(p.fase, real);
+    if (!cls.acertou || !cls.faseEfetiva) continue;
+    const pts = pontosPalpiteMata(cls.faseEfetiva, cfg);
+    let u = out.get(p.user_id);
+    if (!u) {
+      u = new Map();
+      out.set(p.user_id, u);
+    }
+    // Crédito na fase do palpite (rodada em que o palpite foi validado).
+    u.set(p.fase, (u.get(p.fase) ?? 0) + pts);
+  }
+  return out;
+}
+
+/**
+ * Gera ranking_snapshots — uma linha por (user_id, rodada_ordem).
+ * pontos_rodada = pontos ganhos NAQUELA rodada
+ * pontos_totais = soma acumulada até a rodada
+ * posicao = ranking da rodada (1 = primeiro)
+ */
+async function gerarSnapshots(
+  supabase: SB,
+  cfg: PontuacaoConfig,
+  faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
+) {
+  // 1) Apaga snapshots antigas
+  await supabase.from("ranking_snapshots").delete().neq("user_id", "00000000-0000-0000-0000-000000000000");
+
+  // 2) Para cada rodada 1..3 (grupos): soma pontos_calculados dos palpites cujos jogos estão na rodada
+  const { data: users } = await supabase.from("users").select("id, pago");
+  if (!users) return;
+
+  // Estrutura: rodadaOrdem -> userId -> pontos_rodada
+  const pontosPorRodada = new Map<number, Map<string, number>>();
+  for (let r = 1; r <= 8; r++) pontosPorRodada.set(r, new Map());
+
+  // Rodadas de grupos (1..3)
+  for (const r of [1, 2, 3]) {
+    const { data: matches } = await supabase
+      .from("matches")
+      .select("id")
+      .eq("fase", "grupos")
+      .eq("rodada", r);
+    const matchIds = (matches ?? []).map((m) => m.id);
+    if (matchIds.length === 0) continue;
+    const { data: palpites } = await supabase
+      .from("palpites_grupos")
+      .select("user_id, pontos_calculados")
+      .in("match_id", matchIds);
+    const mapa = pontosPorRodada.get(r)!;
+    for (const p of palpites ?? []) {
+      mapa.set(p.user_id, (mapa.get(p.user_id) ?? 0) + (p.pontos_calculados ?? 0));
+    }
+  }
+
+  // Mata-mata: 4=16avos, 5=8avos, 6=quartas, 7=semi, 8=final
+  const { data: palpitesMata } = await supabase
+    .from("palpites_mata")
+    .select("user_id, time_id, fase");
+  const ptsMata = pontosMataPorUsuario(
+    (palpitesMata ?? []).map((p) => ({
+      user_id: p.user_id,
+      time_id: p.time_id,
+      fase: p.fase as FasePalpiteMata,
+    })),
+    faseAlcancada,
+    cfg,
+  );
+  // Pontos creditados na rodada em que o palpite é validado.
+  // "8avos" = palpitou que time chega às oitavas → validado quando o R32 acaba (rodada 4).
+  const faseParaOrdem: Record<FasePalpiteMata, number> = {
+    "16avos": 4, // raramente usado
+    "8avos": 4,
+    "quartas": 5,
+    "semi": 6,
+    "final": 7,
+    "campeao": 8,
+  };
+  for (const [userId, fasesMap] of ptsMata) {
+    for (const [fase, pts] of fasesMap) {
+      const ord = faseParaOrdem[fase];
+      const mapa = pontosPorRodada.get(ord)!;
+      mapa.set(userId, (mapa.get(userId) ?? 0) + pts);
+    }
+  }
+
+  // Artilheiro: soma na rodada 8
+  const { data: palpitesArt } = await supabase
+    .from("palpites_artilheiro")
+    .select("user_id, acertou");
+  for (const p of palpitesArt ?? []) {
+    if (p.acertou) {
+      const mapa = pontosPorRodada.get(8)!;
+      mapa.set(p.user_id, (mapa.get(p.user_id) ?? 0) + cfg.artilheiro);
+    }
+  }
+
+  // Acumulado e posição por rodada
+  const acumulado = new Map<string, number>();
+  const snapshots: {
+    user_id: string;
+    rodada_label: string;
+    rodada_ordem: number;
+    posicao: number;
+    pontos_totais: number;
+    pontos_rodada: number;
+  }[] = [];
+
+  for (const round of ROUND_LABELS) {
+    const mapa = pontosPorRodada.get(round.ordem)!;
+    // Atualiza acumulado
+    for (const u of users) {
+      const pts = mapa.get(u.id) ?? 0;
+      acumulado.set(u.id, (acumulado.get(u.id) ?? 0) + pts);
+    }
+    // Cria array para ordenar e gerar posições
+    const arr = users.map((u) => ({
+      user_id: u.id,
+      pontos_totais: acumulado.get(u.id) ?? 0,
+      pontos_rodada: mapa.get(u.id) ?? 0,
+    }));
+    arr.sort((a, b) => b.pontos_totais - a.pontos_totais);
+    arr.forEach((row, idx) => {
+      snapshots.push({
+        user_id: row.user_id,
+        rodada_label: round.label,
+        rodada_ordem: round.ordem,
+        posicao: idx + 1,
+        pontos_totais: row.pontos_totais,
+        pontos_rodada: row.pontos_rodada,
+      });
+    });
+  }
+
+  if (snapshots.length > 0) {
+    const { error } = await supabase.from("ranking_snapshots").insert(snapshots as any);
+    if (error) throw error;
+  }
+}
