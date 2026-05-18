@@ -19,7 +19,7 @@ export default async function ArtilheiroPage() {
     supabase.from("teams").select("id, nome, bandeira_url"),
     supabase
       .from("palpites_artilheiro")
-      .select("player_id")
+      .select("player_id, player_nome_manual")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);
@@ -48,6 +48,7 @@ export default async function ArtilheiroPage() {
           bandeira_url: teamMap.get(p.time_id ?? "")?.bandeira_url ?? "",
         }))}
         atual={atual?.player_id ?? null}
+        atualManual={(atual as any)?.player_nome_manual ?? null}
         fechado={fechado}
       />
     </div>

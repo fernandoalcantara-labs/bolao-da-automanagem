@@ -9,6 +9,7 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "reset-results": "tsx scripts/reset-results.ts",
+    "expand-players": "tsx scripts/expand-players.ts",
     "test": "vitest run",
     "test:all": "vitest run",
     "test:watch": "vitest"
