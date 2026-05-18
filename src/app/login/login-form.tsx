@@ -29,8 +29,10 @@ export function LoginForm() {
       return;
     }
     toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
-    router.refresh();
-    router.push("/palpites/grupos");
+    // Hard reload garante que o Server Component layout re-renderize com o
+    // user autenticado (cookies já gravados). router.refresh+push juntos
+    // são race-condition: o push navega antes do refresh propagar.
+    window.location.href = "/";
   }
 
   return (

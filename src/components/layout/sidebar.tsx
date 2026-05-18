@@ -22,8 +22,8 @@ export function Sidebar({ user }: { user: SidebarUser }) {
     const supabase = createClient();
     await supabase.auth.signOut();
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
-    router.refresh();
-    router.push("/");
+    // Hard reload pro layout re-renderizar com user=null
+    window.location.href = "/";
   }
 
   const items = NAV_ITEMS.filter((i) => {

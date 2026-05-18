@@ -25,8 +25,8 @@ export function BottomNav({ user }: { user: BottomNavUser }) {
     await supabase.auth.signOut();
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
     setDrawerOpen(false);
-    router.refresh();
-    router.push("/");
+    // Hard reload pro layout re-renderizar com user=null
+    window.location.href = "/";
   }
 
   const primary = NAV_ITEMS.filter((i) => {
