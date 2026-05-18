@@ -55,7 +55,7 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
       className="overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
       style={{ WebkitOverflowScrolling: "touch" }}
     >
-      <div className="flex min-w-[1100px] items-stretch gap-3 touch-pan-x">
+      <div className="flex min-w-[1100px] items-stretch gap-3">
         {/* Lado esquerdo */}
         <ColunaRound titulo="16 avos" matches={renderR32(esquerdo, teams, picks, onPick, fechado)} altura={8} />
         <ColunaRound titulo="Oitavas" matches={renderR16(r16Esquerdo, teams, picks, onPick, fechado)} altura={4} />
