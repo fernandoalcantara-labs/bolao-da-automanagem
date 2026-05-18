@@ -1,26 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, Trophy } from "lucide-react";
+import { Menu, X, Trophy, LogOut, LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PoweredByClaudio } from "./powered-by-claudio";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "@/components/ui/toaster";
 
 type NavItem = { href: string; label: string; auth?: boolean; admin?: boolean };
 
 const NAV: NavItem[] = [
   { href: "/", label: "Painel" },
-  { href: "/palpites/grupos", label: "Fase de grupos", auth: true },
+  { href: "/palpites/grupos", label: "Grupos", auth: true },
   { href: "/palpites/mata-mata", label: "Mata-mata", auth: true },
   { href: "/palpites/artilheiro", label: "Artilheiro", auth: true },
+  { href: "/regras", label: "Regras" },
   { href: "/pagamento", label: "Pagamento" },
   { href: "/admin", label: "Admin", admin: true },
 ];
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<{ id: string; role: string; nome: string } | null>(null);
 
@@ -34,9 +37,18 @@ export function Header() {
         .select("id, role, nome")
         .eq("id", data.user.id)
         .single();
-      if (perfil) setUser(perfil);
+      if (perfil) setUser(perfil as any);
     })();
   }, []);
+
+  async function sair() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    toast({ title: "Você saiu da sua conta", variant: "success" });
+    setUser(null);
+    router.refresh();
+    router.push("/");
+  }
 
   const filteredNav = NAV.filter((item) => {
     if (item.admin) return user?.role === "admin";
@@ -76,18 +88,25 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <Link
-              href="/admin"
-              className="hidden text-xs text-muted-foreground hover:text-foreground sm:inline"
-            >
-              Olá, <span className="font-medium text-foreground">{user.nome.split(" ")[0]}</span>
-            </Link>
+            <div className="hidden items-center gap-2 sm:flex">
+              <span className="text-xs text-muted-foreground">
+                Olá, <span className="font-medium text-foreground">{user.nome.split(" ")[0]}</span>
+              </span>
+              <button
+                onClick={sair}
+                aria-label="Sair"
+                className="rounded-md border border-border px-2 py-1.5 text-xs font-medium hover:bg-accent"
+                title="Sair"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
           ) : (
             <Link
               href="/login"
-              className="hidden rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent sm:inline-block"
+              className="hidden items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-accent sm:inline-flex"
             >
-              Entrar
+              <LogIn className="h-3.5 w-3.5" /> Entrar
             </Link>
           )}
           <PoweredByClaudio className="hidden sm:inline-flex" />
@@ -119,13 +138,20 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            {!user && (
+            {user ? (
+              <button
+                onClick={() => { setOpen(false); sair(); }}
+                className="mt-2 inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-destructive"
+              >
+                <LogOut className="h-4 w-4" /> Sair ({user.nome.split(" ")[0]})
+              </button>
+            ) : (
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="mt-2 rounded-md border border-border px-3 py-2 text-sm font-medium"
+                className="mt-2 inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium"
               >
-                Entrar
+                <LogIn className="h-4 w-4" /> Entrar
               </Link>
             )}
             <div className="mt-3 flex justify-end pt-2">
