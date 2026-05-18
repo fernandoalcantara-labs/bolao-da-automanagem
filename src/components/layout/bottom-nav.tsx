@@ -21,16 +21,36 @@ export function BottomNav() {
 
   React.useEffect(() => {
     const supabase = createClient();
-    void (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
+    let mounted = true;
+
+    async function carregarPerfil(userId: string) {
       const { data: perfil } = await supabase
         .from("users")
         .select("id, role, nome")
-        .eq("id", data.user.id)
+        .eq("id", userId)
         .single();
-      if (perfil) setUser(perfil as any);
+      if (mounted && perfil) setUser(perfil as any);
+    }
+
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) await carregarPerfil(data.user.id);
     })();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
+          await carregarPerfil(session.user.id);
+        } else if (event === "SIGNED_OUT") {
+          if (mounted) setUser(null);
+        }
+      },
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function sair() {
