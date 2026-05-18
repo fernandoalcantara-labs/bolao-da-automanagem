@@ -29,11 +29,11 @@ export const SELECOES: Selecao[] = [
   { nome: "México", codigo: "mx", grupo: "A" },
   { nome: "África do Sul", codigo: "za", grupo: "A" },
   { nome: "Coreia do Sul", codigo: "kr", grupo: "A" },
-  { nome: "Vencedor Playoff Europeu D", codigo: "tbd", grupo: "A", tbd: true },
+  { nome: "Tchéquia", codigo: "cz", grupo: "A" }, // Path D — venceu Dinamarca nos pênaltis
 
   // Grupo B
   { nome: "Canadá", codigo: "ca", grupo: "B" },
-  { nome: "Vencedor Playoff Europeu A", codigo: "tbd", grupo: "B", tbd: true },
+  { nome: "Bósnia e Herzegovina", codigo: "ba", grupo: "B" }, // Path A — venceu Itália nos pênaltis
   { nome: "Catar", codigo: "qa", grupo: "B" },
   { nome: "Suíça", codigo: "ch", grupo: "B" },
 
@@ -47,7 +47,7 @@ export const SELECOES: Selecao[] = [
   { nome: "Estados Unidos", codigo: "us", grupo: "D" },
   { nome: "Paraguai", codigo: "py", grupo: "D" },
   { nome: "Austrália", codigo: "au", grupo: "D" },
-  { nome: "Vencedor Playoff Europeu C", codigo: "tbd", grupo: "D", tbd: true },
+  { nome: "Turquia", codigo: "tr", grupo: "D" }, // Path C
 
   // Grupo E
   { nome: "Alemanha", codigo: "de", grupo: "E" },
@@ -58,7 +58,7 @@ export const SELECOES: Selecao[] = [
   // Grupo F
   { nome: "Holanda", codigo: "nl", grupo: "F" },
   { nome: "Japão", codigo: "jp", grupo: "F" },
-  { nome: "Vencedor Playoff Europeu B", codigo: "tbd", grupo: "F", tbd: true },
+  { nome: "Suécia", codigo: "se", grupo: "F" }, // Path B
   { nome: "Tunísia", codigo: "tn", grupo: "F" },
 
   // Grupo G
@@ -76,7 +76,7 @@ export const SELECOES: Selecao[] = [
   // Grupo I
   { nome: "França", codigo: "fr", grupo: "I" },
   { nome: "Senegal", codigo: "sn", grupo: "I" },
-  { nome: "Vencedor Playoff Intercontinental 2", codigo: "tbd", grupo: "I", tbd: true },
+  { nome: "Iraque", codigo: "iq", grupo: "I" }, // Intercontinental 2 — venceu Bolívia 2-1
   { nome: "Noruega", codigo: "no", grupo: "I" },
 
   // Grupo J
@@ -87,7 +87,7 @@ export const SELECOES: Selecao[] = [
 
   // Grupo K
   { nome: "Portugal", codigo: "pt", grupo: "K" },
-  { nome: "Vencedor Playoff Intercontinental 1", codigo: "tbd", grupo: "K", tbd: true },
+  { nome: "República Democrática do Congo", codigo: "cd", grupo: "K" }, // Intercontinental 1
   { nome: "Uzbequistão", codigo: "uz", grupo: "K" },
   { nome: "Colômbia", codigo: "co", grupo: "K" },
 

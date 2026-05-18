@@ -42,6 +42,18 @@ export default async function AdminPage() {
       title: "Usuários",
       desc: `${usuariosPagos ?? 0} pagos · ${totalUsuarios ?? 0} cadastrados`,
     },
+    {
+      href: "/admin/selecoes",
+      icon: CalendarDays,
+      title: "Seleções",
+      desc: "48 seleções e grupos da Copa",
+    },
+    {
+      href: "/admin/artilheiros",
+      icon: CalendarDays,
+      title: "Validar Artilheiros",
+      desc: "Confirma palpites de artilheiro",
+    },
     { href: "/admin/config", icon: Settings, title: "Configurações", desc: "Pontuação, PIX, rateio" },
   ];
 
