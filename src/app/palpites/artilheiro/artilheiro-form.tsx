@@ -72,14 +72,14 @@ export function ArtilheiroForm({
       setSaving(false);
       return;
     }
-    const payload =
+    const payload: Record<string, unknown> =
       modo.tipo === "lista"
         ? { user_id: userData.user.id, player_id: modo.playerId, player_nome_manual: null }
         : { user_id: userData.user.id, player_id: null, player_nome_manual: modo.nome };
 
     const { error } = await supabase
       .from("palpites_artilheiro")
-      .upsert(payload, { onConflict: "user_id" });
+      .upsert(payload as any, { onConflict: "user_id" });
     setSaving(false);
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
@@ -150,7 +150,7 @@ export function ArtilheiroForm({
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={pickManual}>
-              Usar "{busca.trim().slice(0, 20)}"
+              Usar &quot;{busca.trim().slice(0, 20)}&quot;
             </Button>
           </CardContent>
         </Card>

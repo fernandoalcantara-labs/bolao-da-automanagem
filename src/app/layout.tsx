@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
+import { Sidebar } from "@/components/layout/sidebar";
+import { BottomNav } from "@/components/layout/bottom-nav";
+import { MobileHeader } from "@/components/layout/mobile-header";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
@@ -15,9 +16,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className="dark" suppressHydrationWarning>
       <body className="gradient-stadium min-h-screen font-sans antialiased">
-        <Header />
-        <main className="container py-6 sm:py-10">{children}</main>
-        <Footer />
+        {/* Sidebar fixo no desktop */}
+        <Sidebar />
+        {/* Header simplificado no mobile */}
+        <MobileHeader />
+        {/* Main com padding-left no desktop pra não ficar atrás do sidebar e padding-bottom no mobile pra não ficar atrás do bottom-nav */}
+        <main
+          className="container py-6 lg:ml-60 lg:py-10"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 5rem)" }}
+        >
+          {children}
+        </main>
+        {/* Bottom nav fixo no mobile */}
+        <BottomNav />
         <Toaster />
       </body>
     </html>

@@ -20,24 +20,24 @@ export default async function AdminArtilheirosPage() {
   const playerMap = new Map((players ?? []).map((p) => [p.id, p]));
   const userMap = new Map((users ?? []).map((u) => [u.id, u.nome]));
 
-  // Agrupa por "jogador palpitado" (id ou texto)
-  const grupos = new Map<
-    string,
-    {
-      chave: string;
-      label: string;
-      manual: boolean;
-      gols: number;
-      palpites: { id: string; user_id: string; user_nome: string; acertou: boolean | null }[];
-    }
-  >();
+  type PalpiteItem = { id: string; user_id: string; user_nome: string; acertou: boolean | null };
+  type Grupo = {
+    chave: string;
+    label: string;
+    manual: boolean;
+    gols: number;
+    palpites: PalpiteItem[];
+  };
+  const grupos = new Map<string, Grupo>();
 
-  for (const p of palpites ?? []) {
+  for (const p of (palpites ?? []) as any[]) {
     const player = p.player_id ? playerMap.get(p.player_id) : null;
-    const chave = p.player_id ? `id:${p.player_id}` : `m:${(p.player_nome_manual ?? "").toLowerCase()}`;
+    const chave = p.player_id
+      ? `id:${p.player_id}`
+      : `m:${(p.player_nome_manual ?? "").toLowerCase()}`;
     const label = player ? player.nome : (p.player_nome_manual as string) ?? "—";
     const manual = !p.player_id;
-    const grupo = grupos.get(chave) ?? {
+    const grupo: Grupo = grupos.get(chave) ?? {
       chave,
       label,
       manual,

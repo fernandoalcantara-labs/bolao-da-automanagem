@@ -15,20 +15,23 @@ export function PremiosCard({ ranking, acertaramArtilheiro, rateio, totalArrecad
   const p = calcularRateio(ranking, rateio, totalArrecadado, acertaramArtilheiro);
   const userMap = new Map(ranking.map((r) => [r.user_id, r.nome]));
 
-  const items: {
+  type Item = {
     key: keyof Premiacao;
     label: string;
     icon: any;
     cor: string;
     pct: number;
     p: Premiacao[keyof Premiacao];
-  }[] = [
-    { key: "primeiro", label: "Campeão", icon: Trophy, cor: "text-amber-400", pct: rateio.primeiro, p: p.primeiro },
-    { key: "segundo", label: "Vice", icon: Medal, cor: "text-zinc-300", pct: rateio.segundo, p: p.segundo },
-    { key: "terceiro", label: "3º lugar", icon: Award, cor: "text-orange-400", pct: rateio.terceiro, p: p.terceiro },
-    { key: "lanterninha", label: "Lanterninha", icon: Turtle, cor: "text-emerald-400", pct: rateio.lanterninha, p: p.lanterninha },
-    { key: "artilheiro", label: "Artilheiro", icon: Target, cor: "text-pink-400", pct: rateio.artilheiro, p: p.artilheiro },
-  ].filter((i) => i.pct > 0); // não mostra prêmio com 0%
+  };
+  const items: Item[] = (
+    [
+      { key: "primeiro", label: "Campeão", icon: Trophy, cor: "text-amber-400", pct: rateio.primeiro, p: p.primeiro },
+      { key: "segundo", label: "Vice", icon: Medal, cor: "text-zinc-300", pct: rateio.segundo, p: p.segundo },
+      { key: "terceiro", label: "3º lugar", icon: Award, cor: "text-orange-400", pct: rateio.terceiro, p: p.terceiro },
+      { key: "lanterninha", label: "Lanterninha", icon: Turtle, cor: "text-emerald-400", pct: rateio.lanterninha, p: p.lanterninha },
+      { key: "artilheiro", label: "Artilheiro", icon: Target, cor: "text-pink-400", pct: rateio.artilheiro, p: p.artilheiro },
+    ] as Item[]
+  ).filter((i) => i.pct > 0);
 
   return (
     <Card>
