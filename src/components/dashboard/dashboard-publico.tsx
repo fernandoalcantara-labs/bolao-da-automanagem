@@ -180,7 +180,7 @@ export async function DashboardPublico() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>📊 Pontos na última rodada · {ultimaLabel}</CardTitle>
           </CardHeader>
@@ -197,10 +197,10 @@ export async function DashboardPublico() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0 overflow-hidden">
           <CardHeader>
             <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
-            <CardDescription>Verde mais forte = mais pontos.</CardDescription>
+            <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
           </CardHeader>
           <CardContent>
             <Heatmap

@@ -8,9 +8,9 @@ export function BarChartRodada({ data }: { data: { nome: string; pontos: number 
   }
 
   return (
-    <div className="h-[360px] w-full">
-      <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={{ left: 70, right: 20 }}>
+    <div className="h-[360px] w-full min-w-0">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
           <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
           <YAxis
@@ -18,8 +18,12 @@ export function BarChartRodada({ data }: { data: { nome: string; pontos: number 
             type="category"
             stroke="hsl(var(--muted-foreground))"
             tick={{ fontSize: 11 }}
-            width={70}
-            tickFormatter={(v) => (v as string).split(" ")[0]}
+            width={60}
+            tickFormatter={(v) => {
+              const s = v as string;
+              const primeiro = s.split(" ")[0];
+              return primeiro.length > 8 ? `${primeiro.slice(0, 7)}…` : primeiro;
+            }}
           />
           <Tooltip
             contentStyle={{

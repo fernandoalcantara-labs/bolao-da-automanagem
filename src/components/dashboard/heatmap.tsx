@@ -20,7 +20,6 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
     return `rgba(16, 185, 129, ${alpha})`;
   }
 
-  // Ordena users pelo total — mais pontos no topo
   const totaisPorUser = new Map<string, number>();
   for (const s of snapshots) {
     totaisPorUser.set(s.user_id, (totaisPorUser.get(s.user_id) ?? 0) + s.pontos_rodada);
@@ -30,15 +29,22 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
   );
 
   return (
-    <div className="overflow-auto scrollbar-thin">
-      <table className="w-full border-collapse text-xs">
+    <div
+      className="-mx-5 overflow-x-auto overflow-y-visible scrollbar-thin px-5"
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
+      <table className="w-full border-collapse text-xs" style={{ minWidth: 380 }}>
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 bg-card p-1.5 text-left font-medium text-muted-foreground">
-              Participante
+            <th className="sticky left-0 z-10 bg-white p-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Nome
             </th>
             {rodadas.map(([, label]) => (
-              <th key={label} className="p-1.5 text-center text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th
+                key={label}
+                className="p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                style={{ minWidth: 48 }}
+              >
                 {label}
               </th>
             ))}
@@ -47,8 +53,8 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
         <tbody>
           {usersOrdenados.map((u) => (
             <tr key={u.id}>
-              <td className="sticky left-0 z-10 bg-card p-1.5 font-medium">
-                {u.nome.split(" ").slice(0, 2).join(" ")}
+              <td className="sticky left-0 z-10 bg-white p-1.5 text-xs font-bold">
+                {u.nome.split(" ")[0]}
               </td>
               {rodadas.map(([ord]) => {
                 const snap = snapshots.find((s) => s.rodada_ordem === ord && s.user_id === u.id);
@@ -56,8 +62,8 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
                 return (
                   <td
                     key={ord}
-                    className="border border-border/20 p-1.5 text-center font-mono"
-                    style={{ backgroundColor: color(pts) }}
+                    className="border border-border/20 p-1.5 text-center font-mono font-bold"
+                    style={{ backgroundColor: color(pts), minWidth: 48 }}
                     title={`${u.nome}: ${pts} pts`}
                   >
                     {pts}
