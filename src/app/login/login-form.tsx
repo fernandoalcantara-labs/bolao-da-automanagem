@@ -12,40 +12,95 @@ import { MICROCOPY } from "@/lib/microcopy";
 
 export function LoginForm() {
   const router = useRouter();
+  const emailRef = React.useRef<HTMLInputElement>(null);
+  const passwordRef = React.useRef<HTMLInputElement>(null);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+
+  // Detecta autofill do Chrome que pode não disparar onChange.
+  // Polling rápido no mount + onFocus pra sincronizar state com DOM.
+  React.useEffect(() => {
+    const t = setInterval(() => {
+      if (emailRef.current && emailRef.current.value && !email) {
+        setEmail(emailRef.current.value);
+      }
+      if (passwordRef.current && passwordRef.current.value && !password) {
+        setPassword(passwordRef.current.value);
+      }
+    }, 250);
+    const stop = setTimeout(() => clearInterval(t), 3000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(stop);
+    };
+  }, [email, password]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email"));
-    const password = String(formData.get("password"));
+    // Última chance: lê direto do DOM caso o state ainda não tenha sincronizado
+    const finalEmail = email || emailRef.current?.value || "";
+    const finalPassword = password || passwordRef.current?.value || "";
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Eita 😬", description: error.message, variant: "destructive" });
+    if (!finalEmail || !finalPassword) {
+      toast({ title: "Preenche email e senha 🙏", variant: "destructive" });
       return;
     }
-    toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
-    router.refresh();
-    router.push("/palpites/grupos");
+
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: finalEmail,
+        password: finalPassword,
+      });
+      if (error) {
+        toast({ title: "Eita 😬", description: error.message, variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+      toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
+      router.refresh();
+      router.push("/palpites/grupos");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
+      toast({ title: "Eita 😬", description: msg, variant: "destructive" });
+      setLoading(false);
+    }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="email" className="font-bold">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required placeholder="seuemail@exemplo.com" />
+        <Input
+          ref={emailRef}
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          placeholder="seuemail@exemplo.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password" className="font-bold">Senha</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
+        <Input
+          ref={passwordRef}
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </div>
       <Button type="submit" className="w-full" disabled={loading} size="lg">
         {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-        {MICROCOPY.entrar}
+        {loading ? "Entrando…" : "Entrar"}
       </Button>
     </form>
   );
