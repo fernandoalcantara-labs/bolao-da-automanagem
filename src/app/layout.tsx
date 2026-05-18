@@ -3,6 +3,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
+import { DesignedBySorriso } from "@/components/layout/designed-by-sorriso";
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
@@ -20,6 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Sidebar />
         {/* Header simplificado no mobile */}
         <MobileHeader />
+        {/* Designed by Sorriso — canto direito superior, só desktop (no mobile já está no MobileHeader) */}
+        <div className="fixed right-4 top-4 z-30 hidden lg:block">
+          <DesignedBySorriso />
+        </div>
         {/* Main com padding-left no desktop pra não ficar atrás do sidebar e padding-bottom no mobile pra não ficar atrás do bottom-nav */}
         <main
           className="container py-6 lg:ml-60 lg:py-10"

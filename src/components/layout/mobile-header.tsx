@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { PoweredByClaudio } from "./powered-by-claudio";
+import { DesignedBySorriso } from "./designed-by-sorriso";
 
 /**
  * Header simplificado para mobile (< 1024px).
@@ -17,7 +17,7 @@ export function MobileHeader() {
         </span>
         <span className="text-sm font-bold tracking-tight">Bolão da AutoManagem</span>
       </Link>
-      <PoweredByClaudio compact />
+      <DesignedBySorriso compact />
     </header>
   );
 }

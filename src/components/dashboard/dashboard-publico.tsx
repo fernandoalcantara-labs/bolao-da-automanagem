@@ -61,24 +61,45 @@ export async function DashboardPublico() {
   const ultimaLabel = snapsPagas.find((s) => s.rodada_ordem === ultimaOrdem)?.rodada_label ?? "—";
   const snapsUltima = snapsPagas.filter((s) => s.rodada_ordem === ultimaOrdem);
 
-  // Líder atual (posicao 1 na última rodada)
-  const lider = snapsUltima.find((s) => s.posicao === 1);
-  const liderNome = lider ? usersById.get(lider.user_id)?.nome ?? "—" : "—";
+  // Pódio dos KPIs: 1º, 2º, 3º (cada um com empates) + lanterninha
+  function posicaoAgrupada(idx: number): { nomes: string[]; pontos: number } | null {
+    const ordenado = [...snapsUltima].sort((a, b) => b.pontos_totais - a.pontos_totais);
+    const grupos: number[] = [];
+    for (const r of ordenado) {
+      if (grupos.length === 0 || grupos[grupos.length - 1] !== r.pontos_totais) {
+        grupos.push(r.pontos_totais);
+      }
+      if (grupos.length === idx + 1) break;
+    }
+    if (grupos.length <= idx) return null;
+    const ptsAlvo = grupos[idx];
+    const empatados = ordenado.filter((r) => r.pontos_totais === ptsAlvo);
+    return {
+      nomes: empatados.map((s) => usersById.get(s.user_id)?.nome ?? "—"),
+      pontos: ptsAlvo,
+    };
+  }
 
-  // Maior pontuador da última rodada
-  const maiorPontuador = snapsUltima.length
-    ? snapsUltima.reduce((max, s) => (s.pontos_rodada > max.pontos_rodada ? s : max), snapsUltima[0])
-    : null;
-  const maiorPontuadorNome = maiorPontuador ? usersById.get(maiorPontuador.user_id)?.nome ?? "—" : "—";
+  const primeiro = posicaoAgrupada(0);
+  const segundo = posicaoAgrupada(1);
+  const terceiro = posicaoAgrupada(2);
 
-  // Taxa de acerto média da última rodada — proxy: média de pontos_rodada / max possível.
-  // Como max varia por rodada, vamos só mostrar média de pontos.
-  const mediaPontosUltima =
-    snapsUltima.length > 0
-      ? Math.round(
-          (snapsUltima.reduce((acc, s) => acc + s.pontos_rodada, 0) / snapsUltima.length) * 10,
-        ) / 10
-      : 0;
+  // Lanterninha = quem tem MENOS pontos (sem ser top 3)
+  let lanterninha: { nomes: string[]; pontos: number } | null = null;
+  if (snapsUltima.length > 0) {
+    const top3Pts = new Set(
+      [primeiro, segundo, terceiro].filter(Boolean).map((p) => p!.pontos),
+    );
+    const candidatos = snapsUltima.filter((s) => !top3Pts.has(s.pontos_totais));
+    if (candidatos.length > 0) {
+      const ptsMin = Math.min(...candidatos.map((s) => s.pontos_totais));
+      const empatados = candidatos.filter((s) => s.pontos_totais === ptsMin);
+      lanterninha = {
+        nomes: empatados.map((s) => usersById.get(s.user_id)?.nome ?? "—"),
+        pontos: ptsMin,
+      };
+    }
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -110,16 +131,10 @@ export async function DashboardPublico() {
       />
 
       <KpiCards
-        totalPagos={usersPagos.length}
-        totalArrecadado={totalArrecadado}
-        jogosFinalizados={jogosFinalizados}
-        totalJogos={totalJogos}
-        liderNome={liderNome}
-        liderPontos={lider?.pontos_totais ?? 0}
-        maiorPontuadorNome={maiorPontuadorNome}
-        maiorPontuadorPontos={maiorPontuador?.pontos_rodada ?? 0}
-        ultimaLabel={ultimaLabel}
-        mediaPontos={mediaPontosUltima}
+        primeiro={primeiro}
+        segundo={segundo}
+        terceiro={terceiro}
+        lanterninha={lanterninha}
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
