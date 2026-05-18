@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { DesignedBySorriso } from "@/components/layout/designed-by-sorriso";
 import { Toaster } from "@/components/ui/toaster";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 export const metadata: Metadata = {
   title: "Bolão da AutoManagem · Copa do Mundo FIFA 2026",
@@ -22,17 +23,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetch do usuário no Server Component. O Next.js re-executa este layout
+  // sempre que router.refresh() é chamado, o que faz com que após o login
+  // os componentes Sidebar/BottomNav recebam o user atualizado via prop.
+  const perfil = await getCurrentUser();
+  const userNav = perfil
+    ? { id: perfil.id, nome: perfil.nome, role: perfil.role }
+    : null;
+
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
-        <Sidebar />
+        <Sidebar user={userNav} />
         <MobileHeader />
         <div className="fixed right-4 top-4 z-30 hidden lg:block">
           <DesignedBySorriso onLight />
         </div>
-        {/* Wrapper que reserva espaço pro sidebar fixo no desktop — evita que o
-            container interno extrapole a área visível em larguras intermediárias */}
         <div className="lg:pl-64">
           <main
             className="container py-4 lg:py-8"
@@ -41,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
         </div>
-        <BottomNav />
+        <BottomNav user={userNav} />
         <Toaster />
       </body>
     </html>

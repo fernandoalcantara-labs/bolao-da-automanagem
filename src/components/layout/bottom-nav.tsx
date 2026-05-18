@@ -13,54 +13,20 @@ import { PoweredByClaudio } from "./powered-by-claudio";
 import { Mascot } from "@/components/ui/mascot";
 import { MICROCOPY } from "@/lib/microcopy";
 
-export function BottomNav() {
+type BottomNavUser = { id: string; nome: string; role: string } | null;
+
+export function BottomNav({ user }: { user: BottomNavUser }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = React.useState<{ id: string; nome: string; role: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const supabase = createClient();
-    let mounted = true;
-
-    async function carregarPerfil(userId: string) {
-      const { data: perfil } = await supabase
-        .from("users")
-        .select("id, role, nome")
-        .eq("id", userId)
-        .single();
-      if (mounted && perfil) setUser(perfil as any);
-    }
-
-    void (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) await carregarPerfil(data.user.id);
-    })();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
-          await carregarPerfil(session.user.id);
-        } else if (event === "SIGNED_OUT") {
-          if (mounted) setUser(null);
-        }
-      },
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   async function sair() {
     const supabase = createClient();
     await supabase.auth.signOut();
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
-    setUser(null);
     setDrawerOpen(false);
-    // Hard navigation pra limpar estado de auth em toda a árvore
-    window.location.href = "/";
+    router.refresh();
+    router.push("/");
   }
 
   const primary = NAV_ITEMS.filter((i) => {

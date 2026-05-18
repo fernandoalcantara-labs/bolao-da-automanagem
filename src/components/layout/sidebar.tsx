@@ -12,55 +12,18 @@ import { Mascot } from "@/components/ui/mascot";
 import { NAV_ITEMS } from "./nav-items";
 import { MICROCOPY } from "@/lib/microcopy";
 
-export function Sidebar() {
+type SidebarUser = { id: string; nome: string; role: string } | null;
+
+export function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = React.useState<{ id: string; nome: string; role: string } | null>(null);
-
-  React.useEffect(() => {
-    const supabase = createClient();
-    let mounted = true;
-
-    async function carregarPerfil(userId: string) {
-      const { data: perfil } = await supabase
-        .from("users")
-        .select("id, role, nome")
-        .eq("id", userId)
-        .single();
-      if (mounted && perfil) setUser(perfil as any);
-    }
-
-    void (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) await carregarPerfil(data.user.id);
-    })();
-
-    // Ouve login/logout em tempo real (resolve o caso da Sidebar não remontar
-    // entre /login e /palpites/grupos)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session?.user) {
-          await carregarPerfil(session.user.id);
-        } else if (event === "SIGNED_OUT") {
-          if (mounted) setUser(null);
-        }
-      },
-    );
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   async function sair() {
     const supabase = createClient();
     await supabase.auth.signOut();
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
-    setUser(null);
-    // Hard navigation pra garantir que o estado de auth seja limpo em todos
-    // os componentes (sidebar, bottom-nav, headers de páginas, etc).
-    window.location.href = "/";
+    router.refresh();
+    router.push("/");
   }
 
   const items = NAV_ITEMS.filter((i) => {
@@ -74,7 +37,6 @@ export function Sidebar() {
       className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r-2 border-border bg-white shadow-stack lg:flex"
       aria-label="Navegação principal"
     >
-      {/* Logo */}
       <Link href="/" className="flex items-center gap-3 px-5 py-5 border-b border-border/60">
         <Mascot size={44} />
         <span className="flex flex-col leading-tight">
@@ -87,7 +49,6 @@ export function Sidebar() {
         </span>
       </Link>
 
-      {/* Nav */}
       <nav className="flex-1 space-y-1 px-3 pt-4">
         {items.map((item) => {
           const Icon = item.icon;
@@ -114,7 +75,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* User + sair */}
       <div className="space-y-3 border-t-2 border-border/60 p-4">
         {user ? (
           <div className="space-y-2">
