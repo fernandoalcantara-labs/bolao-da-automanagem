@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { formatDateTime, cn } from "@/lib/utils";
+import { MICROCOPY } from "@/lib/microcopy";
+import { miniConfetti } from "@/lib/confetti";
 
 type Team = { id: string; nome: string; codigo_fifa: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -86,14 +88,12 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
       .upsert(rows, { onConflict: "user_id,match_id" });
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
       return;
     }
-    toast({
-      title: "Palpites salvos!",
-      description: `${rows.length} palpite(s) atualizado(s).`,
-      variant: "success",
-    });
+    const t = MICROCOPY.toastPalpitesSalvos(rows.length);
+    toast({ ...t, variant: "success" });
+    miniConfetti();
   }
 
   const totalPalpitados = Object.values(state).filter((v) => v.c !== "" && v.f !== "").length;
@@ -150,10 +150,10 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
       )}
 
       {!fechado && (
-        <div className="sticky bottom-4 z-10 flex justify-end">
-          <Button onClick={salvar} disabled={saving} size="lg" className="shadow-lg">
+        <div className="sticky bottom-20 z-10 flex justify-end lg:bottom-4">
+          <Button onClick={salvar} disabled={saving} size="lg">
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Salvar palpites
+            {MICROCOPY.salvarPalpites}
           </Button>
         </div>
       )}

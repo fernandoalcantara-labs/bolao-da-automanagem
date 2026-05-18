@@ -38,31 +38,32 @@ export function Toaster() {
   }, []);
 
   return (
-    <div className="fixed bottom-4 right-4 z-[100] flex max-w-sm flex-col gap-2">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4 sm:bottom-4 sm:left-auto sm:right-4 sm:top-auto sm:items-end">
       {toasts.map((t) => (
         <div
           key={t.id}
           role="status"
           className={cn(
-            "pointer-events-auto flex w-80 animate-fade-in items-start gap-3 rounded-lg border border-border bg-card p-4 shadow-xl",
-            t.variant === "destructive" && "border-destructive/40",
-            t.variant === "success" && "border-emerald-500/40",
-            t.variant === "info" && "border-blue-500/40",
+            "animate-pop-in pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border-2 bg-white p-4 shadow-stack",
+            t.variant === "destructive" && "border-festive-red/50",
+            t.variant === "success" && "border-festive-green/50",
+            t.variant === "info" && "border-festive-blue/50",
+            (!t.variant || t.variant === "default") && "border-festive-gold/50",
           )}
         >
-          <span className="mt-0.5 text-muted-foreground">
+          <span className="mt-0.5 shrink-0">
             {t.variant === "destructive" ? (
-              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertCircle className="h-5 w-5 text-festive-red" />
             ) : t.variant === "success" ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <CheckCircle2 className="h-5 w-5 text-festive-green" />
             ) : (
-              <Info className="h-4 w-4 text-blue-400" />
+              <Info className="h-5 w-5 text-festive-blue" />
             )}
           </span>
           <div className="flex-1">
-            <p className="text-sm font-semibold">{t.title}</p>
+            <p className="text-sm font-extrabold text-foreground">{t.title}</p>
             {t.description && (
-              <p className="mt-1 text-xs text-muted-foreground">{t.description}</p>
+              <p className="mt-1 text-xs font-medium text-muted-foreground">{t.description}</p>
             )}
           </div>
           <button
@@ -71,7 +72,7 @@ export function Toaster() {
               memoryToasts = memoryToasts.filter((x) => x.id !== t.id);
               notify();
             }}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground transition-colors hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>

@@ -102,17 +102,17 @@ export async function DashboardPublico() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <header className="space-y-2">
-        <p className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
-          🏆 FIFA World Cup 2026 · {ultimaLabel}
+    <div className="animate-fade-up space-y-6">
+      <header className="space-y-3">
+        <p className="inline-flex items-center gap-1.5 rounded-full bg-festive-green/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-festive-green">
+          🇧🇷 FIFA World Cup 2026 · {ultimaLabel}
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
+        <h1 className="font-fredoka text-3xl font-extrabold tracking-tight sm:text-4xl">
           {nomeBolao}
         </h1>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Ranking ao vivo, gráficos da disputa entre os {usersPagos.length} participantes pagos · prêmio
-          estimado de <strong className="text-primary">R$ {totalArrecadado.toLocaleString("pt-BR")}</strong>.
+        <p className="max-w-2xl text-sm font-medium text-muted-foreground">
+          🏆 Ranking ao vivo entre <strong className="text-foreground">{usersPagos.length} participantes pagos</strong> · prêmio
+          estimado de <strong className="text-festive-green">R$ {totalArrecadado.toLocaleString("pt-BR")}</strong>
         </p>
       </header>
 

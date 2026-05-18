@@ -11,6 +11,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import type { FasePalpiteMata } from "@/types/database";
+import { MICROCOPY } from "@/lib/microcopy";
+import { miniConfetti, bigConfetti } from "@/lib/confetti";
 
 type Team = {
   id: string;
@@ -123,10 +125,12 @@ export function MataMataForm({
     const { error } = await supabase.from("palpites_mata").insert(rows);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Palpites do mata-mata salvos!", variant: "success" });
+    toast({ ...MICROCOPY.toastMataMataSalvo, variant: "success" });
+    if (picks.campeao.size === 1) bigConfetti();
+    else miniConfetti();
   }
 
   return (
@@ -198,10 +202,10 @@ export function MataMataForm({
       </Tabs>
 
       {!fechado && (
-        <div className="sticky bottom-4 z-10 flex justify-end">
-          <Button onClick={salvar} disabled={saving} size="lg" className="shadow-lg">
+        <div className="sticky bottom-20 z-10 flex justify-end lg:bottom-4">
+          <Button onClick={salvar} disabled={saving} size="lg">
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Salvar mata-mata
+            {MICROCOPY.salvarMataMata}
           </Button>
         </div>
       )}

@@ -1,21 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { Mascot } from "@/components/ui/mascot";
 import { DesignedBySorriso } from "./designed-by-sorriso";
 
 /**
  * Header simplificado para mobile (< 1024px).
- * No desktop o sidebar substitui o header completamente.
+ * Header do mobile com gradiente verde estilo Brasil-festivo.
  */
 export function MobileHeader() {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/60 bg-background/85 px-4 backdrop-blur-md lg:hidden">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gradient-header px-4 shadow-md lg:hidden">
       <Link href="/" className="flex items-center gap-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brasil-verde to-brasil-amarelo text-white">
-          <Trophy className="h-4 w-4" />
+        <Mascot size={36} />
+        <span className="flex flex-col leading-tight">
+          <span className="font-fredoka text-sm font-extrabold tracking-tight text-white">
+            Bolão da AutoManagem
+          </span>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-white/80">
+            🇧🇷 Copa 2026
+          </span>
         </span>
-        <span className="text-sm font-bold tracking-tight">Bolão da AutoManagem</span>
       </Link>
       <DesignedBySorriso compact />
     </header>

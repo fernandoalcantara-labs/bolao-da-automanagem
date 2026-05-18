@@ -1,9 +1,29 @@
 # 🏆 Bolão da AutoManagem · Copa do Mundo FIFA 2026
 
 Web app para um bolão entre amigos da **Copa do Mundo FIFA 2026** (EUA, Canadá e México · 11/06 a 19/07/2026).
-Construído com **Next.js 14 + Supabase + Recharts + Tailwind/shadcn**.
+Construído com **Next.js 14 + Supabase + Recharts + Tailwind/shadcn**, com identidade visual brasileira festiva.
 
-> Powered by Claudio · O selo aparece no header de toda página, junto do ícone do Claude (Anthropic).
+> 🇧🇷 Vamo que vamo! · Designed by Sorriso · Powered by Claudio
+
+---
+
+## 🎨 Identidade visual
+
+Vibe **lúdica/festiva/brasileira**, inspirada em Cartola FC + Duolingo + festa de bar:
+
+- **Fundo:** creme quente `#FFF8E7` (não dark mode)
+- **Acentos:**
+  - `#FFD60A` / `#FF9F1C` (gradiente dourado — 1º lugar, prêmios)
+  - `#009C3B` / `#00D26A` (verde-Brasil — header mobile, sucesso, primário)
+  - `#FF6B35` (laranja Claude — selo Powered by Claudio + alertas)
+  - `#4A9EFF` azul (links/info) · `#B83AC1` roxo · `#FF4757` vermelho
+- **Fontes:** [Nunito](https://fonts.google.com/specimen/Nunito) (corpo) + [Fredoka](https://fonts.google.com/specimen/Fredoka) (títulos)
+- **Cantos:** generosos (`rounded-2xl` em cards, `rounded-xl` em botões)
+- **Sombra "stacked":** `box-shadow: 0 4px 0` sem blur — estilo botão de jogo
+- **Bordas:** 2px sólidas coloridas em cards importantes
+- **Confete:** `canvas-confetti` dispara em ações positivas (salvar palpites, cadastro, etc)
+
+Quer ajustar? Os tokens estão em `src/app/globals.css` (variáveis CSS) e `tailwind.config.ts` (classes `festive-*`).
 
 ---
 

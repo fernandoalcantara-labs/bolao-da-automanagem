@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { MICROCOPY } from "@/lib/microcopy";
+import { miniConfetti } from "@/lib/confetti";
 
 type Player = {
   id: string;
@@ -82,10 +84,11 @@ export function ArtilheiroForm({
       .upsert(payload as any, { onConflict: "user_id" });
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Artilheiro salvo!", variant: "success" });
+    toast({ ...MICROCOPY.toastArtilheiroSalvo, variant: "success" });
+    miniConfetti();
   }
 
   function pickPlayer(p: Player) {

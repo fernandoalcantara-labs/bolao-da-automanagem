@@ -33,19 +33,21 @@ export default async function RegrasPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">📜 Regras do {nomeBolao}</h1>
-        <p className="text-sm text-muted-foreground">
-          Os valores abaixo são atualizados em tempo real conforme o admin ajusta a configuração.
+        <h1 className="font-fredoka text-3xl font-extrabold tracking-tight">📜 Regras do {nomeBolao}</h1>
+        <p className="text-sm font-medium text-muted-foreground">
+          Valores atualizados em tempo real conforme o admin ajusta a configuração ✨
         </p>
       </header>
 
       {/* Resumo do prêmio */}
-      <Card className="border-primary/40 bg-primary/5">
+      <Card className="border-2 border-festive-gold-dark/40 gradient-gold shadow-stack-gold">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Prêmio estimado</p>
-            <p className="text-3xl font-bold text-primary">{formatCurrency(totalArrecadado)}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs font-extrabold uppercase tracking-widest text-zinc-900/70">
+              💰 Prêmio estimado
+            </p>
+            <p className="font-fredoka text-4xl font-extrabold text-zinc-900">{formatCurrency(totalArrecadado)}</p>
+            <p className="text-xs font-bold text-zinc-900/70">
               {pagos ?? 0} participante(s) × {formatCurrency(valorAposta)}
             </p>
           </div>
@@ -92,7 +94,7 @@ export default async function RegrasPage() {
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>⚽ Acertar o artilheiro da Copa: <Pts>{pontuacao.artilheiro}</Pts></li>
               {rateio.artilheiro === 0 && (
-                <li className="text-amber-400">⚠️ Acertar o artilheiro <strong>NÃO dá prêmio em dinheiro</strong>, apenas pontos no ranking.</li>
+                <li className="font-bold text-festive-orange">⚠️ Acertar o artilheiro <strong>NÃO dá prêmio em dinheiro</strong>, apenas pontos no ranking.</li>
               )}
             </ul>
           </div>

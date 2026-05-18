@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Selo "Powered by Claudio" — obrigatório no header de todas as páginas.
- * Renderiza o ícone "asterisco" Claude em laranja + texto.
+ * Selo "Powered by Claudio" — mantido só na parte inferior (rodapés).
+ * Estilo festivo com asterisco Claude em laranja.
  */
 export function PoweredByClaudio({
   className,
@@ -17,19 +17,18 @@ export function PoweredByClaudio({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "group inline-flex items-center gap-1.5 rounded-full border border-claude/30 bg-claude/10 px-2.5 py-1 text-xs font-medium text-claude transition-colors hover:bg-claude/20",
+        "group inline-flex items-center gap-1.5 rounded-full bg-zinc-900/10 px-2.5 py-1 text-xs font-bold text-festive-orange transition-colors hover:bg-zinc-900/15",
         className,
       )}
       aria-label="Powered by Claudio"
     >
-      <ClaudeIcon className="h-3.5 w-3.5 text-claude transition-transform group-hover:rotate-90" />
+      <ClaudeIcon className="h-3.5 w-3.5 transition-transform group-hover:rotate-90" />
       {!compact && <span>Powered by Claudio</span>}
     </a>
   );
 }
 
 export function ClaudeIcon({ className }: { className?: string }) {
-  // Forma estilizada inspirada no asterisco do Claude (Anthropic)
   return (
     <svg
       viewBox="0 0 24 24"

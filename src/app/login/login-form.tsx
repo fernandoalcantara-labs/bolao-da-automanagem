@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
+import { MICROCOPY } from "@/lib/microcopy";
 
 export function LoginForm() {
   const router = useRouter();
@@ -24,10 +25,10 @@ export function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      toast({ title: "Eita 😬", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Bem-vindo de volta!", variant: "success" });
+    toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
     router.refresh();
     router.push("/palpites/grupos");
   }
@@ -35,16 +36,16 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Label htmlFor="email" className="font-bold">Email</Label>
+        <Input id="email" name="email" type="email" autoComplete="email" required placeholder="seuemail@exemplo.com" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+        <Label htmlFor="password" className="font-bold">Senha</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Entrar
+      <Button type="submit" className="w-full" disabled={loading} size="lg">
+        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+        {MICROCOPY.entrar}
       </Button>
     </form>
   );

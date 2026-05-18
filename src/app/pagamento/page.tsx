@@ -1,10 +1,11 @@
-import { Copy, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { CopyButton } from "./copy-button";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { formatCurrency } from "@/lib/utils";
+import { MICROCOPY } from "@/lib/microcopy";
 
 export const dynamic = "force-dynamic";
 
@@ -23,55 +24,70 @@ export default async function PagamentoPage() {
   const valor = Number(conf.valor_aposta ?? 50);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 py-6">
+    <div className="mx-auto max-w-2xl space-y-5 py-2 sm:py-6">
+      <header className="space-y-1">
+        <h1 className="font-fredoka text-3xl font-extrabold flex items-center gap-2">
+          <Wallet className="h-7 w-7 text-festive-green" /> Pagamento
+        </h1>
+        <p className="text-sm font-medium text-muted-foreground">
+          Faça um PIX e me avisa pra eu confirmar 💸
+        </p>
+      </header>
+
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Pagamento · {String(conf.nome_bolao ?? "Bolão da AutoManagem")}
-          </CardTitle>
-          <CardDescription>
-            Faça um PIX no valor abaixo para o organizador. Depois, ele marca seu pagamento como aprovado.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border border-border bg-card/60 p-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm text-muted-foreground">Valor da aposta</span>
-              <span className="text-3xl font-bold text-primary">{formatCurrency(valor)}</span>
-            </div>
+        <CardContent className="space-y-4 p-5">
+          {/* Valor destaque */}
+          <div className="rounded-2xl gradient-gold p-5 text-center shadow-stack-gold">
+            <p className="text-xs font-extrabold uppercase tracking-widest text-zinc-900/70">
+              Valor da aposta
+            </p>
+            <p className="mt-1 font-fredoka text-4xl font-extrabold text-zinc-900">
+              {formatCurrency(valor)}
+            </p>
           </div>
 
+          {/* PIX */}
           <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Chave PIX</p>
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
-              <code className="flex-1 truncate font-mono text-sm">{pixChave}</code>
+            <p className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+              📋 Chave PIX
+            </p>
+            <div className="flex items-center gap-2 rounded-xl border-2 border-festive-green/30 bg-festive-green/5 p-3">
+              <code className="flex-1 truncate font-mono text-sm font-bold text-foreground">{pixChave}</code>
               <CopyButton value={pixChave} />
             </div>
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Recebedor</p>
-            <p className="text-base font-medium">{pixNome}</p>
+            <p className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+              👤 Recebedor
+            </p>
+            <p className="text-base font-extrabold">{pixNome}</p>
           </div>
 
           {user && (
-            <div className="rounded-lg border border-border bg-card/40 p-4">
+            <div
+              className={
+                user.pago
+                  ? "rounded-xl border-2 border-festive-green/40 bg-festive-green/10 p-4"
+                  : "rounded-xl border-2 border-festive-orange/40 bg-festive-orange/10 p-4"
+              }
+            >
               <div className="flex items-center gap-3">
                 {user.pago ? (
                   <>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <CheckCircle2 className="h-6 w-6 text-festive-green" />
                     <div>
-                      <p className="font-medium">Pagamento confirmado!</p>
-                      <p className="text-xs text-muted-foreground">
-                        Você já está no ranking público.
+                      <p className="font-extrabold text-festive-green">{MICROCOPY.pago}</p>
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Você já está no ranking público 🎉
                       </p>
                     </div>
                   </>
                 ) : (
                   <>
-                    <Badge variant="warning">Aguardando confirmação</Badge>
-                    <p className="text-xs text-muted-foreground">
-                      O organizador confirma manualmente — seu palpite só aparece no ranking público após isso.
+                    <Badge variant="warning">{MICROCOPY.pendente}</Badge>
+                    <p className="text-xs font-medium text-muted-foreground">
+                      O organizador confirma seu pagamento manualmente.
                     </p>
                   </>
                 )}
@@ -79,12 +95,17 @@ export default async function PagamentoPage() {
             </div>
           )}
 
-          <ol className="ml-4 list-decimal space-y-2 text-sm text-muted-foreground">
-            <li>Abra o app do seu banco e faça PIX no valor de <strong>{formatCurrency(valor)}</strong>.</li>
-            <li>Cole a chave acima. Confirme o nome do recebedor: <strong>{pixNome}</strong>.</li>
-            <li>Envie o comprovante para o organizador (WhatsApp).</li>
-            <li>Em até 24h seu pagamento é confirmado e seu palpite passa a contar no ranking público.</li>
-          </ol>
+          <div className="space-y-2 rounded-xl border-2 border-border bg-festive-page/40 p-4">
+            <p className="text-xs font-extrabold uppercase tracking-widest text-muted-foreground">
+              Passo a passo
+            </p>
+            <ol className="ml-4 list-decimal space-y-1.5 text-sm font-medium">
+              <li>Abra o app do seu banco e faça PIX de <strong className="text-festive-green">{formatCurrency(valor)}</strong>.</li>
+              <li>Use a chave acima. Confira: <strong>{pixNome}</strong>.</li>
+              <li>Envia o comprovante pro organizador (WhatsApp).</li>
+              <li>Em até 24h o pagamento é confirmado e seu palpite começa a contar 🎯</li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
     </div>

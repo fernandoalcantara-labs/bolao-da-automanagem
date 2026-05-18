@@ -1,9 +1,8 @@
-import { Trophy, Medal, Award, Turtle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Crown, Medal, Award, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type Posicionado = {
-  nomes: string[]; // pode ter múltiplos em caso de empate
+  nomes: string[];
   pontos: number;
 };
 
@@ -14,16 +13,58 @@ type Props = {
   lanterninha: Posicionado | null;
 };
 
-const ITEMS = [
-  { key: "primeiro", label: "Líder", icon: Trophy, cor: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" },
-  { key: "segundo", label: "2º lugar", icon: Medal, cor: "text-zinc-300", bg: "bg-zinc-400/10 border-zinc-400/30" },
-  { key: "terceiro", label: "3º lugar", icon: Award, cor: "text-orange-400", bg: "bg-orange-700/10 border-orange-700/30" },
-  { key: "lanterninha", label: "Lanterninha", icon: Turtle, cor: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
-] as const;
+type Item = {
+  key: "primeiro" | "segundo" | "terceiro" | "lanterninha";
+  emoji: string;
+  label: string;
+  icon: typeof Crown;
+  bg: string;
+  text: string;
+  numero: string;
+};
+
+const ITEMS: Item[] = [
+  {
+    key: "primeiro",
+    emoji: "👑",
+    label: "Líder",
+    icon: Crown,
+    bg: "gradient-gold border-festive-gold-dark/40 shadow-stack-gold",
+    text: "text-zinc-900",
+    numero: "text-zinc-900",
+  },
+  {
+    key: "segundo",
+    emoji: "🥈",
+    label: "2º lugar",
+    icon: Medal,
+    bg: "bg-white border-zinc-300 shadow-stack",
+    text: "text-foreground",
+    numero: "text-zinc-600",
+  },
+  {
+    key: "terceiro",
+    emoji: "🥉",
+    label: "3º lugar",
+    icon: Award,
+    bg: "bg-white border-orange-400/40 shadow-stack",
+    text: "text-foreground",
+    numero: "text-festive-orange",
+  },
+  {
+    key: "lanterninha",
+    emoji: "🐢",
+    label: "Lanterninha",
+    icon: Turtle,
+    bg: "bg-white border-festive-green/40 shadow-stack",
+    text: "text-foreground",
+    numero: "text-festive-green",
+  },
+];
 
 export function KpiCards(props: Props) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {ITEMS.map((i) => {
         const p = props[i.key];
         const nome = p?.nomes.length
@@ -31,29 +72,29 @@ export function KpiCards(props: Props) {
             ? p.nomes[0]
             : `${p.nomes.length} empatados`
           : "—";
+        const primeiroNome = nome.split(" ")[0];
         return (
-          <Card key={i.key} className={cn("overflow-hidden", i.bg)}>
-            <CardContent className="flex flex-col gap-1.5 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {i.label}
-                </span>
-                <i.icon className={cn("h-5 w-5", i.cor)} />
-              </div>
-              <p className="line-clamp-1 text-2xl font-bold leading-tight" title={p?.nomes.join(", ")}>
-                {nome.split(" ")[0]}
-                {nome.split(" ").length > 1 && nome.split(" ")[0] !== nome ? (
-                  <span className="ml-1 text-base font-medium text-muted-foreground">
-                    {nome.split(" ").slice(1).join(" ")}
-                  </span>
-                ) : null}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {p ? `${p.pontos} pts` : "ainda sem pontos"}
-                {p && p.nomes.length > 1 ? ` · ${p.nomes.join(", ")}` : ""}
-              </p>
-            </CardContent>
-          </Card>
+          <div
+            key={i.key}
+            className={cn(
+              "min-w-0 rounded-2xl border-2 p-3 transition-transform hover:-translate-y-0.5 sm:p-4",
+              i.bg,
+            )}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className={cn("truncate text-[10px] font-extrabold uppercase tracking-widest", i.text, "opacity-70")}>
+                {i.label}
+              </span>
+              <span className="shrink-0 text-xl sm:text-2xl">{i.emoji}</span>
+            </div>
+            <p className={cn("mt-2 truncate font-fredoka text-xl font-extrabold leading-tight sm:text-2xl", i.text)} title={p?.nomes.join(", ")}>
+              {primeiroNome}
+            </p>
+            <p className={cn("mt-0.5 truncate text-xs font-bold", i.numero, "opacity-80")}>
+              {p ? `${p.pontos} pts` : "sem pontos"}
+              {p && p.nomes.length > 1 && " 👥"}
+            </p>
+          </div>
         );
       })}
     </div>

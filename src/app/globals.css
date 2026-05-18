@@ -1,68 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  Bolão da AutoManagem — Identidade visual festiva brasileira    ║
+   ║  Inspirada em Cartola FC, Duolingo e festa de bar               ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Backgrounds */
+    --bg-page: #FFF8E7;          /* creme quente */
+    --bg-card: #FFFFFF;          /* branco puro pros cards */
 
+    /* shadcn tokens (compat com componentes existentes) */
+    --background: 45 100% 95%;            /* creme = #FFF8E7 */
+    --foreground: 235 30% 14%;            /* #1A1A2E preto-azulado */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 235 30% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 142 80% 30%; /* verde-Brasil */
+    --popover-foreground: 235 30% 14%;
+    --primary: 145 100% 31%;              /* #009C3B verde-Brasil */
     --primary-foreground: 0 0% 100%;
+    --secondary: 51 100% 52%;             /* #FFD60A amarelo-ouro */
+    --secondary-foreground: 235 30% 14%;
+    --muted: 45 50% 92%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 51 100% 90%;                /* amarelo bem claro */
+    --accent-foreground: 235 30% 14%;
+    --destructive: 354 100% 64%;          /* #FF4757 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 92%;
+    --input: 0 0% 92%;
+    --ring: 145 100% 31%;
+    --radius: 0.875rem;                   /* 14px — cantos arredondados generosos */
 
-    --secondary: 51 100% 50%; /* amarelo-Brasil */
-    --secondary-foreground: 222.2 84% 4.9%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142 80% 30%;
-
-    --radius: 0.65rem;
-  }
-
-  .dark {
-    --background: 222.2 47% 5%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 47% 8%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 47% 7%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 142 70% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 51 100% 55%;
-    --secondary-foreground: 222.2 84% 4.9%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142 70% 45%;
+    /* Acentos da identidade festiva (usar diretamente) */
+    --gold: #FFD60A;
+    --gold-dark: #FF9F1C;
+    --green: #009C3B;
+    --green-light: #00D26A;
+    --green-deep: #007A2E;
+    --orange: #FF6B35;
+    --blue: #4A9EFF;
+    --purple: #B83AC1;
+    --red: #FF4757;
+    --text-primary: #1A1A2E;
+    --text-secondary: #666666;
+    --text-muted: #999999;
   }
 }
 
@@ -71,25 +58,134 @@
     @apply border-border;
   }
   html {
-    color-scheme: dark;
+    color-scheme: light;
+    background: var(--bg-page);
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background:
+      radial-gradient(circle at top right, rgba(255, 214, 10, 0.10), transparent 50%),
+      radial-gradient(circle at bottom left, rgba(0, 156, 59, 0.08), transparent 50%),
+      var(--bg-page);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, .font-fredoka {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
   }
 }
 
+/* ════════════════ Utilities festivas ════════════════ */
+
 .gradient-stadium {
-  background: radial-gradient(ellipse at top, rgba(0, 156, 59, 0.25), transparent 60%),
-    radial-gradient(ellipse at bottom right, rgba(255, 223, 0, 0.10), transparent 50%),
-    hsl(var(--background));
+  background: var(--bg-page);
 }
 
+.gradient-header {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+}
+
+.gradient-bronze {
+  background: linear-gradient(135deg, #CD7F32 0%, #B8682E 100%);
+}
+
+/* Sombra "stacked" — característica da vibe lúdica */
+.shadow-stack {
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.08);
+}
+.shadow-stack-gold {
+  box-shadow: 0 4px 0 rgba(255, 159, 28, 0.35);
+}
+.shadow-stack-green {
+  box-shadow: 0 4px 0 var(--green-deep);
+}
+.shadow-stack-orange {
+  box-shadow: 0 4px 0 #C04A1F;
+}
+.shadow-stack-press {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  transform: translateY(2px);
+}
+
+/* Borda colorida grossa estilo Duolingo */
+.border-festive {
+  border-width: 2px;
+  border-style: solid;
+}
+.border-dashed-festive {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+/* Animações */
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.85); }
+  60% { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+}
+@keyframes shimmer-gold {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-pop-in { animation: pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+.animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+.animate-shimmer-gold {
+  background: linear-gradient(90deg, #FFD60A 0%, #FFE876 50%, #FFD60A 100%);
+  background-size: 200% 100%;
+  animation: shimmer-gold 3s ease-in-out infinite;
+}
+.animate-fade-up { animation: fade-up 0.4s ease-out; }
+.animate-spin-slow { animation: spin-slow 2s linear infinite; }
+.animate-bounce-soft { animation: bounce-soft 1.2s ease-in-out infinite; }
+
+/* Botão "stacked" — afunda no click */
+.btn-stack {
+  position: relative;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+.btn-stack:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Scrollbar amigável */
 .scrollbar-thin::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
+  height: 8px;
+  width: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground) / 0.4);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 9999px;
 }

@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: { "2xl": "1400px" },
     },
     extend: {
@@ -49,21 +49,38 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Identidade Bolão da AutoManagem
+        // Paleta festiva brasileira — usar via classes (bg-festive-gold etc)
+        festive: {
+          page: "#FFF8E7",
+          gold: "#FFD60A",
+          "gold-dark": "#FF9F1C",
+          green: "#009C3B",
+          "green-light": "#00D26A",
+          "green-deep": "#007A2E",
+          orange: "#FF6B35",
+          blue: "#4A9EFF",
+          purple: "#B83AC1",
+          red: "#FF4757",
+        },
+        // Cores Brasil (compat com header antigo)
         brasil: {
           verde: "#009C3B",
-          amarelo: "#FFDF00",
+          amarelo: "#FFD60A",
           azul: "#002776",
         },
         claude: {
-          DEFAULT: "#D97757",
-          dark: "#B85A3D",
+          DEFAULT: "#FF6B35",
+          dark: "#C04A1F",
         },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["Nunito", "ui-sans-serif", "system-ui", "sans-serif"],
+        fredoka: ["Fredoka", "Nunito", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
@@ -74,34 +91,10 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
-        },
-        shimmer: {
-          "0%": { backgroundPosition: "-200% 0" },
-          "100%": { backgroundPosition: "200% 0" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.4s ease-out",
-        shimmer: "shimmer 2.5s linear infinite",
-      },
-      fontFamily: {
-        sans: [
-          "Inter",
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
-          "sans-serif",
-        ],
       },
     },
   },
