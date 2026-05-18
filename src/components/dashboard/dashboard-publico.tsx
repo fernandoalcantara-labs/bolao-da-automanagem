@@ -6,7 +6,10 @@ import { BarChartRodada } from "./bar-chart-rodada";
 import { Heatmap } from "./heatmap";
 import { PieCampeao, PieArtilheiro } from "./pies";
 import { ConfrontosRodada } from "./confrontos-rodada";
+import { PremiosCard } from "./premios-card";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { RATEIO_DEFAULT } from "@/lib/prizes";
+import type { RateioConfig } from "@/types/database";
 
 export async function DashboardPublico() {
   const supabase = createClient();
@@ -40,6 +43,7 @@ export async function DashboardPublico() {
   const conf = Object.fromEntries((config ?? []).map((c) => [c.chave, c.valor]));
   const valorAposta = Number(conf.valor_aposta ?? 50);
   const nomeBolao = String(conf.nome_bolao ?? "Bolão da AutoManagem");
+  const rateio = (conf.rateio as RateioConfig) ?? RATEIO_DEFAULT;
 
   const usersPagos = users ?? [];
   const usersById = new Map(usersPagos.map((u) => [u.id, u]));
@@ -90,6 +94,20 @@ export async function DashboardPublico() {
           estimado de <strong className="text-primary">R$ {totalArrecadado.toLocaleString("pt-BR")}</strong>.
         </p>
       </header>
+
+      <PremiosCard
+        ranking={snapsUltima.map((s) => ({
+          user_id: s.user_id,
+          nome: usersById.get(s.user_id)?.nome ?? "—",
+          pontos: s.pontos_totais,
+        }))}
+        acertaramArtilheiro={(palpitesArtilheiro ?? [])
+          .filter((p) => usersById.has(p.user_id))
+          .map((p) => p.user_id)
+          .filter((id, i, arr) => arr.indexOf(id) === i)}
+        rateio={rateio}
+        totalArrecadado={totalArrecadado}
+      />
 
       <KpiCards
         totalPagos={usersPagos.length}

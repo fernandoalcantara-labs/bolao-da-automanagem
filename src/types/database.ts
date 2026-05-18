@@ -26,6 +26,7 @@ export interface RateioConfig {
   primeiro: number;
   segundo: number;
   terceiro: number;
+  lanterninha: number;
   artilheiro: number;
 }
 

@@ -28,7 +28,7 @@ export function ConfigForm({ conf }: { conf: Conf }) {
     },
   );
   const [rateio, setRateio] = React.useState<RateioConfig>(
-    conf.rateio ?? { primeiro: 60, segundo: 20, terceiro: 10, artilheiro: 10 },
+    conf.rateio ?? { primeiro: 65, segundo: 20, terceiro: 10, lanterninha: 5, artilheiro: 0 },
   );
   const [pixChave, setPixChave] = React.useState(conf.pix_chave ?? "");
   const [pixNome, setPixNome] = React.useState(conf.pix_nome ?? "");
@@ -36,6 +36,14 @@ export function ConfigForm({ conf }: { conf: Conf }) {
   const [nomeBolao, setNomeBolao] = React.useState(conf.nome_bolao ?? "Bolão da AutoManagem");
 
   async function salvar() {
+    if (somaRateio !== 100) {
+      toast({
+        title: "Rateio inválido",
+        description: `A soma dos percentuais deve ser 100% (atual: ${somaRateio}%).`,
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const rows = [
@@ -58,7 +66,8 @@ export function ConfigForm({ conf }: { conf: Conf }) {
     toast({ title: "Configurações salvas!", variant: "success" });
   }
 
-  const somaRateio = rateio.primeiro + rateio.segundo + rateio.terceiro + rateio.artilheiro;
+  const somaRateio =
+    rateio.primeiro + rateio.segundo + rateio.terceiro + rateio.lanterninha + rateio.artilheiro;
 
   return (
     <div className="space-y-6">
@@ -96,14 +105,20 @@ export function ConfigForm({ conf }: { conf: Conf }) {
           <CardTitle>Rateio do prêmio (%)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-4">
-            <NumberField label="1º lugar" v={rateio.primeiro} onChange={(n) => setRateio({ ...rateio, primeiro: n })} />
-            <NumberField label="2º lugar" v={rateio.segundo} onChange={(n) => setRateio({ ...rateio, segundo: n })} />
-            <NumberField label="3º lugar" v={rateio.terceiro} onChange={(n) => setRateio({ ...rateio, terceiro: n })} />
-            <NumberField label="Artilheiro" v={rateio.artilheiro} onChange={(n) => setRateio({ ...rateio, artilheiro: n })} />
+          <div className="grid gap-4 sm:grid-cols-5">
+            <NumberField label="🥇 1º lugar" v={rateio.primeiro} onChange={(n) => setRateio({ ...rateio, primeiro: n })} />
+            <NumberField label="🥈 2º lugar" v={rateio.segundo} onChange={(n) => setRateio({ ...rateio, segundo: n })} />
+            <NumberField label="🥉 3º lugar" v={rateio.terceiro} onChange={(n) => setRateio({ ...rateio, terceiro: n })} />
+            <NumberField label="🐢 Lanterninha" v={rateio.lanterninha} onChange={(n) => setRateio({ ...rateio, lanterninha: n })} />
+            <NumberField label="⚽ Artilheiro" v={rateio.artilheiro} onChange={(n) => setRateio({ ...rateio, artilheiro: n })} />
           </div>
           <p className={`mt-3 text-sm ${somaRateio === 100 ? "text-emerald-400" : "text-destructive"}`}>
-            Soma: {somaRateio}% {somaRateio !== 100 && "(deve totalizar 100%)"}
+            Soma: <strong>{somaRateio}%</strong>{" "}
+            {somaRateio !== 100 && `(precisa ser 100%, falta ajustar ${100 - somaRateio}%)`}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            💡 O lanterninha é quem tem MENOS pontos — empate divide igualmente. Acertar artilheiro
+            soma 24 pts ao ranking; o % aqui é prêmio em dinheiro (deixe 0 se quiser só pontuação).
           </p>
         </CardContent>
       </Card>
