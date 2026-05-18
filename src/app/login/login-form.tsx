@@ -50,19 +50,30 @@ export function LoginForm() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithPassword({
-        email: finalEmail,
-        password: finalPassword,
-      });
+      // Timeout de 15s — se a requisição travar, dá erro claro em vez do
+      // spinner ficar preso pra sempre.
+      const result = await Promise.race([
+        supabase.auth.signInWithPassword({
+          email: finalEmail,
+          password: finalPassword,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("A conexão demorou demais. Tenta de novo?")), 15000),
+        ),
+      ]);
+      const { error } = result;
       if (error) {
-        toast({ title: "Eita 😬", description: error.message, variant: "destructive" });
+        toast({
+          title: "Não consegui entrar 😬",
+          description: error.message.includes("Invalid")
+            ? "Email ou senha incorretos. Confere aí?"
+            : error.message,
+          variant: "destructive",
+        });
         setLoading(false);
         return;
       }
       toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
-      // Hard navigation força o layout inteiro a remontar com os cookies de
-      // auth já gravados. Resolve o caso da Sidebar não atualizar o menu
-      // após login (mesma instância de layout entre /login e /palpites/grupos).
       window.location.href = "/palpites/grupos";
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
