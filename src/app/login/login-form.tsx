@@ -61,7 +61,7 @@ export function LoginForm() {
           setTimeout(() => reject(new Error("A conexão demorou demais. Tenta de novo?")), 15000),
         ),
       ]);
-      const { error } = result;
+      const { error, data } = result;
       if (error) {
         toast({
           title: "Não consegui entrar 😬",
@@ -73,8 +73,19 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
-      window.location.href = "/palpites/grupos";
+      // Sucesso! Aguarda 200ms pros cookies de @supabase/ssr serem
+      // persistidos via document.cookie antes de navegar (write é async).
+      if (data?.session) {
+        await new Promise((r) => setTimeout(r, 200));
+        window.location.replace("/palpites/grupos");
+        return;
+      }
+      toast({
+        title: "Algo deu errado 🤔",
+        description: "Login OK mas sessão veio vazia. Tenta de novo?",
+        variant: "destructive",
+      });
+      setLoading(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
       toast({ title: "Eita 😬", description: msg, variant: "destructive" });
