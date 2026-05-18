@@ -51,8 +51,11 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
   const sfDireito = qfDireito;
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-gradient-to-br from-festive-page to-white p-4 shadow-stack">
-      <div className="flex min-w-[1100px] items-stretch gap-3">
+    <div
+      className="overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
+      <div className="flex min-w-[1100px] items-stretch gap-3 touch-pan-x">
         {/* Lado esquerdo */}
         <ColunaRound titulo="16 avos" matches={renderR32(esquerdo, teams, picks, onPick, fechado)} altura={8} />
         <ColunaRound titulo="Oitavas" matches={renderR16(r16Esquerdo, teams, picks, onPick, fechado)} altura={4} />
@@ -253,17 +256,18 @@ function MatchSlot({
       type="button"
       onClick={onClick}
       disabled={!onClick}
+      style={{ WebkitTapHighlightColor: "transparent" }}
       className={cn(
-        "flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[11px] font-bold transition-colors",
+        "flex w-full items-center gap-1.5 rounded-md px-2 py-2 text-left text-xs font-bold transition-colors touch-manipulation",
         escolhido && "bg-festive-green/15 text-festive-green",
-        onClick && "hover:bg-festive-gold/10 cursor-pointer",
+        onClick && "active:scale-95 active:bg-festive-gold/20 hover:bg-festive-gold/10 cursor-pointer",
         !onClick && "cursor-default",
       )}
     >
       {team?.bandeira_url ? (
-        <Image src={team.bandeira_url} alt={team.nome} width={18} height={13} unoptimized className="rounded-sm" />
+        <Image src={team.bandeira_url} alt={team.nome} width={20} height={14} unoptimized className="rounded-sm" />
       ) : (
-        <span className="inline-block h-3 w-4 rounded-sm bg-muted" />
+        <span className="inline-block h-3.5 w-5 rounded-sm bg-muted" />
       )}
       <span className="line-clamp-1 flex-1">
         {team?.nome ?? label ?? "—"}

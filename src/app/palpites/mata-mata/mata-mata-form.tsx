@@ -206,7 +206,6 @@ export function MataMataForm({
             )}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Bracket
-            <span className="hidden sm:inline opacity-70">(desktop)</span>
           </button>
           <button
             onClick={() => changeModo("lista")}
@@ -224,41 +223,18 @@ export function MataMataForm({
       </div>
 
       {modo === "bracket" ? (
-        <>
-          {/* Desktop ≥ lg: BracketView completo */}
-          <div className="hidden lg:block">
-            <BracketView
-              r32={r32}
-              teams={teamMap}
-              picks={picks}
-              onPick={pickInMatch}
-              fechado={fechado}
-            />
-          </div>
-          {/* Mobile/tablet: aviso + fallback automático pra "Por fase" */}
-          <div className="lg:hidden">
-            <Card>
-              <CardContent className="space-y-2 p-4 text-center text-sm">
-                <p>📱 O bracket completo precisa de tela larga.</p>
-                <p className="text-xs text-muted-foreground">
-                  Em telas pequenas, use o modo <strong>&quot;Por fase&quot;</strong> abaixo —
-                  mais legível e funcional.
-                </p>
-                <Button onClick={() => changeModo("lista")} variant="outline" size="sm">
-                  Mudar pra &quot;Por fase&quot;
-                </Button>
-              </CardContent>
-            </Card>
-            <ListaPorFase
-              teams={teams}
-              picks={picks}
-              pickInMatch={pickInMatch}
-              aba={aba}
-              setAba={setAba}
-              fechado={fechado}
-            />
-          </div>
-        </>
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground lg:hidden">
+            👉 Arrasta horizontalmente pra ver todo o bracket. Toca num time pra marcar como vencedor.
+          </p>
+          <BracketView
+            r32={r32}
+            teams={teamMap}
+            picks={picks}
+            onPick={pickInMatch}
+            fechado={fechado}
+          />
+        </div>
       ) : (
         <ListaPorFase
           teams={teams}
