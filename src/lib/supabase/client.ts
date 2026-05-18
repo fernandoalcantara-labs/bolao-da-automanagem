@@ -14,7 +14,7 @@ export function createClient() {
         // travar indefinidamente até o lock liberar.
         // Trade-off: pequeno risco de race entre múltiplas abas (aceitável
         // pro caso de uso de bolão entre amigos).
-        lock: async (_name, _timeout, fn) => fn(),
+        lock: async <R,>(_name: string, _timeout: number, fn: () => Promise<R>): Promise<R> => fn(),
       },
     },
   );
