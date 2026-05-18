@@ -4,7 +4,6 @@ import * as React from "react";
 import Image from "next/image";
 import { Loader2, Save, LayoutGrid, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
@@ -238,20 +237,28 @@ function PorGrupo({
                             <span className="line-clamp-1 font-medium">{casa.nome}</span>
                             <Image src={casa.bandeira_url} alt={casa.nome} width={20} height={14} unoptimized className="rounded-sm" />
                           </div>
-                          <Input
+                          <input
                             inputMode="numeric"
-                            className="h-8 w-9 text-center text-sm"
+                            className={cn(
+                              "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                              v?.c ? "border-festive-green" : "border-dashed border-festive-green/40",
+                            )}
                             value={v?.c ?? ""}
                             onChange={(e) => update(m.id, "c", e.target.value)}
                             disabled={dis}
+                            aria-label={`Placar de ${casa.nome}`}
                           />
-                          <span className="text-xs text-muted-foreground">×</span>
-                          <Input
+                          <span className="font-bold text-muted-foreground">×</span>
+                          <input
                             inputMode="numeric"
-                            className="h-8 w-9 text-center text-sm"
+                            className={cn(
+                              "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                              v?.f ? "border-festive-green" : "border-dashed border-festive-green/40",
+                            )}
                             value={v?.f ?? ""}
                             onChange={(e) => update(m.id, "f", e.target.value)}
                             disabled={dis}
+                            aria-label={`Placar de ${fora.nome}`}
                           />
                           <div className="flex flex-1 items-center gap-1.5 text-xs">
                             <Image src={fora.bandeira_url} alt={fora.nome} width={20} height={14} unoptimized className="rounded-sm" />
@@ -319,9 +326,29 @@ function PorRodada({
                       <span className="line-clamp-1 text-sm font-medium">{casa.nome}</span>
                       <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} unoptimized className="rounded-sm" />
                     </div>
-                    <Input inputMode="numeric" className="h-9 w-11 text-center" value={v?.c ?? ""} onChange={(e) => update(m.id, "c", e.target.value)} disabled={dis} />
-                    <span className="text-muted-foreground">×</span>
-                    <Input inputMode="numeric" className="h-9 w-11 text-center" value={v?.f ?? ""} onChange={(e) => update(m.id, "f", e.target.value)} disabled={dis} />
+                    <input
+                      inputMode="numeric"
+                      className={cn(
+                        "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                        v?.c ? "border-festive-green" : "border-dashed border-festive-green/40",
+                      )}
+                      value={v?.c ?? ""}
+                      onChange={(e) => update(m.id, "c", e.target.value)}
+                      disabled={dis}
+                      aria-label={`Placar de ${casa.nome}`}
+                    />
+                    <span className="font-bold text-muted-foreground">×</span>
+                    <input
+                      inputMode="numeric"
+                      className={cn(
+                        "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                        v?.f ? "border-festive-green" : "border-dashed border-festive-green/40",
+                      )}
+                      value={v?.f ?? ""}
+                      onChange={(e) => update(m.id, "f", e.target.value)}
+                      disabled={dis}
+                      aria-label={`Placar de ${fora.nome}`}
+                    />
                     <div className="flex flex-1 items-center gap-1.5">
                       <Image src={fora.bandeira_url} alt={fora.nome} width={24} height={18} unoptimized className="rounded-sm" />
                       <span className="line-clamp-1 text-sm font-medium">{fora.nome}</span>
