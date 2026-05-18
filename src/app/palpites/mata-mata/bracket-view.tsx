@@ -258,10 +258,13 @@ function MatchSlot({
       disabled={!onClick}
       style={{ WebkitTapHighlightColor: "transparent" }}
       className={cn(
-        "flex w-full items-center gap-1.5 rounded-md px-2 py-2 text-left text-xs font-bold transition-colors touch-manipulation",
-        escolhido && "bg-festive-green/15 text-festive-green",
-        onClick && "active:scale-95 active:bg-festive-gold/20 hover:bg-festive-gold/10 cursor-pointer",
-        !onClick && "cursor-default",
+        "flex w-full items-center gap-1.5 rounded-md px-2 py-2 text-left text-xs font-bold transition-all touch-manipulation",
+        // Escolhido (passa de fase): verde Brasil com texto branco
+        escolhido && "bg-gradient-to-br from-festive-green to-festive-green-light text-white ring-1 ring-festive-green-deep",
+        // Não escolhido + clicável: hover amarelo claro
+        !escolhido && onClick && "text-zinc-900 hover:bg-festive-gold/15 active:scale-95 cursor-pointer",
+        // Disabled/sem team
+        !onClick && !escolhido && "text-muted-foreground cursor-default",
       )}
     >
       {team?.bandeira_url ? (
@@ -272,7 +275,7 @@ function MatchSlot({
       <span className="line-clamp-1 flex-1">
         {team?.nome ?? label ?? "—"}
       </span>
-      {escolhido && <span className="text-festive-green">✓</span>}
+      {escolhido && <span className="text-white">✓</span>}
     </button>
   );
 }
@@ -301,33 +304,40 @@ function CentroBracket({
         <p className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-widest text-festive-gold-dark">
           Final
         </p>
-        <div className="rounded-xl border-2 border-festive-gold-dark/50 gradient-gold p-1.5 shadow-stack-gold">
+        <div className="rounded-xl border-2 border-festive-gold-dark/50 bg-white p-1.5 shadow-stack-gold">
           {[0, 1].map((slot) => {
             const tid = finalistas[slot];
             const team = tid ? teams[tid] : null;
-            const isCampeao = tid && campeao === tid;
+            const isCampeao = !!tid && campeao === tid;
+            const podeClicar = !!tid && !fechado;
             return (
               <React.Fragment key={slot}>
-                {slot === 1 && <div className="my-1 h-px bg-zinc-900/20" />}
+                {slot === 1 && <div className="my-1 h-px bg-border" />}
                 <button
                   type="button"
-                  onClick={tid && !fechado ? () => onPick("campeao", tid) : undefined}
-                  disabled={!tid || fechado}
+                  onClick={podeClicar ? () => onPick("campeao", tid) : undefined}
+                  disabled={!podeClicar}
+                  style={{ WebkitTapHighlightColor: "transparent" }}
                   className={cn(
-                    "flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-[11px] font-extrabold transition-colors",
-                    isCampeao && "bg-zinc-900 text-festive-gold",
-                    tid && !isCampeao && !fechado && "hover:bg-white/40",
+                    "flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-xs font-extrabold transition-all touch-manipulation",
+                    // Não escolhido (estado normal): fundo branco, texto escuro
+                    !isCampeao && tid && "text-zinc-900 hover:bg-festive-gold/15",
+                    // Escolhido como CAMPEÃO: gradient dourado, texto escuro forte (contraste alto)
+                    isCampeao && "gradient-gold text-zinc-900 ring-2 ring-festive-gold-dark scale-[1.02]",
+                    // Sem time ainda
+                    !tid && "text-muted-foreground",
+                    podeClicar && "cursor-pointer active:scale-95",
                   )}
                 >
                   {team?.bandeira_url ? (
-                    <Image src={team.bandeira_url} alt={team.nome} width={18} height={13} unoptimized className="rounded-sm" />
+                    <Image src={team.bandeira_url} alt={team.nome} width={20} height={14} unoptimized className="rounded-sm" />
                   ) : (
-                    <span className="inline-block h-3 w-4 rounded-sm bg-zinc-900/20" />
+                    <span className="inline-block h-3.5 w-5 rounded-sm bg-muted" />
                   )}
-                  <span className="line-clamp-1 flex-1 text-zinc-900">
+                  <span className="line-clamp-1 flex-1">
                     {team?.nome ?? "—"}
                   </span>
-                  {isCampeao && <span>👑</span>}
+                  {isCampeao && <span className="text-base">👑</span>}
                 </button>
               </React.Fragment>
             );
