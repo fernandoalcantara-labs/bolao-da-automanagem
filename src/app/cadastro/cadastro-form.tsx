@@ -40,7 +40,10 @@ export function CadastroForm() {
       }
       toast({ ...MICROCOPY.toastCadastroFeito, variant: "success" });
       bigConfetti();
-      router.push("/pagamento");
+      // Hard navigation pra garantir que sidebar/bottom-nav vejam o user logado
+      setTimeout(() => {
+        window.location.href = "/pagamento";
+      }, 800);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
       toast({ title: "Eita 😬", description: msg, variant: "destructive" });

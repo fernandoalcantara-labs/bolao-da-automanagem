@@ -59,8 +59,8 @@ export function BottomNav() {
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
     setUser(null);
     setDrawerOpen(false);
-    router.refresh();
-    router.push("/");
+    // Hard navigation pra limpar estado de auth em toda a árvore
+    window.location.href = "/";
   }
 
   const primary = NAV_ITEMS.filter((i) => {

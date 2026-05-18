@@ -58,8 +58,9 @@ export function Sidebar() {
     await supabase.auth.signOut();
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
     setUser(null);
-    router.refresh();
-    router.push("/");
+    // Hard navigation pra garantir que o estado de auth seja limpo em todos
+    // os componentes (sidebar, bottom-nav, headers de páginas, etc).
+    window.location.href = "/";
   }
 
   const items = NAV_ITEMS.filter((i) => {

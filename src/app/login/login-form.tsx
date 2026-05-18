@@ -60,8 +60,10 @@ export function LoginForm() {
         return;
       }
       toast({ ...MICROCOPY.toastLoginFeito, variant: "success" });
-      router.refresh();
-      router.push("/palpites/grupos");
+      // Hard navigation força o layout inteiro a remontar com os cookies de
+      // auth já gravados. Resolve o caso da Sidebar não atualizar o menu
+      // após login (mesma instância de layout entre /login e /palpites/grupos).
+      window.location.href = "/palpites/grupos";
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
       toast({ title: "Eita 😬", description: msg, variant: "destructive" });
