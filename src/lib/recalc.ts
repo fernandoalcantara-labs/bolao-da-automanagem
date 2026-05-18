@@ -185,21 +185,26 @@ async function recalcularPalpiteArtilheiro(supabase: SB) {
     .from("players")
     .select("id, gols_torneio")
     .order("gols_torneio", { ascending: false });
-  if (!jogadores || jogadores.length === 0) return;
 
-  const top = jogadores[0].gols_torneio;
-  if (top === 0) {
-    // ainda não há artilheiro definido
-    return;
-  }
-  const idsArtilheiros = new Set(jogadores.filter((p) => p.gols_torneio === top).map((p) => p.id));
+  // Determina quem é(são) o(s) artilheiro(s) atual(is)
+  const top = jogadores?.[0]?.gols_torneio ?? 0;
+  const idsArtilheiros = top > 0
+    ? new Set((jogadores ?? []).filter((p) => p.gols_torneio === top).map((p) => p.id))
+    : new Set<string>();
 
-  const { data: palpites } = await supabase.from("palpites_artilheiro").select("id, player_id");
+  const { data: palpites } = await supabase
+    .from("palpites_artilheiro")
+    .select("id, player_id, player_nome_manual");
   if (!palpites) return;
 
+  // Importante: só recalculamos automaticamente palpites com player_id (escolha
+  // da lista). Palpites texto livre (player_nome_manual) ficam sob controle
+  // exclusivo do admin via /admin/artilheiros — não tocamos no acertou deles
+  // pra não desfazer validações manuais.
   const acertou: string[] = [];
   const errou: string[] = [];
-  for (const p of palpites) {
+  for (const p of palpites as Array<{ id: string; player_id: string | null; player_nome_manual: string | null }>) {
+    if (p.player_id === null) continue; // pula texto livre — admin controla
     if (idsArtilheiros.has(p.player_id)) acertou.push(p.id);
     else errou.push(p.id);
   }
