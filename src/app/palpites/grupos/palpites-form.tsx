@@ -2,15 +2,14 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, LayoutGrid, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, cn } from "@/lib/utils";
 
 type Team = { id: string; nome: string; codigo_fifa: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -34,19 +33,29 @@ type Props = {
   fechado: boolean;
 };
 
+type Modo = "grupo" | "rodada";
+
 export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props) {
   const [state, setState] = React.useState<Record<string, { c: string; f: string }>>(() => {
     const init: Record<string, { c: string; f: string }> = {};
     for (const m of matches) {
       const p = palpites[m.id];
-      init[m.id] = {
-        c: p ? String(p.placar_casa) : "",
-        f: p ? String(p.placar_fora) : "",
-      };
+      init[m.id] = { c: p ? String(p.placar_casa) : "", f: p ? String(p.placar_fora) : "" };
     }
     return init;
   });
   const [saving, setSaving] = React.useState(false);
+  const [modo, setModo] = React.useState<Modo>("grupo");
+
+  // Carrega/persiste o modo no localStorage
+  React.useEffect(() => {
+    const saved = window.localStorage.getItem("palpites-grupos-modo");
+    if (saved === "rodada" || saved === "grupo") setModo(saved);
+  }, []);
+  function changeModo(m: Modo) {
+    setModo(m);
+    window.localStorage.setItem("palpites-grupos-modo", m);
+  }
 
   function update(id: string, side: "c" | "f", value: string) {
     if (!/^\d{0,2}$/.test(value)) return;
@@ -87,6 +96,82 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
     });
   }
 
+  const totalPalpitados = Object.values(state).filter((v) => v.c !== "" && v.f !== "").length;
+
+  return (
+    <div className="space-y-4">
+      {/* Toggle de modo + progresso */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-md border border-border bg-card/40 p-0.5">
+          <button
+            onClick={() => changeModo("grupo")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors",
+              modo === "grupo"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Por grupo
+          </button>
+          <button
+            onClick={() => changeModo("rodada")}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors",
+              modo === "rodada"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <ListOrdered className="h-3.5 w-3.5" /> Por rodada
+          </button>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          <strong className="text-foreground">{totalPalpitados}/72</strong> jogos palpitados
+        </span>
+      </div>
+
+      {modo === "grupo" ? (
+        <PorGrupo
+          matches={matches}
+          teams={teams}
+          state={state}
+          update={update}
+          fechado={fechado}
+        />
+      ) : (
+        <PorRodada
+          matches={matches}
+          teams={teams}
+          state={state}
+          update={update}
+          fechado={fechado}
+        />
+      )}
+
+      {!fechado && (
+        <div className="sticky bottom-4 z-10 flex justify-end">
+          <Button onClick={salvar} disabled={saving} size="lg" className="shadow-lg">
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Salvar palpites
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────── Por grupo ─────────────────────────────────────────
+
+function PorGrupo({
+  matches, teams, state, update, fechado,
+}: {
+  matches: Match[];
+  teams: Record<string, Team>;
+  state: Record<string, { c: string; f: string }>;
+  update: (id: string, side: "c" | "f", value: string) => void;
+  fechado: boolean;
+}) {
   const porGrupo = React.useMemo(() => {
     const m = new Map<string, Match[]>();
     for (const match of matches) {
@@ -98,94 +183,156 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
   }, [matches]);
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue={porGrupo[0]?.[0] ?? "A"}>
-        <TabsList className="flex h-auto flex-wrap gap-1 bg-muted/40 p-1">
-          {porGrupo.map(([grupo]) => (
-            <TabsTrigger key={grupo} value={grupo} className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              Grupo {grupo}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {porGrupo.map(([grupo, jogos]) => {
+        const times = Object.values(teams).filter((t) => t.grupo === grupo);
+        const palpitadosNoGrupo = jogos.filter(
+          (j) => state[j.id]?.c !== "" && state[j.id]?.f !== "",
+        ).length;
+        return (
+          <Card key={grupo} className="overflow-hidden">
+            <CardContent className="space-y-3 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge className="text-sm">Grupo {grupo}</Badge>
+                  <div className="flex -space-x-1">
+                    {times.map((t) => (
+                      <Image
+                        key={t.id}
+                        src={t.bandeira_url}
+                        alt={t.nome}
+                        width={20}
+                        height={14}
+                        title={t.nome}
+                        unoptimized
+                        className="rounded-sm border border-background"
+                      />
+                    ))}
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  {palpitadosNoGrupo}/6 palpites
+                </span>
+              </div>
 
-        {porGrupo.map(([grupo, jogos]) => (
-          <TabsContent key={grupo} value={grupo} className="space-y-3">
+              <div className="space-y-1.5">
+                {jogos
+                  .sort((a, b) => a.data_hora.localeCompare(b.data_hora))
+                  .map((m) => {
+                    const casa = teams[m.time_casa_id];
+                    const fora = teams[m.time_fora_id];
+                    if (!casa || !fora) return null;
+                    const v = state[m.id];
+                    const dis = fechado || m.status !== "agendado";
+                    return (
+                      <div
+                        key={m.id}
+                        className="rounded border border-border/40 bg-card/30 p-2"
+                      >
+                        <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
+                          <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
+                          <span>{formatDateTime(m.data_hora)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
+                            <span className="line-clamp-1 font-medium">{casa.nome}</span>
+                            <Image src={casa.bandeira_url} alt={casa.nome} width={20} height={14} unoptimized className="rounded-sm" />
+                          </div>
+                          <Input
+                            inputMode="numeric"
+                            className="h-8 w-9 text-center text-sm"
+                            value={v?.c ?? ""}
+                            onChange={(e) => update(m.id, "c", e.target.value)}
+                            disabled={dis}
+                          />
+                          <span className="text-xs text-muted-foreground">×</span>
+                          <Input
+                            inputMode="numeric"
+                            className="h-8 w-9 text-center text-sm"
+                            value={v?.f ?? ""}
+                            onChange={(e) => update(m.id, "f", e.target.value)}
+                            disabled={dis}
+                          />
+                          <div className="flex flex-1 items-center gap-1.5 text-xs">
+                            <Image src={fora.bandeira_url} alt={fora.nome} width={20} height={14} unoptimized className="rounded-sm" />
+                            <span className="line-clamp-1 font-medium">{fora.nome}</span>
+                          </div>
+                        </div>
+                        {m.status === "finalizado" && (
+                          <p className="mt-1 text-center text-[10px] text-emerald-400">
+                            Resultado: {m.placar_casa}-{m.placar_fora}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────── Por rodada ─────────────────────────────────────────
+
+function PorRodada({
+  matches, teams, state, update, fechado,
+}: {
+  matches: Match[];
+  teams: Record<string, Team>;
+  state: Record<string, { c: string; f: string }>;
+  update: (id: string, side: "c" | "f", value: string) => void;
+  fechado: boolean;
+}) {
+  const porRodada = React.useMemo(() => {
+    const m = new Map<number, Match[]>();
+    for (const match of matches) {
+      const arr = m.get(match.rodada) ?? [];
+      arr.push(match);
+      m.set(match.rodada, arr);
+    }
+    return [...m.entries()].sort(([a], [b]) => a - b);
+  }, [matches]);
+
+  return (
+    <div className="space-y-4">
+      {porRodada.map(([rodada, jogos]) => (
+        <section key={rodada} className="space-y-2">
+          <h2 className="text-lg font-semibold">Rodada {rodada}</h2>
+          <div className="grid gap-2 md:grid-cols-2">
             {jogos.map((m) => {
               const casa = teams[m.time_casa_id];
               const fora = teams[m.time_fora_id];
               if (!casa || !fora) return null;
               const v = state[m.id];
+              const dis = fechado || m.status !== "agendado";
               return (
                 <Card key={m.id} className="overflow-hidden">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div className="flex w-24 flex-col text-xs text-muted-foreground">
-                      <Badge variant="muted" className="w-fit">R{m.rodada}</Badge>
+                  <CardContent className="flex items-center gap-3 p-3">
+                    <div className="flex w-16 flex-col text-[10px] text-muted-foreground">
+                      <Badge variant="muted" className="text-[10px]">{m.grupo}</Badge>
                       <span className="mt-1">{formatDateTime(m.data_hora)}</span>
                     </div>
-
-                    <div className="flex flex-1 items-center justify-end gap-2 text-right">
+                    <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
                       <span className="line-clamp-1 text-sm font-medium">{casa.nome}</span>
-                      <Image
-                        src={casa.bandeira_url}
-                        alt={casa.nome}
-                        width={28}
-                        height={20}
-                        className="rounded-sm shadow"
-                        unoptimized
-                      />
+                      <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} unoptimized className="rounded-sm" />
                     </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        inputMode="numeric"
-                        className="h-10 w-12 text-center text-base font-semibold"
-                        value={v?.c ?? ""}
-                        onChange={(e) => update(m.id, "c", e.target.value)}
-                        disabled={fechado || m.status !== "agendado"}
-                      />
-                      <span className="text-muted-foreground">×</span>
-                      <Input
-                        inputMode="numeric"
-                        className="h-10 w-12 text-center text-base font-semibold"
-                        value={v?.f ?? ""}
-                        onChange={(e) => update(m.id, "f", e.target.value)}
-                        disabled={fechado || m.status !== "agendado"}
-                      />
-                    </div>
-
-                    <div className="flex flex-1 items-center gap-2">
-                      <Image
-                        src={fora.bandeira_url}
-                        alt={fora.nome}
-                        width={28}
-                        height={20}
-                        className="rounded-sm shadow"
-                        unoptimized
-                      />
+                    <Input inputMode="numeric" className="h-9 w-11 text-center" value={v?.c ?? ""} onChange={(e) => update(m.id, "c", e.target.value)} disabled={dis} />
+                    <span className="text-muted-foreground">×</span>
+                    <Input inputMode="numeric" className="h-9 w-11 text-center" value={v?.f ?? ""} onChange={(e) => update(m.id, "f", e.target.value)} disabled={dis} />
+                    <div className="flex flex-1 items-center gap-1.5">
+                      <Image src={fora.bandeira_url} alt={fora.nome} width={24} height={18} unoptimized className="rounded-sm" />
                       <span className="line-clamp-1 text-sm font-medium">{fora.nome}</span>
                     </div>
-
-                    {m.status === "finalizado" && (
-                      <Badge variant="success" className="hidden sm:inline-flex">
-                        {m.placar_casa} - {m.placar_fora}
-                      </Badge>
-                    )}
                   </CardContent>
                 </Card>
               );
             })}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {!fechado && (
-        <div className="sticky bottom-4 z-10 flex justify-end">
-          <Button onClick={salvar} disabled={saving} size="lg" className="shadow-lg">
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Salvar palpites
-          </Button>
-        </div>
-      )}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
