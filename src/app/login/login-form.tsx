@@ -1,46 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { MICROCOPY } from "@/lib/microcopy";
 
 export function LoginForm() {
-  const router = useRouter();
-  const emailRef = React.useRef<HTMLInputElement>(null);
-  const passwordRef = React.useRef<HTMLInputElement>(null);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
-  // Detecta autofill do Chrome que pode não disparar onChange.
-  // Polling rápido no mount + onFocus pra sincronizar state com DOM.
-  React.useEffect(() => {
-    const t = setInterval(() => {
-      if (emailRef.current && emailRef.current.value && !email) {
-        setEmail(emailRef.current.value);
-      }
-      if (passwordRef.current && passwordRef.current.value && !password) {
-        setPassword(passwordRef.current.value);
-      }
-    }, 250);
-    const stop = setTimeout(() => clearInterval(t), 3000);
-    return () => {
-      clearInterval(t);
-      clearTimeout(stop);
-    };
-  }, [email, password]);
-
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Última chance: lê direto do DOM caso o state ainda não tenha sincronizado
-    const finalEmail = email || emailRef.current?.value || "";
-    const finalPassword = password || passwordRef.current?.value || "";
+
+    // Lê do DOM caso o autofill do Chrome ainda não tenha disparado onChange
+    const form = e.currentTarget;
+    const finalEmail =
+      email || (form.elements.namedItem("email") as HTMLInputElement)?.value || "";
+    const finalPassword =
+      password || (form.elements.namedItem("password") as HTMLInputElement)?.value || "";
 
     if (!finalEmail || !finalPassword) {
       toast({ title: "Preenche email e senha 🙏", variant: "destructive" });
@@ -50,22 +31,14 @@ export function LoginForm() {
     setLoading(true);
     try {
       const supabase = createClient();
-      // Timeout de 15s — se a requisição travar, dá erro claro em vez do
-      // spinner ficar preso pra sempre.
-      const result = await Promise.race([
-        supabase.auth.signInWithPassword({
-          email: finalEmail,
-          password: finalPassword,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("A conexão demorou demais. Tenta de novo?")), 15000),
-        ),
-      ]);
-      const { error, data } = result;
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email: finalEmail,
+        password: finalPassword,
+      });
       if (error) {
         toast({
           title: "Não consegui entrar 😬",
-          description: error.message.includes("Invalid")
+          description: /invalid|credentials/i.test(error.message)
             ? "Email ou senha incorretos. Confere aí?"
             : error.message,
           variant: "destructive",
@@ -73,19 +46,19 @@ export function LoginForm() {
         setLoading(false);
         return;
       }
-      // Sucesso! Aguarda 200ms pros cookies de @supabase/ssr serem
-      // persistidos via document.cookie antes de navegar (write é async).
-      if (data?.session) {
-        await new Promise((r) => setTimeout(r, 200));
-        window.location.replace("/palpites/grupos");
+      if (!data?.session) {
+        toast({
+          title: "Algo deu errado 🤔",
+          description: "Login OK mas sessão veio vazia. Tenta de novo?",
+          variant: "destructive",
+        });
+        setLoading(false);
         return;
       }
-      toast({
-        title: "Algo deu errado 🤔",
-        description: "Login OK mas sessão veio vazia. Tenta de novo?",
-        variant: "destructive",
-      });
-      setLoading(false);
+      // Pequeno delay pros cookies de @supabase/ssr serem persistidos
+      // via document.cookie antes da navegação SSR.
+      await new Promise((r) => setTimeout(r, 150));
+      window.location.replace("/palpites/grupos");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro de conexão. Tenta de novo.";
       toast({ title: "Eita 😬", description: msg, variant: "destructive" });
@@ -98,7 +71,6 @@ export function LoginForm() {
       <div className="space-y-2">
         <Label htmlFor="email" className="font-bold">Email</Label>
         <Input
-          ref={emailRef}
           id="email"
           name="email"
           type="email"
@@ -112,7 +84,6 @@ export function LoginForm() {
       <div className="space-y-2">
         <Label htmlFor="password" className="font-bold">Senha</Label>
         <Input
-          ref={passwordRef}
           id="password"
           name="password"
           type="password"
