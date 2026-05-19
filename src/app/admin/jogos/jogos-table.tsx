@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { formatDateTime } from "@/lib/utils";
+import { triggerRecalcDebounced } from "@/lib/recalc-trigger";
 
 type Team = { id: string; nome: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -65,9 +66,13 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
     setRows((r) => ({ ...r, [m.id]: { ...r[m.id], manual: false } }));
     toast({
       title: "Jogo voltou pro automático ✓",
-      description: "A próxima sincronização vai atualizar com a API.",
+      description: "Recalculando pontuações… próxima sync vai atualizar pela API.",
       variant: "success",
     });
+    // Pontuações precisam ser recalculadas: o placar manual pode ter
+    // mudado o que cada usuário ganhou. Debounced pra agrupar com outras
+    // edições caso o admin esteja batendo vários jogos em sequência.
+    triggerRecalcDebounced();
   }
 
   function update(id: string, patch: Partial<{ c: string; f: string; s: Match["status"] }>) {
@@ -92,7 +97,17 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Jogo atualizado", variant: "success" });
+    // Marca como manual no state local pro botão "Auto" aparecer sem F5
+    setRows((rr) => ({ ...rr, [m.id]: { ...rr[m.id], manual: true } }));
+    toast({
+      title: "Jogo atualizado",
+      description: "Recalculando pontuações…",
+      variant: "success",
+    });
+    // IMPORTANTE: sempre que mexer em matches (placar/status), o recalc
+    // tem que rodar. Sem isso pontos antigos ficam congelados — e em
+    // particular palpites de jogos que voltaram pra "agendado" não zeram.
+    triggerRecalcDebounced();
   }
 
   const fases = [
