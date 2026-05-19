@@ -190,7 +190,11 @@
   max-width: 100%;
 }
 .team-name-center {
-  composes: team-name;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  hyphens: none;
+  line-height: 1.15;
+  max-width: 100%;
   text-align: center;
 }
 
