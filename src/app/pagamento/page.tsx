@@ -1,11 +1,9 @@
-import { CheckCircle2, Wallet } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { CopyButton } from "./copy-button";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { formatCurrency } from "@/lib/utils";
-import { MICROCOPY } from "@/lib/microcopy";
 
 export const dynamic = "force-dynamic";
 
@@ -64,33 +62,35 @@ export default async function PagamentoPage() {
             <p className="text-base font-extrabold">{pixNome}</p>
           </div>
 
-          {user && (
-            <div
-              className={
-                user.pago
-                  ? "rounded-xl border-2 border-festive-green/40 bg-festive-green/10 p-4"
-                  : "rounded-xl border-2 border-festive-orange/40 bg-festive-orange/10 p-4"
-              }
-            >
+          {user && user.pago && (
+            <div className="rounded-xl border-2 border-festive-green/40 bg-festive-green/10 p-4">
               <div className="flex items-center gap-3">
-                {user.pago ? (
-                  <>
-                    <CheckCircle2 className="h-6 w-6 text-festive-green" />
-                    <div>
-                      <p className="font-extrabold text-festive-green">{MICROCOPY.pago}</p>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Você já está no ranking público 🎉
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Badge variant="warning">{MICROCOPY.pendente}</Badge>
-                    <p className="text-xs font-medium text-muted-foreground">
-                      O organizador confirma seu pagamento manualmente.
-                    </p>
-                  </>
-                )}
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-festive-green" />
+                <div>
+                  <p className="font-extrabold text-festive-green">Tá pago! 💚</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Você já está no ranking público 🎉
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {user && !user.pago && (
+            <div
+              className="flex items-start gap-3 rounded-xl border-2 px-3 py-2.5"
+              style={{
+                background: "#FFE5DD",
+                borderColor: "#FF6B35",
+              }}
+            >
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#FF6B35" }} />
+              <div className="space-y-0.5">
+                <p className="text-sm font-extrabold" style={{ color: "#A8421A" }}>
+                  ⚠️ Falta o PIX! 💸 Acerta com o organizador
+                </p>
+                <p className="text-xs font-medium" style={{ color: "#A8421A", opacity: 0.85 }}>
+                  Sem pagamento confirmado, seu palpite não conta no ranking público.
+                </p>
               </div>
             </div>
           )}
