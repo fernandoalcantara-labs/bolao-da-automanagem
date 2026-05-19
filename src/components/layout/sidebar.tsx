@@ -41,6 +41,13 @@ export function Sidebar({
   async function sair() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Limpa cache de palpites do localStorage pra nao vazar entre contas
+    try {
+      const { limparCachePalpites } = await import("@/hooks/use-autosave");
+      limparCachePalpites();
+    } catch {
+      // ignora — limpeza e' best-effort
+    }
     toast({ ...MICROCOPY.toastLogoutFeito, variant: "success" });
     // Hard reload pro layout re-renderizar com user=null
     window.location.href = "/";

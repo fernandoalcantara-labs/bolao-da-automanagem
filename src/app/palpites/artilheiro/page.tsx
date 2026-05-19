@@ -50,6 +50,7 @@ export default async function ArtilheiroPage() {
         atual={atual?.player_id ?? null}
         atualManual={(atual as any)?.player_nome_manual ?? null}
         fechado={fechado}
+        userId={user.id}
       />
     </div>
   );
