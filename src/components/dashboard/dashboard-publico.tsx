@@ -129,7 +129,7 @@ export async function DashboardPublico() {
     <div className="animate-fade-up space-y-6">
       <header className="space-y-3">
         <p className="inline-flex items-center gap-1.5 rounded-full bg-festive-green/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-festive-green">
-          🇧🇷 FIFA World Cup 2026 · {ultimaLabel}
+          🇧🇷 FIFA World Cup 2026
         </p>
         <h1 className="font-fredoka text-3xl font-extrabold tracking-tight sm:text-4xl">
           {nomeBolao}
