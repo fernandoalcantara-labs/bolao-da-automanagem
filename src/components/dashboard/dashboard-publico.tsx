@@ -11,11 +11,16 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { RateioConfig } from "@/types/database";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { BannersPendencia } from "@/components/banners/pendencias";
+import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export async function DashboardPublico() {
   const supabase = createClient();
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser?.id ?? null;
+  const stats = currentUserId
+    ? await contarPalpitesUsuario(supabase as any, currentUserId)
+    : null;
 
   const [
     { data: users },
@@ -122,6 +127,14 @@ export async function DashboardPublico() {
           estimado de <strong className="text-festive-green">R$ {totalArrecadado.toLocaleString("pt-BR")}</strong>
         </p>
       </header>
+
+      {currentUser && stats && (
+        <BannersPendencia
+          palpitesFeitos={stats.feitos}
+          palpitesEsperados={stats.esperados}
+          pago={currentUser.pago}
+        />
+      )}
 
       <PremiosCard
         ranking={snapsUltima.map((s) => ({
