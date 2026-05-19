@@ -42,13 +42,20 @@ export function BottomNav({
     window.location.href = "/";
   }
 
+  // Bottom-nav mobile: SO' itens marcados como primary E que passam pelo
+  // filtro de auth/admin. Antes o filtro incluia qualquer item auth=true
+  // mesmo sem primary → Artilheiro aparecia duplicado (no bottom E no
+  // drawer). Fix do CT-18 da QW4.
   const primary = NAV_ITEMS.filter((i) => {
+    if (!i.primary) return false;
     if (i.admin) return user?.role === "admin";
     if (i.auth) return !!user;
-    return i.primary;
+    return true;
   }).slice(0, 4);
 
-  const secondary = NAV_ITEMS.filter((i) => !i.primary || i.admin).filter((i) => {
+  // Drawer "Mais": tudo que NAO esta no bottom-nav (= itens nao-primary
+  // ou itens admin). Filtro de auth/admin tambem aplicado.
+  const secondary = NAV_ITEMS.filter((i) => !i.primary).filter((i) => {
     if (i.admin) return user?.role === "admin";
     if (i.auth) return !!user;
     return true;
