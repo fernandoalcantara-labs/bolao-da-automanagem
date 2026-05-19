@@ -53,9 +53,19 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
   async function reverterAutomatico(m: Match) {
     setRevertingId(m.id);
     const supabase = createClient();
+    // "Auto" volta o jogo pro estado VAZIO (agendado, sem placar) e
+    // remove o flag manual. Próxima sync com a API vai trazer o resultado
+    // oficial. Antes só setávamos editado_manualmente=false, mas isso
+    // deixava placar+status congelados até o sync passar — confuso pro
+    // admin, que esperava ver o jogo "limpo".
     const { error } = await supabase
       .from("matches")
-      .update({ editado_manualmente: false })
+      .update({
+        editado_manualmente: false,
+        status: "agendado",
+        placar_casa: null,
+        placar_fora: null,
+      })
       .eq("id", m.id);
     setRevertingId(null);
     setConfirmRevertId(null);
@@ -63,10 +73,13 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
       toast({ title: "Erro ao reverter", description: error.message, variant: "destructive" });
       return;
     }
-    setRows((r) => ({ ...r, [m.id]: { ...r[m.id], manual: false } }));
+    setRows((r) => ({
+      ...r,
+      [m.id]: { c: "", f: "", s: "agendado", manual: false },
+    }));
     toast({
       title: "Jogo voltou pro automático ✓",
-      description: "Recalculando pontuações… próxima sync vai atualizar pela API.",
+      description: "Recalculando pontuações… próxima sync vai puxar o resultado oficial.",
       variant: "success",
     });
     // Pontuações precisam ser recalculadas: o placar manual pode ter
@@ -230,8 +243,10 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
                             <strong className="text-foreground">
                               {casa?.nome ?? "—"} {r.c || "?"}×{r.f || "?"} {fora?.nome ?? "—"}
                             </strong>
-                            . Ao confirmar, a próxima sincronização com a API substitui esse
-                            placar pelo oficial. Sua edição será perdida.
+                            . Ao confirmar, o jogo volta pro estado{" "}
+                            <strong className="text-foreground">agendado</strong> sem placar.
+                            A próxima sincronização com a API puxa o resultado oficial.
+                            Sua edição manual será perdida.
                           </p>
                         </div>
                       </div>
