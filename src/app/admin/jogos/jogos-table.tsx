@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
@@ -38,11 +39,36 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
           c: m.placar_casa?.toString() ?? "",
           f: m.placar_fora?.toString() ?? "",
           s: m.status,
+          manual: m.editado_manualmente,
         },
       ]),
     ),
   );
   const [savingId, setSavingId] = React.useState<string | null>(null);
+  const [revertingId, setRevertingId] = React.useState<string | null>(null);
+  const [confirmRevertId, setConfirmRevertId] = React.useState<string | null>(null);
+  const [soManuais, setSoManuais] = React.useState(false);
+
+  async function reverterAutomatico(m: Match) {
+    setRevertingId(m.id);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("matches")
+      .update({ editado_manualmente: false })
+      .eq("id", m.id);
+    setRevertingId(null);
+    setConfirmRevertId(null);
+    if (error) {
+      toast({ title: "Erro ao reverter", description: error.message, variant: "destructive" });
+      return;
+    }
+    setRows((r) => ({ ...r, [m.id]: { ...r[m.id], manual: false } }));
+    toast({
+      title: "Jogo voltou pro automático ✓",
+      description: "A próxima sincronização vai atualizar com a API.",
+      variant: "success",
+    });
+  }
 
   function update(id: string, patch: Partial<{ c: string; f: string; s: Match["status"] }>) {
     setRows((r) => ({ ...r, [id]: { ...r[id], ...patch } }));
@@ -80,19 +106,32 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
   ];
 
   return (
-    <Tabs defaultValue="grupos">
-      <TabsList className="flex flex-wrap gap-1 bg-muted/40 p-1">
-        {fases.map((f) => (
-          <TabsTrigger key={f.key} value={f.key}>{f.label}</TabsTrigger>
-        ))}
-      </TabsList>
+    <Tabs defaultValue="grupos" className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabsList className="flex flex-wrap gap-1 bg-muted/40 p-1">
+          {fases.map((f) => (
+            <TabsTrigger key={f.key} value={f.key}>{f.label}</TabsTrigger>
+          ))}
+        </TabsList>
+        <label className="inline-flex items-center gap-2 text-xs font-bold">
+          <Switch checked={soManuais} onCheckedChange={setSoManuais} />
+          Só editados manualmente
+        </label>
+      </div>
 
       {fases.map((f) => {
-        const jogosDaFase = matches.filter((m) => m.fase === f.key);
+        let jogosDaFase = matches.filter((m) => m.fase === f.key);
+        if (soManuais) {
+          jogosDaFase = jogosDaFase.filter((m) => rows[m.id]?.manual);
+        }
         return (
           <TabsContent key={f.key} value={f.key} className="space-y-2">
             {jogosDaFase.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum jogo nesta fase ainda.</p>
+              <p className="text-sm text-muted-foreground">
+                {soManuais
+                  ? "Nenhum jogo editado manualmente nesta fase."
+                  : "Nenhum jogo nesta fase ainda."}
+              </p>
             )}
             {jogosDaFase.map((m) => {
               const casa = m.time_casa_id ? teamMap.get(m.time_casa_id) : null;
@@ -141,8 +180,56 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
                     <Button size="sm" onClick={() => salvar(m)} disabled={savingId === m.id}>
                       {savingId === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                     </Button>
-                    {m.editado_manualmente && <Badge variant="warning">Manual</Badge>}
+                    {r.manual && (
+                      <>
+                        <Badge variant="warning">✏️ Manual</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Voltar pro modo automático (próximo sync vai atualizar pela API)"
+                          onClick={() => setConfirmRevertId(m.id)}
+                          disabled={revertingId === m.id}
+                        >
+                          {revertingId === m.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                              Auto
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
                   </CardContent>
+                  {confirmRevertId === m.id && (
+                    <div className="border-t-2 border-festive-orange/40 bg-festive-orange/10 p-3 text-sm">
+                      <div className="mb-2 flex items-start gap-2">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-festive-orange" />
+                        <div className="flex-1 space-y-1">
+                          <p className="font-extrabold text-festive-orange">
+                            Voltar pra modo automático?
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Resultado manual atual:{" "}
+                            <strong className="text-foreground">
+                              {casa?.nome ?? "—"} {r.c || "?"}×{r.f || "?"} {fora?.nome ?? "—"}
+                            </strong>
+                            . Ao confirmar, a próxima sincronização com a API substitui esse
+                            placar pelo oficial. Sua edição será perdida.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setConfirmRevertId(null)}>
+                          Cancelar
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => reverterAutomatico(m)}>
+                          Confirmar reversão
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </Card>
               );
             })}
