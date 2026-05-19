@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatDateTime } from "@/lib/utils";
+// formatarDataJogo removido temporariamente — datas do seed estão erradas
+// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
 
 type TeamInfo = { nome: string; bandeira_url: string };
 type Match = {
@@ -43,7 +44,7 @@ export function ConfrontosRodada({
               className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card/60 p-3"
             >
               <div className="flex flex-1 items-center gap-2 text-right">
-                <span className="line-clamp-1 flex-1 text-sm font-medium">{casa?.nome ?? "—"}</span>
+                <span className="team-name flex-1 text-sm font-medium text-right">{casa?.nome ?? "—"}</span>
                 {casa && (
                   <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} className="rounded-sm" unoptimized />
                 )}
@@ -58,15 +59,12 @@ export function ConfrontosRodada({
                     {m.status === "andamento" ? "AO VIVO" : "vs"}
                   </Badge>
                 )}
-                <span className="mt-0.5 text-[10px] text-muted-foreground">
-                  {formatDateTime(m.data_hora)}
-                </span>
               </div>
               <div className="flex flex-1 items-center gap-2">
                 {fora && (
                   <Image src={fora.bandeira_url} alt={fora.nome} width={24} height={18} className="rounded-sm" unoptimized />
                 )}
-                <span className="line-clamp-1 flex-1 text-sm font-medium">{fora?.nome ?? "—"}</span>
+                <span className="team-name flex-1 text-sm font-medium">{fora?.nome ?? "—"}</span>
               </div>
             </div>
           );

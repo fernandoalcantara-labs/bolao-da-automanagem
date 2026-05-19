@@ -1,22 +1,16 @@
 /**
  * Helpers de formatação de nome de exibição.
  *
- * Estratégia:
- *  - KPI Cards / Ranking público → "Primeiro Último" (Fernando Rocha)
- *    desambigua dois "Fernando" no mesmo bolão sem precisar de unique
- *  - Heatmap / Bar chart → "Primeiro" só (espaço escasso na visualização)
+ * Estratégia (QW3 item 16, regra do Fernando):
+ *  - KPI Cards / Ranking público / multi-line chart tooltip / admin
+ *    → exibem `nome_exibicao` cru (escolha do usuário, configurável via
+ *      /perfil). Default vem como 'Primeiro Segundo' (primeiro nome +
+ *      primeira palavra do sobrenome) setado pelo trigger handle_new_user.
+ *  - Heatmap / Bar chart → `formatShortName` (só primeiro nome, espaço
+ *    escasso na visualização).
  */
 
-/** Primeiro + último sobrenome, ou primeiro nome só se for único. */
-export function formatRankingName(nome: string | null | undefined): string {
-  if (!nome) return "—";
-  const partes = nome.trim().split(/\s+/).filter(Boolean);
-  if (partes.length === 0) return "—";
-  if (partes.length === 1) return partes[0];
-  return `${partes[0]} ${partes[partes.length - 1]}`;
-}
-
-/** Só o primeiro nome — pra contextos compactos. */
+/** Só o primeiro nome — pra contextos compactos (heatmap, bar chart). */
 export function formatShortName(nome: string | null | undefined): string {
   if (!nome) return "—";
   return nome.trim().split(/\s+/)[0] ?? "—";

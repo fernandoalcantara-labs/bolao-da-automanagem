@@ -14,11 +14,14 @@ export default async function AdminArtilheirosPage() {
       .from("palpites_artilheiro")
       .select("id, user_id, player_id, player_nome_manual, acertou"),
     supabase.from("players").select("id, nome, gols_torneio"),
-    supabase.from("users").select("id, nome"),
+    supabase.from("users").select("id, nome, nome_exibicao"),
   ]);
 
   const playerMap = new Map((players ?? []).map((p) => [p.id, p]));
-  const userMap = new Map((users ?? []).map((u) => [u.id, u.nome]));
+  // nome_exibicao com fallback pra nome completo — admin precisa identificar
+  const userMap = new Map(
+    (users ?? []).map((u: any) => [u.id, (u.nome_exibicao as string) ?? u.nome]),
+  );
 
   type PalpiteItem = { id: string; user_id: string; user_nome: string; acertou: boolean | null };
   type Grupo = {

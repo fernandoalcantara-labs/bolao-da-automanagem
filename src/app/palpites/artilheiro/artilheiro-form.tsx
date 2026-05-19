@@ -12,6 +12,8 @@ import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
+import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
+import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 
 type Player = {
   id: string;
@@ -30,22 +32,52 @@ export function ArtilheiroForm({
   atual,
   atualManual,
   fechado,
+  userId,
 }: {
   players: Player[];
   atual: string | null;
   atualManual?: string | null;
   fechado: boolean;
+  userId: string;
 }) {
+  const storageKey = `bolao:palpites:artilheiro:${userId}`;
   const [busca, setBusca] = React.useState("");
   const [modo, setModo] = React.useState<ModoPalpite | null>(() => {
+    // 1. Default: estado do server
+    let inicial: ModoPalpite | null = null;
     if (atual) {
       const p = players.find((x) => x.id === atual);
-      return p ? { tipo: "lista", playerId: p.id, nome: p.nome } : null;
+      inicial = p ? { tipo: "lista", playerId: p.id, nome: p.nome } : null;
+    } else if (atualManual) {
+      inicial = { tipo: "manual", nome: atualManual };
     }
-    if (atualManual) return { tipo: "manual", nome: atualManual };
-    return null;
+    // 2. Hidratacao: se o cache tem palpite e o server nao, usa cache
+    //    (caso 'escolheu e dei F5 antes do save')
+    if (!inicial) {
+      const cache = lerCachePalpites<ModoPalpite | null>(storageKey);
+      if (cache) inicial = cache;
+    }
+    return inicial;
   });
   const [saving, setSaving] = React.useState(false);
+
+  const { status: autosaveStatus, forceSave } = useAutosave({
+    storageKey,
+    state: modo,
+    enabled: !fechado,
+    saveRemote: async (snapshot) => {
+      if (!snapshot) return;
+      const supabase = createClient();
+      const payload: Record<string, unknown> =
+        snapshot.tipo === "lista"
+          ? { user_id: userId, player_id: snapshot.playerId, player_nome_manual: null }
+          : { user_id: userId, player_id: null, player_nome_manual: snapshot.nome };
+      const { error } = await supabase
+        .from("palpites_artilheiro")
+        .upsert(payload as any, { onConflict: "user_id" });
+      if (error) throw error;
+    },
+  });
 
   const filtered = React.useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -68,27 +100,19 @@ export function ArtilheiroForm({
   async function salvar() {
     if (!modo) return;
     setSaving(true);
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
+    try {
+      await forceSave();
+      toast({ ...MICROCOPY.toastArtilheiroSalvo, variant: "success" });
+      miniConfetti();
+    } catch (e: any) {
+      toast({
+        title: MICROCOPY.toastErroGenerico,
+        description: e?.message ?? "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
       setSaving(false);
-      return;
     }
-    const payload: Record<string, unknown> =
-      modo.tipo === "lista"
-        ? { user_id: userData.user.id, player_id: modo.playerId, player_nome_manual: null }
-        : { user_id: userData.user.id, player_id: null, player_nome_manual: modo.nome };
-
-    const { error } = await supabase
-      .from("palpites_artilheiro")
-      .upsert(payload as any, { onConflict: "user_id" });
-    setSaving(false);
-    if (error) {
-      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ ...MICROCOPY.toastArtilheiroSalvo, variant: "success" });
-    miniConfetti();
   }
 
   function pickPlayer(p: Player) {
@@ -103,6 +127,11 @@ export function ArtilheiroForm({
 
   return (
     <div className="space-y-4">
+      {!fechado && (
+        <div className="flex justify-end">
+          <AutosaveStatusBadge status={autosaveStatus} />
+        </div>
+      )}
       {/* Palpite atual */}
       {modo && (
         <Card className="border-primary/40">

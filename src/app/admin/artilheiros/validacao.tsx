@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
+import { triggerRecalcDebounced } from "@/lib/recalc-trigger";
 
 type Grupo = {
   chave: string;
@@ -42,9 +43,13 @@ export function ArtilheirosValidacao({ grupos }: { grupos: Grupo[] }) {
     );
     toast({
       title: novoValor ? "Marcado como acertador" : "Desmarcado",
-      description: "Lembre de rodar 'Recalcular' no painel admin pra atualizar o ranking.",
+      description: "Recalculando pontuações…",
       variant: "success",
     });
+    // Recálculo automático — admin não precisa mais lembrar de apertar
+    // "Recalcular pontuações" depois de validar artilheiros (era o item
+    // que mais quebrava por esquecimento).
+    triggerRecalcDebounced();
   }
 
   const totalAcertaram = state.reduce(

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ import { MICROCOPY } from "@/lib/microcopy";
 import { bigConfetti } from "@/lib/confetti";
 
 export function CadastroForm() {
-  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -25,19 +23,47 @@ export function CadastroForm() {
     const telefone = (fd.get("telefone") as string) || null;
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+
+    // 1. Criar conta (trigger no Supabase cria perfil em public.users)
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password: senha,
       options: { data: { nome, telefone } },
     });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Eita 😬", description: error.message, variant: "destructive" });
+
+    if (signUpError) {
+      setLoading(false);
+      toast({ title: "Eita 😬", description: signUpError.message, variant: "destructive" });
       return;
     }
+
+    // 2. Garantir sessão ativa: se o signUp já trouxe sessão (caso de email
+    //    confirmation desabilitado), seguimos direto. Senão, fazemos login.
+    if (!signUpData.session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
+      if (signInError) {
+        setLoading(false);
+        // Cadastro feito mas login falhou — caso raro. Manda pro /login.
+        toast({
+          title: "Cadastro feito! 🎉",
+          description: "Faz login pra continuar.",
+          variant: "default",
+        });
+        window.location.href = "/login";
+        return;
+      }
+    }
+
+    // 3. Sucesso completo: confete + toast + hard reload pro Server Component
+    //    layout re-renderizar com o user autenticado (cookies já gravados).
+    //    Hard reload é o mesmo padrão usado no /login (race condition do
+    //    router.push + refresh deixa o sidebar com state velho).
     toast({ ...MICROCOPY.toastCadastroFeito, variant: "success" });
     bigConfetti();
-    router.push("/pagamento");
+    window.location.href = "/";
   }
 
   return (

@@ -15,6 +15,8 @@ import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti, bigConfetti } from "@/lib/confetti";
 import { BracketView, type Team as BracketTeam } from "./bracket-view";
 import type { ParR32Resolvido } from "@/lib/bracket-2026";
+import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
+import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 
 type Team = {
   id: string;
@@ -37,18 +39,24 @@ const FASES: { key: FasePalpiteMata; label: string; quantidade: number; descrica
 
 const ORDEM_FASES: FasePalpiteMata[] = ["16avos", "8avos", "quartas", "semi", "final", "campeao"];
 
+type PicksSerial = Record<FasePalpiteMata, string[]>;
+
 export function MataMataForm({
   teams,
   palpites,
   r32,
   fechado,
+  userId,
 }: {
   teams: Team[];
   palpites: Palpite[];
   r32: ParR32Resolvido[];
   fechado: boolean;
+  userId: string;
 }) {
-  // Estado de picks
+  const storageKey = `bolao:palpites:mata:${userId}`;
+
+  // Estado de picks — fonte de verdade local
   const [picks, setPicks] = React.useState<Record<FasePalpiteMata, Set<string>>>(() => {
     const init: Record<FasePalpiteMata, Set<string>> = {
       "16avos": new Set(),
@@ -61,7 +69,57 @@ export function MataMataForm({
     for (const p of palpites) {
       if (init[p.fase]) init[p.fase].add(p.time_id);
     }
+    // Reconciliacao com cache: se cache local tem mais picks que o server,
+    // hidrata do cache (caso 'preenchi e dei F5').
+    const cache = lerCachePalpites<PicksSerial>(storageKey);
+    if (cache) {
+      const cacheCount = Object.values(cache).reduce(
+        (acc, arr) => acc + (arr?.length ?? 0),
+        0,
+      );
+      const serverCount = Object.values(init).reduce(
+        (acc, set) => acc + set.size,
+        0,
+      );
+      if (cacheCount > serverCount) {
+        for (const fase of ORDEM_FASES) {
+          if (cache[fase]) init[fase] = new Set(cache[fase]);
+        }
+      }
+    }
     return init;
+  });
+
+  // Versao serializavel pro hook de autosave (Set nao serializa em JSON)
+  const picksSerial: PicksSerial = React.useMemo(
+    () => ({
+      "16avos": [...picks["16avos"]],
+      "8avos": [...picks["8avos"]],
+      "quartas": [...picks["quartas"]],
+      "semi": [...picks["semi"]],
+      "final": [...picks["final"]],
+      "campeao": [...picks["campeao"]],
+    }),
+    [picks],
+  );
+
+  const { status: autosaveStatus, forceSave } = useAutosave({
+    storageKey,
+    state: picksSerial,
+    enabled: !fechado,
+    saveRemote: async (snapshot) => {
+      const supabase = createClient();
+      await supabase.from("palpites_mata").delete().eq("user_id", userId);
+      const rows: { user_id: string; time_id: string; fase: FasePalpiteMata }[] = [];
+      for (const fase of ORDEM_FASES) {
+        for (const time_id of snapshot[fase] ?? []) {
+          rows.push({ user_id: userId, time_id, fase });
+        }
+      }
+      if (rows.length === 0) return;
+      const { error } = await supabase.from("palpites_mata").insert(rows);
+      if (error) throw error;
+    },
   });
   const [saving, setSaving] = React.useState(false);
   const [aba, setAba] = React.useState<FasePalpiteMata>("8avos");
@@ -164,31 +222,23 @@ export function MataMataForm({
     });
   }
 
+  // Force save (botao Salvar continua existindo como fallback)
   async function salvar() {
     setSaving(true);
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-    if (!userId) {
+    try {
+      await forceSave();
+      toast({ ...MICROCOPY.toastMataMataSalvo, variant: "success" });
+      if (picks.campeao.size === 1) bigConfetti();
+      else miniConfetti();
+    } catch (e: any) {
+      toast({
+        title: MICROCOPY.toastErroGenerico,
+        description: e?.message ?? "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
       setSaving(false);
-      return;
     }
-    await supabase.from("palpites_mata").delete().eq("user_id", userId);
-    const rows: { user_id: string; time_id: string; fase: FasePalpiteMata }[] = [];
-    for (const f of FASES) {
-      for (const time_id of picks[f.key]) {
-        rows.push({ user_id: userId, time_id, fase: f.key });
-      }
-    }
-    const { error } = await supabase.from("palpites_mata").insert(rows);
-    setSaving(false);
-    if (error) {
-      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ ...MICROCOPY.toastMataMataSalvo, variant: "success" });
-    if (picks.campeao.size === 1) bigConfetti();
-    else miniConfetti();
   }
 
   return (
@@ -219,7 +269,10 @@ export function MataMataForm({
             <List className="h-3.5 w-3.5" /> Por fase
           </button>
         </div>
-        <ProgressoFases picks={picks} />
+        <div className="flex items-center gap-2">
+          <ProgressoFases picks={picks} />
+          {!fechado && <AutosaveStatusBadge status={autosaveStatus} />}
+        </div>
       </div>
 
       {modo === "bracket" ? (
@@ -384,7 +437,7 @@ function ListaPorFase({
                       unoptimized
                     />
                     <div className="flex-1 overflow-hidden">
-                      <p className="line-clamp-1 text-sm font-extrabold">{t.nome}</p>
+                      <p className="team-name text-sm font-extrabold">{t.nome}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Grupo {t.grupo}
                       </p>

@@ -80,6 +80,8 @@ export function MultiLineChart({
   });
 
   const maxPos = ranking.length || 30;
+  // Nome no tooltip: usa nome_exibicao cru (escolha do usuario).
+  // Default 'Primeiro Segundo' do trigger; user pode editar em /perfil.
   const userMap = new Map(exibidos.map((u) => [u.id, u.nome]));
 
   return (

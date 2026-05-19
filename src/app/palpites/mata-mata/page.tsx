@@ -121,6 +121,7 @@ export default async function MataMataPage() {
         palpites={(palpitesMata ?? []) as any}
         r32={r32Resolvido}
         fechado={fechado}
+        userId={user.id}
       />
     </div>
   );

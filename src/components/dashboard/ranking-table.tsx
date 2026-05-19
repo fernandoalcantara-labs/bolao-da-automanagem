@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatRankingName } from "@/lib/format-name";
 
 type User = { id: string; nome: string };
 type Snap = {
@@ -24,7 +23,9 @@ export function RankingTable({ users, snapshots }: { users: User[]; snapshots: S
   const rows = ultimas
     .map((s) => ({
       ...s,
-      nome: formatRankingName(userMap.get(s.user_id)?.nome),
+      // Mostra nome_exibicao cru (sem truncamento) — usuario controla
+      // via /perfil. Default vem como 'Primeiro Segundo' do trigger.
+      nome: userMap.get(s.user_id)?.nome ?? "—",
     }))
     .sort((a, b) => a.posicao - b.posicao);
 

@@ -12,7 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { formatDateTime } from "@/lib/utils";
+// formatDateTime removido temporariamente — datas do seed estão erradas
+// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
+import { triggerRecalcDebounced } from "@/lib/recalc-trigger";
 
 type Team = { id: string; nome: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -52,9 +54,19 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
   async function reverterAutomatico(m: Match) {
     setRevertingId(m.id);
     const supabase = createClient();
+    // "Auto" volta o jogo pro estado VAZIO (agendado, sem placar) e
+    // remove o flag manual. Próxima sync com a API vai trazer o resultado
+    // oficial. Antes só setávamos editado_manualmente=false, mas isso
+    // deixava placar+status congelados até o sync passar — confuso pro
+    // admin, que esperava ver o jogo "limpo".
     const { error } = await supabase
       .from("matches")
-      .update({ editado_manualmente: false })
+      .update({
+        editado_manualmente: false,
+        status: "agendado",
+        placar_casa: null,
+        placar_fora: null,
+      })
       .eq("id", m.id);
     setRevertingId(null);
     setConfirmRevertId(null);
@@ -62,12 +74,19 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
       toast({ title: "Erro ao reverter", description: error.message, variant: "destructive" });
       return;
     }
-    setRows((r) => ({ ...r, [m.id]: { ...r[m.id], manual: false } }));
+    setRows((r) => ({
+      ...r,
+      [m.id]: { c: "", f: "", s: "agendado", manual: false },
+    }));
     toast({
       title: "Jogo voltou pro automático ✓",
-      description: "A próxima sincronização vai atualizar com a API.",
+      description: "Recalculando pontuações… próxima sync vai puxar o resultado oficial.",
       variant: "success",
     });
+    // Pontuações precisam ser recalculadas: o placar manual pode ter
+    // mudado o que cada usuário ganhou. Debounced pra agrupar com outras
+    // edições caso o admin esteja batendo vários jogos em sequência.
+    triggerRecalcDebounced();
   }
 
   function update(id: string, patch: Partial<{ c: string; f: string; s: Match["status"] }>) {
@@ -92,7 +111,17 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Jogo atualizado", variant: "success" });
+    // Marca como manual no state local pro botão "Auto" aparecer sem F5
+    setRows((rr) => ({ ...rr, [m.id]: { ...rr[m.id], manual: true } }));
+    toast({
+      title: "Jogo atualizado",
+      description: "Recalculando pontuações…",
+      variant: "success",
+    });
+    // IMPORTANTE: sempre que mexer em matches (placar/status), o recalc
+    // tem que rodar. Sem isso pontos antigos ficam congelados — e em
+    // particular palpites de jogos que voltaram pra "agendado" não zeram.
+    triggerRecalcDebounced();
   }
 
   const fases = [
@@ -142,7 +171,6 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
                   <CardContent className="flex flex-wrap items-center gap-3 p-3">
                     <div className="w-32 text-xs text-muted-foreground">
                       <Badge variant="muted">{m.grupo ?? m.fase}</Badge>
-                      <p className="mt-1">{formatDateTime(m.data_hora)}</p>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-2 text-right">
                       <span className="text-sm">{casa?.nome ?? "—"}</span>
@@ -215,8 +243,10 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
                             <strong className="text-foreground">
                               {casa?.nome ?? "—"} {r.c || "?"}×{r.f || "?"} {fora?.nome ?? "—"}
                             </strong>
-                            . Ao confirmar, a próxima sincronização com a API substitui esse
-                            placar pelo oficial. Sua edição será perdida.
+                            . Ao confirmar, o jogo volta pro estado{" "}
+                            <strong className="text-foreground">agendado</strong> sem placar.
+                            A próxima sincronização com a API puxa o resultado oficial.
+                            Sua edição manual será perdida.
                           </p>
                         </div>
                       </div>

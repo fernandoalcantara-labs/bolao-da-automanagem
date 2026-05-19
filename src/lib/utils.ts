@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { formatarDataJogo } from "./datetime";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,25 +13,25 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
+/**
+ * @deprecated Use `formatarDataJogo(date, "completo")` from `@/lib/datetime`.
+ * Mantido como alias por compatibilidade.
+ */
 export function formatDateTime(date: string | Date) {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
-  }).format(d);
+  return formatarDataJogo(date, "completo");
 }
 
+/**
+ * @deprecated Use `formatarDataJogo(date, "apenas_hora")` from `@/lib/datetime`.
+ * Mantido como alias por compatibilidade.
+ */
 export function formatTime(date: string | Date) {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
-  }).format(d);
+  return formatarDataJogo(date, "apenas_hora");
 }
 
-export const DEADLINE_FASE_GRUPOS = new Date("2026-06-11T20:00:00-04:00"); // Kickoff WC 2026 — México vs Cazaquistão (Estádio Azteca)
+// Kickoff oficial Copa do Mundo FIFA 2026 — México vs ? (Estádio Azteca, CDMX).
+// Sites brasileiros (Globo, Google) mostram 16:00 BRT como horário de início.
+// Antes estava como "2026-06-11T20:00:00-04:00" assumindo CDT (DST), mas o
+// México REVOGOU o horário de verão em 2022 — está em UTC-6 permanente.
+// 16:00 BRT (UTC-3) = 19:00 UTC = 13:00 CDMX (UTC-6) ✓
+export const DEADLINE_FASE_GRUPOS = new Date("2026-06-11T16:00:00-03:00");
