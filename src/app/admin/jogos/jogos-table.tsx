@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { formatDateTime } from "@/lib/utils";
+// formatDateTime removido temporariamente — datas do seed estão erradas
+// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
 import { triggerRecalcDebounced } from "@/lib/recalc-trigger";
 
 type Team = { id: string; nome: string; bandeira_url: string; grupo: string };
@@ -170,7 +171,6 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
                   <CardContent className="flex flex-wrap items-center gap-3 p-3">
                     <div className="w-32 text-xs text-muted-foreground">
                       <Badge variant="muted">{m.grupo ?? m.fase}</Badge>
-                      <p className="mt-1">{formatDateTime(m.data_hora)}</p>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-2 text-right">
                       <span className="text-sm">{casa?.nome ?? "—"}</span>

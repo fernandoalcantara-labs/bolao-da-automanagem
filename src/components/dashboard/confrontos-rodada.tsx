@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatarDataJogo } from "@/lib/datetime";
+// formatarDataJogo removido temporariamente — datas do seed estão erradas
+// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
 
 type TeamInfo = { nome: string; bandeira_url: string };
 type Match = {
@@ -58,9 +59,6 @@ export function ConfrontosRodada({
                     {m.status === "andamento" ? "AO VIVO" : "vs"}
                   </Badge>
                 )}
-                <span className="mt-0.5 text-[10px] text-muted-foreground">
-                  {formatarDataJogo(m.data_hora, "curto")}
-                </span>
               </div>
               <div className="flex flex-1 items-center gap-2">
                 {fora && (

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-import { formatarDataJogo } from "@/lib/datetime";
+// formatarDataJogo removido temporariamente — datas do seed estão erradas
+// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
@@ -273,7 +274,6 @@ function PorGrupo({
                       >
                         <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
                           <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
-                          <span>{formatarDataJogo(m.data_hora, "curto")}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
@@ -363,7 +363,6 @@ function PorRodada({
                   <CardContent className="flex items-center gap-3 p-3">
                     <div className="flex w-16 flex-col text-[10px] text-muted-foreground">
                       <Badge variant="muted" className="text-[10px]">{m.grupo}</Badge>
-                      <span className="mt-1">{formatarDataJogo(m.data_hora, "curto")}</span>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
                       <span className="team-name text-sm font-medium">{casa.nome}</span>
