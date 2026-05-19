@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { TOP_N_GRAFICO } from "@/lib/config-display";
 
@@ -88,7 +88,26 @@ export function MultiLineChart({
         <ResponsiveContainer>
           <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-            <XAxis dataKey="rodada" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} />
+            <XAxis
+              dataKey="rodada"
+              stroke="hsl(var(--muted-foreground))"
+              tick={(props: any) => {
+                const { x, y, payload } = props;
+                const isArtilheiro = payload?.value === "Artilheiro";
+                return (
+                  <text
+                    x={x}
+                    y={y + 12}
+                    textAnchor="middle"
+                    fill={isArtilheiro ? "#FF9F1C" : "hsl(var(--muted-foreground))"}
+                    fontSize={11}
+                    fontWeight={isArtilheiro ? 800 : 400}
+                  >
+                    {isArtilheiro ? "🏆 " : ""}{payload?.value}
+                  </text>
+                );
+              }}
+            />
             <YAxis
               reversed
               domain={[1, maxPos]}
@@ -119,6 +138,15 @@ export function MultiLineChart({
                 ];
               }}
             />
+            {/* Linha vertical pontilhada separando a Final do Artilheiro */}
+            {rodadas.some(([ord]) => ord === 9) && (
+              <ReferenceLine
+                x="Final"
+                stroke="#FF9F1C"
+                strokeDasharray="3 3"
+                strokeOpacity={0.5}
+              />
+            )}
             {exibidos.map((u, i) => {
               const isMe = currentUserId === u.id;
               const isLider = u.id === liderId;

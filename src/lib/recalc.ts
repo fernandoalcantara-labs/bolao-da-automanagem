@@ -31,6 +31,10 @@ const ROUND_LABELS = [
   { ordem: 6, label: "Quartas", filtro: { fase: "quartas" as const } },
   { ordem: 7, label: "Semi", filtro: { fase: "semi" as const } },
   { ordem: 8, label: "Final", filtro: { fase: "final" as const } },
+  // ordem 9 = Artilheiro — coluna separada nos gráficos. Pontos só
+  // entram quando o admin valida o artilheiro (gols_torneio > 0 e/ou
+  // acertou=true via marcação manual).
+  { ordem: 9, label: "Artilheiro", filtro: { fase: "artilheiro" as const } },
 ];
 
 export async function recalcularTudo(supabase: SB) {
@@ -263,7 +267,7 @@ async function gerarSnapshots(
 
   // Estrutura: rodadaOrdem -> userId -> pontos_rodada
   const pontosPorRodada = new Map<number, Map<string, number>>();
-  for (let r = 1; r <= 8; r++) pontosPorRodada.set(r, new Map());
+  for (let r = 1; r <= 9; r++) pontosPorRodada.set(r, new Map());
 
   // Rodadas de grupos (1..3)
   for (const r of [1, 2, 3]) {
@@ -315,13 +319,15 @@ async function gerarSnapshots(
     }
   }
 
-  // Artilheiro: soma na rodada 8
+  // Artilheiro: coluna 9 (separada da Final pra ficar visível como coluna
+  // própria nos gráficos). Só quem acertou ganha cfg.artilheiro pts;
+  // os outros têm 0 pontos_rodada nessa coluna (e ranking se ajusta).
   const { data: palpitesArt } = await supabase
     .from("palpites_artilheiro")
     .select("user_id, acertou");
   for (const p of palpitesArt ?? []) {
     if (p.acertou) {
-      const mapa = pontosPorRodada.get(8)!;
+      const mapa = pontosPorRodada.get(9)!;
       mapa.set(p.user_id, (mapa.get(p.user_id) ?? 0) + cfg.artilheiro);
     }
   }
