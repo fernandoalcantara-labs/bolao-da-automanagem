@@ -15,7 +15,13 @@ import { MICROCOPY } from "@/lib/microcopy";
 
 type BottomNavUser = { id: string; nome: string; role: string } | null;
 
-export function BottomNav({ user }: { user: BottomNavUser }) {
+export function BottomNav({
+  user,
+}: {
+  user: BottomNavUser;
+  nomeBolao?: string;
+  valorArrecadado?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -48,8 +54,8 @@ export function BottomNav({ user }: { user: BottomNavUser }) {
       className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-border bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.05)] lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid grid-cols-5">
-        {primary.map((item) => {
+      <div className={cn("grid", user ? "grid-cols-5" : "grid-cols-4")}>
+        {primary.slice(0, user ? 4 : 2).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
@@ -74,6 +80,26 @@ export function BottomNav({ user }: { user: BottomNavUser }) {
             </Link>
           );
         })}
+        {/* CTA "Bora pro Bolão" — só quando deslogado */}
+        {!user && (
+          <Link
+            href="/login"
+            className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[9px] font-extrabold leading-tight"
+          >
+            <span
+              className="flex h-11 w-14 flex-col items-center justify-center rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, #FFD60A 0%, #FF9F1C 100%)",
+                boxShadow: "0 3px 0 rgba(255,159,28,0.4)",
+              }}
+            >
+              <span className="text-sm leading-none">🎉</span>
+              <span className="text-[8px] font-extrabold leading-tight text-zinc-900">
+                BORA!
+              </span>
+            </span>
+          </Link>
+        )}
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
             <button className="flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold text-muted-foreground transition-all hover:text-foreground active:scale-95">
@@ -94,19 +120,26 @@ export function BottomNav({ user }: { user: BottomNavUser }) {
             </Link>
 
             {user && (
-              <div className="mb-3 flex items-center gap-2.5 rounded-xl border-2 border-festive-gold/30 bg-festive-gold/5 p-2.5">
+              <Link
+                href="/perfil"
+                onClick={() => setDrawerOpen(false)}
+                className="mb-3 flex items-center gap-2.5 rounded-xl border-2 border-festive-gold/30 bg-festive-gold/5 p-2.5 transition-colors hover:bg-festive-gold/10"
+                title="Editar perfil"
+              >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-gold text-base font-extrabold text-zinc-900 shadow-stack-gold">
                   {user.nome.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="line-clamp-1 text-sm font-extrabold">{user.nome}</p>
+                  <p className="line-clamp-1 text-sm font-extrabold">
+                    {user.nome} <span className="opacity-50">✏️</span>
+                  </p>
                   {user.role === "admin" && (
                     <p className="text-[10px] font-bold uppercase tracking-wider text-festive-green">
                       👑 Admin
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             )}
 
             <nav className="flex-1 space-y-0.5">

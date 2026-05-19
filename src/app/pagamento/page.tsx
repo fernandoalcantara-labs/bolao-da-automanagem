@@ -1,11 +1,12 @@
-import { CheckCircle2, Wallet } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 import { CopyButton } from "./copy-button";
+import { WhatsAppSorriso } from "./whatsapp-sorriso";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { formatCurrency } from "@/lib/utils";
-import { MICROCOPY } from "@/lib/microcopy";
+import { BannersPendencia } from "@/components/banners/pendencias";
+import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -16,23 +17,42 @@ export default async function PagamentoPage() {
   const { data: config } = await supabase
     .from("config")
     .select("chave, valor")
-    .in("chave", ["pix_chave", "pix_nome", "valor_aposta", "nome_bolao"]);
+    .in("chave", [
+      "pix_chave",
+      "pix_nome",
+      "valor_aposta",
+      "nome_bolao",
+      "pix_sorriso_whatsapp",
+    ]);
 
-  const conf = Object.fromEntries((config ?? []).map((c) => [c.chave, c.valor]));
+  const conf = Object.fromEntries((config ?? []).map((c: any) => [c.chave, c.valor]));
   const pixChave = (conf.pix_chave as string) ?? "—";
   const pixNome = (conf.pix_nome as string) ?? "—";
   const valor = Number(conf.valor_aposta ?? 50);
+  const telefoneSorriso = (conf.pix_sorriso_whatsapp as string) || null;
+
+  // Stats de palpites do user pros banners
+  const stats = user ? await contarPalpitesUsuario(supabase as any, user.id) : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 py-2 sm:py-6">
       <header className="space-y-1">
-        <h1 className="font-fredoka text-3xl font-extrabold flex items-center gap-2">
+        <h1 className="flex items-center gap-2 font-fredoka text-3xl font-extrabold">
           <Wallet className="h-7 w-7 text-festive-green" /> Pagamento
         </h1>
         <p className="text-sm font-medium text-muted-foreground">
           Faça um PIX e me avisa pra eu confirmar 💸
         </p>
       </header>
+
+      {user && stats && (
+        <BannersPendencia
+          palpitesFeitos={stats.feitos}
+          palpitesEsperados={stats.esperados}
+          pago={user.pago}
+          contexto="pagamento"
+        />
+      )}
 
       <Card>
         <CardContent className="space-y-4 p-5">
@@ -64,33 +84,44 @@ export default async function PagamentoPage() {
             <p className="text-base font-extrabold">{pixNome}</p>
           </div>
 
+          {/* Botão WhatsApp Sorriso */}
           {user && (
-            <div
-              className={
-                user.pago
-                  ? "rounded-xl border-2 border-festive-green/40 bg-festive-green/10 p-4"
-                  : "rounded-xl border-2 border-festive-orange/40 bg-festive-orange/10 p-4"
-              }
-            >
+            <WhatsAppSorriso
+              telefoneSorriso={telefoneSorriso}
+              nomeUser={user.nome}
+              valorAposta={valor}
+            />
+          )}
+
+          {user && user.pago && (
+            <div className="rounded-xl border-2 border-festive-green/40 bg-festive-green/10 p-4">
               <div className="flex items-center gap-3">
-                {user.pago ? (
-                  <>
-                    <CheckCircle2 className="h-6 w-6 text-festive-green" />
-                    <div>
-                      <p className="font-extrabold text-festive-green">{MICROCOPY.pago}</p>
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Você já está no ranking público 🎉
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Badge variant="warning">{MICROCOPY.pendente}</Badge>
-                    <p className="text-xs font-medium text-muted-foreground">
-                      O organizador confirma seu pagamento manualmente.
-                    </p>
-                  </>
-                )}
+                <CheckCircle2 className="h-6 w-6 shrink-0 text-festive-green" />
+                <div>
+                  <p className="font-extrabold text-festive-green">Tá pago! 💚</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Você já está no ranking público 🎉
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          {user && !user.pago && (
+            <div
+              className="flex items-start gap-3 rounded-xl border-2 px-3 py-2.5"
+              style={{
+                background: "#FFE5DD",
+                borderColor: "#FF6B35",
+              }}
+            >
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#FF6B35" }} />
+              <div className="space-y-0.5">
+                <p className="text-sm font-extrabold" style={{ color: "#A8421A" }}>
+                  ⚠️ Falta o PIX! 💸 Acerta com o organizador
+                </p>
+                <p className="text-xs font-medium" style={{ color: "#A8421A", opacity: 0.85 }}>
+                  Sem pagamento confirmado, seu palpite não conta no ranking público.
+                </p>
               </div>
             </div>
           )}
@@ -102,7 +133,7 @@ export default async function PagamentoPage() {
             <ol className="ml-4 list-decimal space-y-1.5 text-sm font-medium">
               <li>Abra o app do seu banco e faça PIX de <strong className="text-festive-green">{formatCurrency(valor)}</strong>.</li>
               <li>Use a chave acima. Confira: <strong>{pixNome}</strong>.</li>
-              <li>Envia o comprovante pro organizador (WhatsApp).</li>
+              <li>Toca no botão acima pra avisar o organizador no WhatsApp.</li>
               <li>Em até 24h o pagamento é confirmado e seu palpite começa a contar 🎯</li>
             </ol>
           </div>

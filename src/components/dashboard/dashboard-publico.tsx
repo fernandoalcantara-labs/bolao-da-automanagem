@@ -10,9 +10,17 @@ import { PremiosCard } from "./premios-card";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { RateioConfig } from "@/types/database";
+import { getCurrentUser } from "@/lib/auth-helpers";
+import { BannersPendencia } from "@/components/banners/pendencias";
+import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export async function DashboardPublico() {
   const supabase = createClient();
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser?.id ?? null;
+  const stats = currentUserId
+    ? await contarPalpitesUsuario(supabase as any, currentUserId)
+    : null;
 
   const [
     { data: users },
@@ -24,7 +32,7 @@ export async function DashboardPublico() {
     { data: players },
     { data: config },
   ] = await Promise.all([
-    supabase.from("users").select("id, nome, pago").eq("pago", true),
+    supabase.from("users").select("id, nome, nome_exibicao, pago").eq("pago", true),
     supabase
       .from("ranking_snapshots")
       .select("user_id, rodada_label, rodada_ordem, posicao, pontos_totais, pontos_rodada")
@@ -45,7 +53,11 @@ export async function DashboardPublico() {
   const nomeBolao = String(conf.nome_bolao ?? "Bolão da AutoManagem");
   const rateio = (conf.rateio as RateioConfig) ?? RATEIO_DEFAULT;
 
-  const usersPagos = users ?? [];
+  // Mapeia pra usar nome_exibicao (público) em vez de nome (privado)
+  const usersPagos = (users ?? []).map((u: any) => ({
+    ...u,
+    nome: u.nome_exibicao ?? u.nome,
+  }));
   const usersById = new Map(usersPagos.map((u) => [u.id, u]));
   const totalArrecadado = usersPagos.length * valorAposta;
   const totalJogos = matches?.length ?? 0;
@@ -116,6 +128,14 @@ export async function DashboardPublico() {
         </p>
       </header>
 
+      {currentUser && stats && (
+        <BannersPendencia
+          palpitesFeitos={stats.feitos}
+          palpitesEsperados={stats.esperados}
+          pago={currentUser.pago}
+        />
+      )}
+
       <PremiosCard
         ranking={snapsUltima.map((s) => ({
           user_id: s.user_id,
@@ -154,6 +174,7 @@ export async function DashboardPublico() {
                 pontos_rodada: s.pontos_rodada,
                 pontos_totais: s.pontos_totais,
               }))}
+              currentUserId={currentUserId}
             />
           </CardContent>
         </Card>

@@ -1,5 +1,6 @@
 import { Crown, Medal, Award, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatRankingName } from "@/lib/format-name";
 
 export type Posicionado = {
   nomes: string[];
@@ -67,12 +68,11 @@ export function KpiCards(props: Props) {
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {ITEMS.map((i) => {
         const p = props[i.key];
-        const nome = p?.nomes.length
+        const displayName = p?.nomes.length
           ? p.nomes.length === 1
-            ? p.nomes[0]
+            ? formatRankingName(p.nomes[0])
             : `${p.nomes.length} empatados`
           : "—";
-        const primeiroNome = nome.split(" ")[0];
         return (
           <div
             key={i.key}
@@ -87,8 +87,11 @@ export function KpiCards(props: Props) {
               </span>
               <span className="shrink-0 text-xl sm:text-2xl">{i.emoji}</span>
             </div>
-            <p className={cn("mt-2 truncate font-fredoka text-xl font-extrabold leading-tight sm:text-2xl", i.text)} title={p?.nomes.join(", ")}>
-              {primeiroNome}
+            <p
+              className={cn("mt-2 truncate font-fredoka text-xl font-extrabold leading-tight sm:text-2xl", i.text)}
+              title={p?.nomes.join(", ")}
+            >
+              {displayName}
             </p>
             <p className={cn("mt-0.5 truncate text-xs font-bold", i.numero, "opacity-80")}>
               {p ? `${p.pontos} pts` : "sem pontos"}

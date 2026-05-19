@@ -8,6 +8,7 @@ import { RATEIO_DEFAULT } from "@/lib/prizes";
 import { PONTUACAO_DEFAULT } from "@/lib/scoring";
 import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 import { CompartilharRegras } from "./compartilhar";
+import { shareMessageCompleto } from "@/lib/share-message";
 
 export const dynamic = "force-dynamic";
 
@@ -51,9 +52,7 @@ export default async function RegrasPage() {
               {pagos ?? 0} participante(s) × {formatCurrency(valorAposta)}
             </p>
           </div>
-          <CompartilharRegras
-            texto={gerarTextoCompartilhamento({ nomeBolao, pontuacao, rateio, valorAposta, pixChave, pixNome, totalArrecadado })}
-          />
+          <CompartilharRegras nomeBolao={nomeBolao} pontuacao={pontuacao} rateio={rateio} valorAposta={valorAposta} pixChave={pixChave} pixNome={pixNome} totalArrecadado={totalArrecadado} />
         </CardContent>
       </Card>
 
@@ -178,32 +177,4 @@ function RateioRow({ emoji, label, pct, total }: { emoji: string; label: string;
   );
 }
 
-function gerarTextoCompartilhamento(o: {
-  nomeBolao: string;
-  pontuacao: PontuacaoConfig;
-  rateio: RateioConfig;
-  valorAposta: number;
-  pixChave: string;
-  pixNome: string;
-  totalArrecadado: number;
-}) {
-  return `🏆 *${o.nomeBolao}* · Copa do Mundo FIFA 2026
-
-💰 *Prêmio estimado*: ${formatCurrency(o.totalArrecadado)}
-💵 *Valor da aposta*: ${formatCurrency(o.valorAposta)}
-
-*Pontuação*:
-🎯 Placar exato: ${o.pontuacao.placar_exato} pts
-✅ Acertou vencedor/empate: ${o.pontuacao.vencedor_ou_empate} pts
-⚽ Mata-mata: 8 / 12 / 16 / 20 pts por fase
-🥇 Campeão: ${o.pontuacao.campeao} pts | 🥈 Vice: ${o.pontuacao.vice} pts
-⚽ Artilheiro: ${o.pontuacao.artilheiro} pts
-
-*Rateio*:
-🥇 1º: ${o.rateio.primeiro}%  |  🥈 2º: ${o.rateio.segundo}%  |  🥉 3º: ${o.rateio.terceiro}%
-🐢 Lanterninha: ${o.rateio.lanterninha}%${o.rateio.artilheiro > 0 ? `  |  ⚽ Artilheiro: ${o.rateio.artilheiro}%` : ""}
-
-*Pagamento PIX*:
-${o.pixChave}
-(${o.pixNome})`;
-}
+// (gerarTextoCompartilhamento removido — agora usa shareMessageCompleto em @/lib/share-message)

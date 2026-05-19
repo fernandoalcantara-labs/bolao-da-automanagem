@@ -1,5 +1,7 @@
 "use client";
 
+import { formatShortName } from "@/lib/format-name";
+
 type User = { id: string; nome: string };
 type Snap = { user_id: string; rodada_label: string; rodada_ordem: number; pontos_rodada: number };
 
@@ -39,22 +41,26 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
             <th className="sticky left-0 z-10 bg-white p-1.5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Nome
             </th>
-            {rodadas.map(([, label]) => (
-              <th
-                key={label}
-                className="p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-                style={{ minWidth: 48 }}
-              >
-                {label}
-              </th>
-            ))}
+            {rodadas.map(([, label]) => {
+              const isFinal = label === "Final";
+              return (
+                <th
+                  key={label}
+                  className="p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+                  style={{ minWidth: 48 }}
+                >
+                  {isFinal ? "🏆 " : ""}
+                  {label}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
           {usersOrdenados.map((u) => (
             <tr key={u.id}>
               <td className="sticky left-0 z-10 bg-white p-1.5 text-xs font-bold">
-                {u.nome.split(" ")[0]}
+                {formatShortName(u.nome)}
               </td>
               {rodadas.map(([ord]) => {
                 const snap = snapshots.find((s) => s.rodada_ordem === ord && s.user_id === u.id);

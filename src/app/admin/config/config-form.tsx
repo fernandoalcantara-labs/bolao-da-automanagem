@@ -15,6 +15,7 @@ type Conf = {
   rateio?: RateioConfig;
   pix_chave?: string;
   pix_nome?: string;
+  pix_sorriso_whatsapp?: string;
   valor_aposta?: number;
   nome_bolao?: string;
 };
@@ -32,6 +33,7 @@ export function ConfigForm({ conf }: { conf: Conf }) {
   );
   const [pixChave, setPixChave] = React.useState(conf.pix_chave ?? "");
   const [pixNome, setPixNome] = React.useState(conf.pix_nome ?? "");
+  const [pixSorrisoWA, setPixSorrisoWA] = React.useState(conf.pix_sorriso_whatsapp ?? "");
   const [valor, setValor] = React.useState(conf.valor_aposta ?? 50);
   const [nomeBolao, setNomeBolao] = React.useState(conf.nome_bolao ?? "Bolão da AutoManagem");
 
@@ -44,6 +46,15 @@ export function ConfigForm({ conf }: { conf: Conf }) {
       });
       return;
     }
+    // Validação do WhatsApp (12-13 dígitos numéricos)
+    if (pixSorrisoWA && !/^\d{12,13}$/.test(pixSorrisoWA)) {
+      toast({
+        title: "WhatsApp inválido",
+        description: "Use só dígitos: DDI + DDD + número (12-13 chars). Ex: 5531987654321",
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     const rows = [
@@ -51,6 +62,7 @@ export function ConfigForm({ conf }: { conf: Conf }) {
       { chave: "rateio", valor: rateio as any },
       { chave: "pix_chave", valor: pixChave as any },
       { chave: "pix_nome", valor: pixNome as any },
+      { chave: "pix_sorriso_whatsapp", valor: pixSorrisoWA as any },
       { chave: "valor_aposta", valor: valor as any },
       { chave: "nome_bolao", valor: nomeBolao as any },
     ];
@@ -80,6 +92,18 @@ export function ConfigForm({ conf }: { conf: Conf }) {
           <Field label="Valor da aposta (R$)" type="number" value={String(valor)} onChange={(v) => setValor(Number(v))} />
           <Field label="Chave PIX" value={pixChave} onChange={setPixChave} />
           <Field label="Nome do recebedor" value={pixNome} onChange={setPixNome} />
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>WhatsApp do organizador (Sorriso)</Label>
+            <Input
+              type="tel"
+              value={pixSorrisoWA}
+              onChange={(e) => setPixSorrisoWA(e.target.value)}
+              placeholder="5531987654321"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Formato internacional sem + ou espaços. Ex: 5531987654321 (DDI Brasil 55 + DDD + número).
+            </p>
+          </div>
         </CardContent>
       </Card>
 
