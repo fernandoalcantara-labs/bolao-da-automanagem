@@ -20,12 +20,12 @@ function csvEscape(v: string | number | null | undefined): string {
 export function gerarCsvPessoal(b: Breakdown): string {
   const linhas: string[] = [];
 
-  linhas.push(`=== MEUS PALPITES — ${b.nome} ===`);
+  linhas.push(`[MEUS PALPITES — ${b.nome}]`);
   linhas.push(`Total: ${b.total} pts · Posição atual: ${b.posicao_atual ?? "—"}º`);
   linhas.push("");
 
   // Fase de grupos
-  linhas.push("=== FASE DE GRUPOS ===");
+  linhas.push("[FASE DE GRUPOS]");
   linhas.push(
     [
       csvEscape("Rodada"),
@@ -71,7 +71,7 @@ export function gerarCsvPessoal(b: Breakdown): string {
   linhas.push("");
 
   // Mata-mata
-  linhas.push("=== MATA-MATA ===");
+  linhas.push("[MATA-MATA]");
   linhas.push(
     [csvEscape("Fase"), csvEscape("Time Palpitado"), csvEscape("Acertou?"), csvEscape("Pontos")].join(","),
   );
@@ -90,7 +90,7 @@ export function gerarCsvPessoal(b: Breakdown): string {
   linhas.push("");
 
   // Artilheiro
-  linhas.push("=== ARTILHEIRO ===");
+  linhas.push("[ARTILHEIRO]");
   linhas.push([csvEscape("Palpite"), csvEscape("Tipo"), csvEscape("Status"), csvEscape("Pontos")].join(","));
   if (b.artilheiro) {
     const status = !b.artilheiro.ja_definido

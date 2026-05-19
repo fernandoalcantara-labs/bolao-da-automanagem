@@ -50,28 +50,39 @@ export async function gerarCsvCompleto(
   supabase: SB,
 ): Promise<{ csv: string; stats: CsvStats }> {
   // ============== Loads em paralelo ==============
+  // IMPORTANTE: Supabase tem default limit de 1000 rows. Como temos
+  // potencialmente 30 users × 72 jogos = 2160 palpites de grupos
+  // (e 30 × 31 = 930 palpites de mata), usamos .limit(50000) pra
+  // garantir que pega TUDO. Sem isso, o CSV vinha cortado pela
+  // metade — bug encontrado no CT-21 da QW4.
+  const LIMITE = 50000;
   const [usersRes, matchesRes, teamsRes, playersRes, palpitesGruposRes, palpitesMataRes, palpitesArtRes, snapshotsRes] =
     await Promise.all([
       supabase
         .from("users")
         .select("id, nome, nome_exibicao, pago, role")
-        .order("nome_exibicao", { ascending: true }),
+        .order("nome_exibicao", { ascending: true })
+        .limit(LIMITE),
       supabase
         .from("matches")
         .select("id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora")
-        .order("data_hora", { ascending: true }),
-      supabase.from("teams").select("id, nome, codigo_fifa, grupo"),
-      supabase.from("players").select("id, nome, time_id, gols_torneio"),
+        .order("data_hora", { ascending: true })
+        .limit(LIMITE),
+      supabase.from("teams").select("id, nome, codigo_fifa, grupo").limit(LIMITE),
+      supabase.from("players").select("id, nome, time_id, gols_torneio").limit(LIMITE),
       supabase
         .from("palpites_grupos")
-        .select("user_id, match_id, placar_casa, placar_fora, pontos_calculados"),
-      supabase.from("palpites_mata").select("user_id, time_id, fase, acertou"),
+        .select("user_id, match_id, placar_casa, placar_fora, pontos_calculados")
+        .limit(LIMITE),
+      supabase.from("palpites_mata").select("user_id, time_id, fase, acertou").limit(LIMITE),
       supabase
         .from("palpites_artilheiro")
-        .select("user_id, player_id, player_nome_manual, acertou"),
+        .select("user_id, player_id, player_nome_manual, acertou")
+        .limit(LIMITE),
       supabase
         .from("ranking_snapshots")
-        .select("user_id, rodada_ordem, pontos_totais, pontos_rodada, posicao"),
+        .select("user_id, rodada_ordem, pontos_totais, pontos_rodada, posicao")
+        .limit(LIMITE),
     ]);
 
   const usuarios = (usersRes.data ?? []) as any[];
@@ -109,7 +120,7 @@ export async function gerarCsvCompleto(
 
   // ============== Seção 1: FASE DE GRUPOS ==============
   const linhasGrupos: string[] = [];
-  linhasGrupos.push("=== FASE DE GRUPOS ===");
+  linhasGrupos.push("[FASE DE GRUPOS]");
   linhasGrupos.push(
     [
       csvEscape("Rodada"),
@@ -149,7 +160,7 @@ export async function gerarCsvCompleto(
   // ============== Seção 2: MATA-MATA (por fase) ==============
   const linhasMata: string[] = [];
   linhasMata.push("");
-  linhasMata.push("=== MATA-MATA ===");
+  linhasMata.push("[MATA-MATA]");
   linhasMata.push(
     [csvEscape("Fase"), csvEscape("Time Palpitado (count)"), usuariosColsCsv].join(","),
   );
@@ -173,7 +184,7 @@ export async function gerarCsvCompleto(
   // ============== Seção 3: ARTILHEIRO ==============
   const linhasArt: string[] = [];
   linhasArt.push("");
-  linhasArt.push("=== ARTILHEIRO ===");
+  linhasArt.push("[ARTILHEIRO]");
   linhasArt.push([csvEscape("Pergunta"), csvEscape("Status"), usuariosColsCsv].join(","));
   const colsArt = usuarios.map((u) => {
     const p = palpiteArtIdx.get(u.id);
@@ -190,7 +201,7 @@ export async function gerarCsvCompleto(
   // ============== Seção 4: RESUMO ==============
   const linhasResumo: string[] = [];
   linhasResumo.push("");
-  linhasResumo.push("=== RESUMO ===");
+  linhasResumo.push("[RESUMO]");
   linhasResumo.push(
     [
       csvEscape("Usuário"),
