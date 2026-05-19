@@ -54,35 +54,40 @@ async function carregarPontuacao(supabase: SB): Promise<PontuacaoConfig> {
 }
 
 async function recalcularPalpitesGrupos(supabase: SB, cfg: PontuacaoConfig) {
+  // IMPORTANTE: lê TODOS os jogos de grupos (não só finalizados). Se um jogo
+  // que estava finalizado voltou pra "agendado" (ex: admin reverteu edição
+  // manual), os palpites dele precisam zerar — senão pontos antigos ficam
+  // congelados no banco.
   const { data: matches } = await supabase
     .from("matches")
-    .select("id, placar_casa, placar_fora, status, fase")
-    .eq("fase", "grupos")
-    .eq("status", "finalizado");
-  if (!matches || matches.length === 0) return;
-
-  const matchMap = new Map(
-    matches.map((m) => [m.id, { casa: m.placar_casa ?? 0, fora: m.placar_fora ?? 0 }]),
-  );
+    .select("id, placar_casa, placar_fora, status")
+    .eq("fase", "grupos");
+  if (!matches) return;
 
   const { data: palpites } = await supabase
     .from("palpites_grupos")
-    .select("id, match_id, placar_casa, placar_fora")
-    .in("match_id", [...matchMap.keys()]);
-
+    .select("id, match_id, placar_casa, placar_fora");
   if (!palpites) return;
 
-  // Agrupa ids por valor de pontos pra fazer um UPDATE por valor (muito mais rápido
-  // que update por linha, e funciona com chunks de até 200 ids por request).
+  const matchMap = new Map(matches.map((m: any) => [m.id, m]));
+
+  // Agrupa ids por valor de pontos. Não-finalizados → 0 pts (zera no DB).
   const byPoints = new Map<number, string[]>();
-  for (const p of palpites) {
-    const r = matchMap.get(p.match_id);
-    if (!r) continue;
-    const pts = pontosPalpiteGrupo(
-      { casa: p.placar_casa, fora: p.placar_fora },
-      r,
-      cfg,
-    );
+  for (const p of palpites as any[]) {
+    const m = matchMap.get(p.match_id) as any;
+    let pts = 0;
+    if (
+      m &&
+      m.status === "finalizado" &&
+      m.placar_casa !== null &&
+      m.placar_fora !== null
+    ) {
+      pts = pontosPalpiteGrupo(
+        { casa: p.placar_casa, fora: p.placar_fora },
+        { casa: m.placar_casa, fora: m.placar_fora },
+        cfg,
+      );
+    }
     const arr = byPoints.get(pts) ?? [];
     arr.push(p.id);
     byPoints.set(pts, arr);

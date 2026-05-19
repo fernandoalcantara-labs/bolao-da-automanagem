@@ -151,16 +151,18 @@ create unique index if not exists users_nome_exibicao_lower_idx
 **Item:** 9 · **Pré-condição:** logado como admin
 **Passos:**
 1. Vai em `/admin/jogos`
-2. Edita o placar de algum jogo de grupos (ex: 3x1) e salva
+2. Edita o placar de algum jogo de grupos (ex: 3x1) **+ status finalizado** e salva
 3. Aparece badge "✏️ Manual" + botão "↺ Auto"
-4. Clica "↺ Auto"
-5. Painel de confirmação aparece inline com resultado atual
-6. Clica "Confirmar reversão"
+4. Vai em `/admin` → clica "Recalcular pontuações"
+5. Confere que usuários que acertaram receberam pontos
+6. Volta em `/admin/jogos`, clica "↺ Auto", confirma reversão
+7. Edita o jogo de volta pra status="agendado" e salva (placares ficam nulos ou ignorados)
+8. Vai em `/admin` → clica "Recalcular pontuações" de novo
 
 **Esperado:**
-- ✅ Toast "Jogo voltou pro automático ✓"
-- ✅ Badge "Manual" some
-- ✅ Botão "↺ Auto" some
+- ✅ Toast "Jogo voltou pro automático ✓" no passo 6
+- ✅ Badge "Manual" e botão "↺ Auto" somem
+- ✅ Após passo 8, pontos dos usuários ZERAM (em `/admin/usuarios` ver memória de cálculo)
 
 **Obtido:** [ ] OK [ ] Falhou
 
@@ -197,16 +199,9 @@ create unique index if not exists users_nome_exibicao_lower_idx
 
 ---
 
-#### CT-12: Nome de exibição duplicado
-**Item:** 10
-**Passos:**
-1. Tenta usar nome de exibição que já existe (ex: "Fernandinho2026" de outro user)
-
-**Esperado:**
-- ✅ Erro "Esse nome já tá sendo usado por outro craque 😅 Tenta variar."
-- ✅ Form não salva
-
-**Obtido:** [ ] OK [ ] Falhou
+#### ~~CT-12: Nome de exibição duplicado~~ **(removido)**
+Decidimos remover a restrição de unicidade — nomes duplicados são permitidos.
+KPIs e Ranking mostram "Primeiro + Último sobrenome" pra desambiguar.
 
 ---
 
