@@ -3,21 +3,19 @@
  * - Botão "Compartilhar" no header (sidebar / mobile header)
  * - Botão "Compartilhar" da página /regras
  *
- * Decidimos que TODO compartilhamento inclui o link principal do site —
- * a pessoa precisa ter como entrar.
+ * Decidimos que TODO compartilhamento usa a MESMA mensagem completa,
+ * sempre incluindo o link principal do site — a pessoa precisa ter
+ * como entrar.
  */
 
 import { formatCurrency } from "@/lib/utils";
 import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
-export type ShareInfo = {
+export type ShareInfoCompleto = {
   nomeBolao: string;
   totalArrecadado: number;
   valorAposta: number;
   appUrl: string;
-};
-
-export type ShareInfoCompleto = ShareInfo & {
   pontuacao: PontuacaoConfig;
   rateio: RateioConfig;
   pixChave: string;
@@ -25,24 +23,8 @@ export type ShareInfoCompleto = ShareInfo & {
 };
 
 /**
- * Versão curta — usada no botão "Compartilhar" do header.
- * Convida pra entrar no bolão (sem detalhe de pontuação).
- */
-export function shareMessageCurta(info: ShareInfo): string {
-  return [
-    `🏆 *${info.nomeBolao}* · Copa do Mundo FIFA 2026`,
-    "",
-    `🇧🇷 Bora entrar no bolão!`,
-    `💰 *Prêmio estimado*: ${formatCurrency(info.totalArrecadado)}`,
-    `💵 *Valor da aposta*: ${formatCurrency(info.valorAposta)}`,
-    "",
-    `Acessa: ${info.appUrl}`,
-  ].join("\n");
-}
-
-/**
- * Versão completa — usada na página /regras pra explicar tudo do bolão.
- * Inclui pontuação, rateio, pix + link.
+ * Mensagem completa do bolão — usada em TODOS os botões de compartilhar.
+ * Inclui pontuação, rateio, pix + link do site.
  */
 export function shareMessageCompleto(info: ShareInfoCompleto): string {
   return [
