@@ -30,7 +30,7 @@ export type BreakdownGrupoItem = {
   real_fora: number | null;
   status: "agendado" | "andamento" | "finalizado";
   pontos: number;
-  tipo: "exato" | "vencedor" | "erro" | "pendente";
+  tipo: "exato" | "vencedor" | "erro" | "pendente" | "nao_palpitou";
 };
 
 export type BreakdownMataItem = {
@@ -122,20 +122,28 @@ export async function calcularBreakdown(
     const p = palpitesGMap.get(m.id) as any;
     const casa = teamMap.get(m.time_casa_id) as any;
     const fora = teamMap.get(m.time_fora_id) as any;
+    // Tipo do item (QW4 item 23 — mostra TODOS os 72 jogos sempre):
+    //  - "pendente": jogo ainda não disputado (status != finalizado)
+    //  - "nao_palpitou": jogo finalizado MAS user não palpitou (0 pts)
+    //  - "exato"/"vencedor"/"erro": jogo finalizado + palpite avaliado
     let tipo: BreakdownGrupoItem["tipo"] = "pendente";
     let pontos = 0;
-    if (m.status === "finalizado" && p) {
-      const av = avaliarPalpiteGrupo(
-        { casa: p.placar_casa, fora: p.placar_fora },
-        { casa: m.placar_casa, fora: m.placar_fora },
-      );
-      tipo = av === "exato" ? "exato" : av === "vencedor_ou_empate" ? "vencedor" : "erro";
-      pontos = pontosPalpiteGrupo(
-        { casa: p.placar_casa, fora: p.placar_fora },
-        { casa: m.placar_casa, fora: m.placar_fora },
-        cfg,
-      );
-      gruposSubtotal += pontos;
+    if (m.status === "finalizado") {
+      if (!p) {
+        tipo = "nao_palpitou";
+      } else {
+        const av = avaliarPalpiteGrupo(
+          { casa: p.placar_casa, fora: p.placar_fora },
+          { casa: m.placar_casa, fora: m.placar_fora },
+        );
+        tipo = av === "exato" ? "exato" : av === "vencedor_ou_empate" ? "vencedor" : "erro";
+        pontos = pontosPalpiteGrupo(
+          { casa: p.placar_casa, fora: p.placar_fora },
+          { casa: m.placar_casa, fora: m.placar_fora },
+          cfg,
+        );
+        gruposSubtotal += pontos;
+      }
     }
     gruposItems.push({
       match_id: m.id,
@@ -258,11 +266,26 @@ export function breakdownParaTexto(b: Breakdown): string {
   lines.push("");
 
   lines.push(`FASE DE GRUPOS: ${b.grupos.subtotal} pts`);
+  // QW4 item 23.6 — inclui TODOS os 72 jogos, não só os finalizados.
   for (const it of b.grupos.items) {
-    if (it.status !== "finalizado") continue;
-    const palpite = `${it.palpite_casa ?? "-"}x${it.palpite_fora ?? "-"}`;
-    const real = `${it.real_casa ?? "-"}x${it.real_fora ?? "-"}`;
-    const tag = it.tipo === "exato" ? "+5 placar exato" : it.tipo === "vencedor" ? "+2 vencedor" : "0 errou";
+    const palpite =
+      it.palpite_casa === null && it.palpite_fora === null
+        ? "—"
+        : `${it.palpite_casa ?? "-"}x${it.palpite_fora ?? "-"}`;
+    const real =
+      it.status === "finalizado"
+        ? `${it.real_casa ?? "-"}x${it.real_fora ?? "-"}`
+        : "—";
+    const tag =
+      it.tipo === "exato"
+        ? "✅ +5 placar exato"
+        : it.tipo === "vencedor"
+          ? "⚠️ +2 vencedor"
+          : it.tipo === "erro"
+            ? "❌ 0 errou"
+            : it.tipo === "nao_palpitou"
+              ? "🚫 não palpitou"
+              : "⏳ pendente";
     lines.push(`- R${it.rodada} ${it.casa_nome} ${real} ${it.fora_nome} (palpitou ${palpite}): ${tag}`);
   }
   lines.push("");
