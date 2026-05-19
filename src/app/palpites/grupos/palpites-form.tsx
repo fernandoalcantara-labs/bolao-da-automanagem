@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { formatarDataJogo } from "@/lib/datetime";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
+import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
+import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 
 type Team = { id: string; nome: string; codigo_fifa: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -33,21 +35,67 @@ type Props = {
   teams: Record<string, Team>;
   palpites: Record<string, Palpite>;
   fechado: boolean;
+  userId: string;
 };
 
 type Modo = "grupo" | "rodada";
+type FormState = Record<string, { c: string; f: string }>;
 
-export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props) {
-  const [state, setState] = React.useState<Record<string, { c: string; f: string }>>(() => {
-    const init: Record<string, { c: string; f: string }> = {};
+export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId }: Props) {
+  const storageKey = `bolao:palpites:grupos:${userId}`;
+
+  const [state, setState] = React.useState<FormState>(() => {
+    // 1. Default = palpites do servidor
+    const init: FormState = {};
     for (const m of matches) {
       const p = palpites[m.id];
       init[m.id] = { c: p ? String(p.placar_casa) : "", f: p ? String(p.placar_fora) : "" };
+    }
+    // 2. Reconciliacao com cache local: se cache tem MAIS palpites
+    //    preenchidos, usa cache (user preencheu mas nao salvou antes do F5).
+    //    Caso contrario, server e' a fonte de verdade.
+    const cache = lerCachePalpites<FormState>(storageKey);
+    if (cache) {
+      const cacheCount = Object.values(cache).filter(
+        (v) => v && (v.c !== "" || v.f !== ""),
+      ).length;
+      const serverCount = Object.values(init).filter(
+        (v) => v.c !== "" || v.f !== "",
+      ).length;
+      if (cacheCount > serverCount) {
+        // Merge: mantem todos os match_ids do server + sobrepoe valores do cache
+        for (const matchId in init) {
+          if (cache[matchId]) init[matchId] = cache[matchId];
+        }
+      }
     }
     return init;
   });
   const [saving, setSaving] = React.useState(false);
   const [modo, setModo] = React.useState<Modo>("grupo");
+
+  // Autosave: localStorage imediato + Supabase com debounce de 800ms
+  const { status: autosaveStatus, forceSave } = useAutosave({
+    storageKey,
+    state,
+    enabled: !fechado,
+    saveRemote: async (snapshot) => {
+      const supabase = createClient();
+      const rows = Object.entries(snapshot)
+        .filter(([, v]) => v.c !== "" && v.f !== "")
+        .map(([match_id, v]) => ({
+          match_id,
+          user_id: userId,
+          placar_casa: Number(v.c),
+          placar_fora: Number(v.f),
+        }));
+      if (rows.length === 0) return;
+      const { error } = await supabase
+        .from("palpites_grupos")
+        .upsert(rows, { onConflict: "user_id,match_id" });
+      if (error) throw error;
+    },
+  });
 
   // Carrega/persiste o modo no localStorage
   React.useEffect(() => {
@@ -64,36 +112,27 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
     setState((s) => ({ ...s, [id]: { ...s[id], [side]: value } }));
   }
 
+  // Força salvar agora (botão "Salvar" continua existindo como fallback caso
+  // o autosave esteja em "error"/"offline" e o user queira confirmar)
   async function salvar() {
     setSaving(true);
-    const supabase = createClient();
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData.user?.id;
-    if (!userId) {
+    try {
+      await forceSave();
+      const total = Object.values(state).filter(
+        (v) => v.c !== "" && v.f !== "",
+      ).length;
+      const t = MICROCOPY.toastPalpitesSalvos(total);
+      toast({ ...t, variant: "success" });
+      miniConfetti();
+    } catch (e: any) {
+      toast({
+        title: MICROCOPY.toastErroGenerico,
+        description: e?.message ?? "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
       setSaving(false);
-      toast({ title: "Sessão expirada", variant: "destructive" });
-      return;
     }
-    const rows = Object.entries(state)
-      .filter(([, v]) => v.c !== "" && v.f !== "")
-      .map(([match_id, v]) => ({
-        match_id,
-        user_id: userId,
-        placar_casa: Number(v.c),
-        placar_fora: Number(v.f),
-      }));
-
-    const { error } = await supabase
-      .from("palpites_grupos")
-      .upsert(rows, { onConflict: "user_id,match_id" });
-    setSaving(false);
-    if (error) {
-      toast({ title: MICROCOPY.toastErroGenerico, description: error.message, variant: "destructive" });
-      return;
-    }
-    const t = MICROCOPY.toastPalpitesSalvos(rows.length);
-    toast({ ...t, variant: "success" });
-    miniConfetti();
   }
 
   const totalPalpitados = Object.values(state).filter((v) => v.c !== "" && v.f !== "").length;
@@ -126,9 +165,12 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado }: Props)
             <ListOrdered className="h-3.5 w-3.5" /> Por rodada
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">
-          <strong className="text-foreground">{totalPalpitados}/72</strong> jogos palpitados
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            <strong className="text-foreground">{totalPalpitados}/72</strong> jogos palpitados
+          </span>
+          {!fechado && <AutosaveStatusBadge status={autosaveStatus} />}
+        </div>
       </div>
 
       {modo === "grupo" ? (

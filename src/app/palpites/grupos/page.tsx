@@ -52,6 +52,7 @@ export default async function PalpitesGruposPage() {
         teams={Object.fromEntries(teamMap)}
         palpites={Object.fromEntries(palpitesMap)}
         fechado={fechado}
+        userId={user.id}
       />
     </div>
   );
