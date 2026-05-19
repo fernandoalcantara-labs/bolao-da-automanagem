@@ -10,9 +10,12 @@ import { PremiosCard } from "./premios-card";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { RateioConfig } from "@/types/database";
+import { getCurrentUser } from "@/lib/auth-helpers";
 
 export async function DashboardPublico() {
   const supabase = createClient();
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser?.id ?? null;
 
   const [
     { data: users },
@@ -158,6 +161,7 @@ export async function DashboardPublico() {
                 pontos_rodada: s.pontos_rodada,
                 pontos_totais: s.pontos_totais,
               }))}
+              currentUserId={currentUserId}
             />
           </CardContent>
         </Card>
