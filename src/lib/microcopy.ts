@@ -56,8 +56,8 @@ export const MICROCOPY = {
     title: "Bem-vindo de volta! 🎉",
   },
   toastCadastroFeito: {
-    title: "Bora pro bolão! 🎉",
-    description: "Cadastro feito. Agora só pagar o PIX.",
+    title: "Bora pro Bolão! 🎉",
+    description: "Cadastro feito. Agora bora chutar e pagar o PIX!",
   },
 
   // Toasts de erro
