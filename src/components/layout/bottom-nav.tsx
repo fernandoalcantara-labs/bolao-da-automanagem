@@ -42,24 +42,24 @@ export function BottomNav({
     window.location.href = "/";
   }
 
-  // Bottom-nav mobile: SO' itens marcados como primary E que passam pelo
-  // filtro de auth/admin. Antes o filtro incluia qualquer item auth=true
-  // mesmo sem primary → Artilheiro aparecia duplicado (no bottom E no
-  // drawer). Fix do CT-18 da QW4.
-  const primary = NAV_ITEMS.filter((i) => {
-    if (!i.primary) return false;
-    if (i.admin) return user?.role === "admin";
-    if (i.auth) return !!user;
-    return true;
-  }).slice(0, 4);
-
-  // Drawer "Mais": tudo que NAO esta no bottom-nav (= itens nao-primary
-  // ou itens admin). Filtro de auth/admin tambem aplicado.
-  const secondary = NAV_ITEMS.filter((i) => !i.primary).filter((i) => {
+  // Filtra todos os items permitidos pelo estado de auth/admin do user
+  const todosPermitidos = NAV_ITEMS.filter((i) => {
     if (i.admin) return user?.role === "admin";
     if (i.auth) return !!user;
     return true;
   });
+
+  // Bottom nav: candidatos primary (slice limita pelo nº max de slots).
+  // Logado: temos 4 candidatos auth (Painel/Grupos/Mata/Artilheiro) +
+  //         Regras (público) → 5 candidatos, slice(0,4) corta Regras.
+  // Deslogado: 2 candidatos (Painel, Regras) → ambos cabem.
+  const slotsMax = user ? 4 : 4; // mesmo 4 em ambos (botão BORA ou Mais ocupa o 5º)
+  const primary = todosPermitidos.filter((i) => i.primary).slice(0, slotsMax);
+
+  // Drawer "Mais": tudo que NÃO entrou no bottom. Pega itens não-primary
+  // E primary que sobraram do slice (caso de Regras pro logado).
+  const noBottom = new Set(primary.map((i) => i.href));
+  const secondary = todosPermitidos.filter((i) => !noBottom.has(i.href));
 
   return (
     <nav
@@ -69,7 +69,7 @@ export function BottomNav({
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className={cn("grid", user ? "grid-cols-5" : "grid-cols-4")}>
-        {primary.slice(0, user ? 4 : 2).map((item) => {
+        {primary.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
