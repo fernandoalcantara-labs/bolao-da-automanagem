@@ -272,7 +272,7 @@ function MatchSlot({
       ) : (
         <span className="inline-block h-3.5 w-5 rounded-sm bg-muted" />
       )}
-      <span className="line-clamp-1 flex-1">
+      <span className="team-name flex-1">
         {team?.nome ?? label ?? "—"}
       </span>
       {escolhido && <span className="text-white">✓</span>}
@@ -334,7 +334,7 @@ function CentroBracket({
                   ) : (
                     <span className="inline-block h-3.5 w-5 rounded-sm bg-muted" />
                   )}
-                  <span className="line-clamp-1 flex-1">
+                  <span className="team-name flex-1">
                     {team?.nome ?? "—"}
                   </span>
                   {isCampeao && <span className="text-base">👑</span>}

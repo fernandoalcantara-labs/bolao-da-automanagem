@@ -177,6 +177,23 @@
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
+/* QW3 Item 12 — Nomes de seleção com quebra natural.
+   Aplicar em labels de time (Costa do Marfim, Coreia do Sul, etc).
+   - keep-all mantém cada palavra inteira (nunca corta no meio)
+   - overflow-wrap quebra ao limite do container
+   - line-height apertado pra 2 linhas caberem bem em cards pequenos */
+.team-name {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  hyphens: none;
+  line-height: 1.15;
+  max-width: 100%;
+}
+.team-name-center {
+  composes: team-name;
+  text-align: center;
+}
+
 /* Scrollbar amigável */
 .scrollbar-thin::-webkit-scrollbar {
   height: 8px;

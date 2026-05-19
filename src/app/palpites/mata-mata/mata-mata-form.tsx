@@ -384,7 +384,7 @@ function ListaPorFase({
                       unoptimized
                     />
                     <div className="flex-1 overflow-hidden">
-                      <p className="line-clamp-1 text-sm font-extrabold">{t.nome}</p>
+                      <p className="team-name text-sm font-extrabold">{t.nome}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Grupo {t.grupo}
                       </p>

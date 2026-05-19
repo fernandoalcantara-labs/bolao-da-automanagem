@@ -43,7 +43,7 @@ export function ConfrontosRodada({
               className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card/60 p-3"
             >
               <div className="flex flex-1 items-center gap-2 text-right">
-                <span className="line-clamp-1 flex-1 text-sm font-medium">{casa?.nome ?? "—"}</span>
+                <span className="team-name flex-1 text-sm font-medium text-right">{casa?.nome ?? "—"}</span>
                 {casa && (
                   <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} className="rounded-sm" unoptimized />
                 )}
@@ -66,7 +66,7 @@ export function ConfrontosRodada({
                 {fora && (
                   <Image src={fora.bandeira_url} alt={fora.nome} width={24} height={18} className="rounded-sm" unoptimized />
                 )}
-                <span className="line-clamp-1 flex-1 text-sm font-medium">{fora?.nome ?? "—"}</span>
+                <span className="team-name flex-1 text-sm font-medium">{fora?.nome ?? "—"}</span>
               </div>
             </div>
           );

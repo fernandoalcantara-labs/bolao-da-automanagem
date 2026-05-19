@@ -235,7 +235,7 @@ function PorGrupo({
                         </div>
                         <div className="flex items-center gap-1.5">
                           <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
-                            <span className="line-clamp-1 font-medium">{casa.nome}</span>
+                            <span className="team-name font-medium">{casa.nome}</span>
                             <Image src={casa.bandeira_url} alt={casa.nome} width={20} height={14} unoptimized className="rounded-sm" />
                           </div>
                           <input
@@ -263,7 +263,7 @@ function PorGrupo({
                           />
                           <div className="flex flex-1 items-center gap-1.5 text-xs">
                             <Image src={fora.bandeira_url} alt={fora.nome} width={20} height={14} unoptimized className="rounded-sm" />
-                            <span className="line-clamp-1 font-medium">{fora.nome}</span>
+                            <span className="team-name font-medium">{fora.nome}</span>
                           </div>
                         </div>
                         {m.status === "finalizado" && (
@@ -324,7 +324,7 @@ function PorRodada({
                       <span className="mt-1">{formatarDataJogo(m.data_hora, "curto")}</span>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
-                      <span className="line-clamp-1 text-sm font-medium">{casa.nome}</span>
+                      <span className="team-name text-sm font-medium">{casa.nome}</span>
                       <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} unoptimized className="rounded-sm" />
                     </div>
                     <input
@@ -352,7 +352,7 @@ function PorRodada({
                     />
                     <div className="flex flex-1 items-center gap-1.5">
                       <Image src={fora.bandeira_url} alt={fora.nome} width={24} height={18} unoptimized className="rounded-sm" />
-                      <span className="line-clamp-1 text-sm font-medium">{fora.nome}</span>
+                      <span className="team-name text-sm font-medium">{fora.nome}</span>
                     </div>
                   </CardContent>
                 </Card>
