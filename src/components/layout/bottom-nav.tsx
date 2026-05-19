@@ -54,8 +54,8 @@ export function BottomNav({
       className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-border bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.05)] lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid grid-cols-5">
-        {primary.map((item) => {
+      <div className={cn("grid", user ? "grid-cols-5" : "grid-cols-4")}>
+        {primary.slice(0, user ? 4 : 2).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (
@@ -80,6 +80,25 @@ export function BottomNav({
             </Link>
           );
         })}
+        {/* CTA "Bora pro Bolão" — só quando deslogado */}
+        {!user && (
+          <Link
+            href="/login"
+            className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[9px] font-extrabold leading-tight"
+          >
+            <span
+              className="flex h-12 w-16 -translate-y-2 flex-col items-center justify-center rounded-xl"
+              style={{
+                background: "linear-gradient(135deg, #FFD60A 0%, #FF9F1C 100%)",
+                boxShadow: "0 3px 0 rgba(255,159,28,0.4)",
+              }}
+            >
+              <span className="text-base leading-none">🎉</span>
+              <span className="text-[8px] text-zinc-900">BORA PRO</span>
+              <span className="text-[8px] text-zinc-900">BOLÃO!</span>
+            </span>
+          </Link>
+        )}
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetTrigger asChild>
             <button className="flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold text-muted-foreground transition-all hover:text-foreground active:scale-95">
