@@ -163,6 +163,7 @@ export async function DashboardPublico() {
           .filter((id, i, arr) => arr.indexOf(id) === i)}
         rateio={rateio}
         totalArrecadado={totalArrecadado}
+        bolaoIniciou={bolaoIniciou}
       />
 
       {bolaoIniciou ? (
