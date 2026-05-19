@@ -7,6 +7,9 @@ import { DesignedBySorriso } from "@/components/layout/designed-by-sorriso";
 import { Toaster } from "@/components/ui/toaster";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
+import { PONTUACAO_DEFAULT } from "@/lib/scoring";
+import { RATEIO_DEFAULT } from "@/lib/prizes";
+import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Bolão da AutoManagem · Copa do Mundo FIFA 2026",
@@ -28,14 +31,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const supabase = createClient();
   const [perfil, configRes, pagosRes] = await Promise.all([
     getCurrentUser(),
-    supabase.from("config").select("chave, valor").in("chave", ["nome_bolao", "valor_aposta"]),
+    supabase
+      .from("config")
+      .select("chave, valor")
+      .in("chave", [
+        "nome_bolao",
+        "valor_aposta",
+        "pontuacao",
+        "rateio",
+        "pix_chave",
+        "pix_nome",
+      ]),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
   ]);
   const conf = Object.fromEntries(
     ((configRes.data ?? []) as any[]).map((c: any) => [c.chave, c.valor]),
   );
   const nomeBolao = String(conf.nome_bolao ?? "Bolão da AutoManagem");
-  const valorArrecadado = (pagosRes.count ?? 0) * Number(conf.valor_aposta ?? 50);
+  const valorAposta = Number(conf.valor_aposta ?? 50);
+  const valorArrecadado = (pagosRes.count ?? 0) * valorAposta;
+  const pontuacao = (conf.pontuacao as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+  const rateio = (conf.rateio as RateioConfig) ?? RATEIO_DEFAULT;
+  const pixChave = String(conf.pix_chave ?? "—");
+  const pixNome = String(conf.pix_nome ?? "—");
 
   const userNav = perfil
     ? {
@@ -48,8 +66,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
-        <Sidebar user={userNav} nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} />
-        <MobileHeader nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} />
+        <Sidebar
+          user={userNav}
+          nomeBolao={nomeBolao}
+          valorArrecadado={valorArrecadado}
+          valorAposta={valorAposta}
+          pontuacao={pontuacao}
+          rateio={rateio}
+          pixChave={pixChave}
+          pixNome={pixNome}
+        />
+        <MobileHeader
+          nomeBolao={nomeBolao}
+          valorArrecadado={valorArrecadado}
+          valorAposta={valorAposta}
+          pontuacao={pontuacao}
+          rateio={rateio}
+          pixChave={pixChave}
+          pixNome={pixNome}
+        />
         <div className="fixed right-4 top-4 z-30 hidden lg:block">
           <DesignedBySorriso onLight />
         </div>

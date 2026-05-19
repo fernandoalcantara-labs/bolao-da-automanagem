@@ -4,13 +4,24 @@ import Link from "next/link";
 import { Mascot } from "@/components/ui/mascot";
 import { DesignedBySorriso } from "./designed-by-sorriso";
 import { ShareButton } from "@/components/share/share-button";
+import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 export function MobileHeader({
   nomeBolao,
   valorArrecadado,
+  valorAposta,
+  pontuacao,
+  rateio,
+  pixChave,
+  pixNome,
 }: {
   nomeBolao: string;
   valorArrecadado: number;
+  valorAposta: number;
+  pontuacao: PontuacaoConfig;
+  rateio: RateioConfig;
+  pixChave: string;
+  pixNome: string;
 }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gradient-header px-3 shadow-md lg:hidden">
@@ -26,7 +37,16 @@ export function MobileHeader({
         </span>
       </Link>
       <div className="flex items-center gap-1.5">
-        <ShareButton nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} compact />
+        <ShareButton
+          nomeBolao={nomeBolao}
+          valorArrecadado={valorArrecadado}
+          valorAposta={valorAposta}
+          pontuacao={pontuacao}
+          rateio={rateio}
+          pixChave={pixChave}
+          pixNome={pixNome}
+          compact
+        />
         <DesignedBySorriso compact />
       </div>
     </header>

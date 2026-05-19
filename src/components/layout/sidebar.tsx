@@ -12,6 +12,7 @@ import { Mascot } from "@/components/ui/mascot";
 import { NAV_ITEMS } from "./nav-items";
 import { MICROCOPY } from "@/lib/microcopy";
 import { ShareButton } from "@/components/share/share-button";
+import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 type SidebarUser = { id: string; nome: string; role: string } | null;
 
@@ -19,10 +20,20 @@ export function Sidebar({
   user,
   nomeBolao,
   valorArrecadado,
+  valorAposta,
+  pontuacao,
+  rateio,
+  pixChave,
+  pixNome,
 }: {
   user: SidebarUser;
   nomeBolao: string;
   valorArrecadado: number;
+  valorAposta: number;
+  pontuacao: PontuacaoConfig;
+  rateio: RateioConfig;
+  pixChave: string;
+  pixNome: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -58,7 +69,16 @@ export function Sidebar({
             </span>
           </span>
         </Link>
-        <ShareButton nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} compact />
+        <ShareButton
+          nomeBolao={nomeBolao}
+          valorArrecadado={valorArrecadado}
+          valorAposta={valorAposta}
+          pontuacao={pontuacao}
+          rateio={rateio}
+          pixChave={pixChave}
+          pixNome={pixNome}
+          compact
+        />
       </div>
 
       {/* CTA "Bora pro Bolão" — só quando não logado */}

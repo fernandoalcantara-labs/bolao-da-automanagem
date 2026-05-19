@@ -11,18 +11,30 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/toaster";
+import { shareMessageCompleto } from "@/lib/share-message";
+import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 export function ShareButton({
   nomeBolao,
   valorArrecadado,
+  valorAposta,
+  pontuacao,
+  rateio,
+  pixChave,
+  pixNome,
   compact = false,
 }: {
   nomeBolao: string;
   valorArrecadado: number;
+  valorAposta: number;
+  pontuacao: PontuacaoConfig;
+  rateio: RateioConfig;
+  pixChave: string;
+  pixNome: string;
   compact?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
-  const [appUrl, setAppUrl] = React.useState("");
+  const [appUrl, setAppUrl] = React.useState("https://bolao-da-automanagem.vercel.app");
   const [copiouTexto, setCopiouTexto] = React.useState(false);
   const [copiouLink, setCopiouLink] = React.useState(false);
 
@@ -30,11 +42,16 @@ export function ShareButton({
     if (typeof window !== "undefined") setAppUrl(window.location.origin);
   }, []);
 
-  const valorFormatado = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(valorArrecadado);
-  const mensagem = `Bora entrar no ${nomeBolao}! 🏆⚽\nPrêmio atual: ${valorFormatado}\nAcesse: ${appUrl}`;
+  const mensagem = shareMessageCompleto({
+    nomeBolao,
+    totalArrecadado: valorArrecadado,
+    valorAposta,
+    appUrl,
+    pontuacao,
+    rateio,
+    pixChave,
+    pixNome,
+  });
 
   async function compartilharNativo() {
     if (navigator.share) {
@@ -98,7 +115,7 @@ export function ShareButton({
           </DialogDescription>
         </div>
 
-        <div className="rounded-xl border-2 border-border bg-festive-page/40 p-3 text-sm">
+        <div className="max-h-64 overflow-y-auto rounded-xl border-2 border-border bg-festive-page/40 p-3 text-sm">
           <p className="whitespace-pre-line font-medium text-foreground">{mensagem}</p>
         </div>
 
