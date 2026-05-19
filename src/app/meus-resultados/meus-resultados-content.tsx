@@ -10,7 +10,7 @@ import { toast } from "@/components/ui/toaster";
 import type { Breakdown } from "@/lib/scoring-breakdown";
 import { gerarCsvPessoal, gerarTextoPessoal } from "@/lib/export-csv-pessoal";
 
-export function MinhaExportacaoContent({ breakdown }: { breakdown: Breakdown }) {
+export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
   const [filtro, setFiltro] = React.useState<"todos" | "acertos" | "erros" | "pendentes">("todos");
   const [copied, setCopied] = React.useState(false);
 
@@ -50,6 +50,28 @@ export function MinhaExportacaoContent({ breakdown }: { breakdown: Breakdown }) 
 
   return (
     <>
+      {/* Botões de exportação — logo abaixo do Resumo (Fernando preferiu
+          assim no CT-24 da QW4 pra ficar mais visível). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">📥 Exportar</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={exportarCsv} variant="default">
+              <FileDown className="mr-2 h-4 w-4" /> Exportar como CSV
+            </Button>
+            <Button onClick={copiarTexto} variant="outline">
+              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? "Copiado!" : "Copiar como texto"}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            CSV abre direto no Excel/Google Sheets · Texto vai pro WhatsApp 📲
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Fase de grupos */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
@@ -212,26 +234,6 @@ export function MinhaExportacaoContent({ breakdown }: { breakdown: Breakdown }) 
         </Card>
       )}
 
-      {/* Botões de exportação */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">📥 Exportar</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={exportarCsv} variant="default">
-              <FileDown className="mr-2 h-4 w-4" /> Exportar como CSV
-            </Button>
-            <Button onClick={copiarTexto} variant="outline">
-              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
-              {copied ? "Copiado!" : "Copiar como texto"}
-            </Button>
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            CSV abre direto no Excel/Google Sheets · Texto vai pro WhatsApp 📲
-          </p>
-        </CardContent>
-      </Card>
     </>
   );
 }

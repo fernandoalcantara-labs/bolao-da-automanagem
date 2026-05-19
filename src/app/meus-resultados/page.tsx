@@ -1,14 +1,13 @@
-import { redirect } from "next/navigation";
-import { Download } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { requireUser } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { calcularBreakdown } from "@/lib/scoring-breakdown";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { MinhaExportacaoContent } from "./minha-exportacao-content";
+import { MeusResultadosContent } from "./meus-resultados-content";
 
 export const dynamic = "force-dynamic";
 
-export default async function MinhaExportacaoPage() {
+export default async function MeusResultadosPage() {
   const user = await requireUser();
   const supabase = createClient();
 
@@ -25,10 +24,10 @@ export default async function MinhaExportacaoPage() {
     <div className="mx-auto max-w-3xl space-y-5 py-2 sm:py-6">
       <header className="space-y-1">
         <h1 className="flex items-center gap-2 font-fredoka text-3xl font-extrabold">
-          <Download className="h-7 w-7 text-festive-green" /> Minha Exportação
+          <Trophy className="h-7 w-7 text-festive-green" /> Meus Resultados
         </h1>
         <p className="text-sm font-medium text-muted-foreground">
-          Veja e exporte todos os seus palpites do bolão. 📥
+          Veja todos os seus palpites e pontos do bolão. 📊
         </p>
       </header>
 
@@ -55,7 +54,7 @@ export default async function MinhaExportacaoPage() {
         </CardContent>
       </Card>
 
-      <MinhaExportacaoContent breakdown={breakdown} />
+      <MeusResultadosContent breakdown={breakdown} />
     </div>
   );
 }
