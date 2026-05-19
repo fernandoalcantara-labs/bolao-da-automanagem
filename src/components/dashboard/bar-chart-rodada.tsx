@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
+import { formatShortName } from "@/lib/format-name";
 
 export function BarChartRodada({ data }: { data: { nome: string; pontos: number }[] }) {
   if (data.length === 0) {
@@ -20,8 +21,7 @@ export function BarChartRodada({ data }: { data: { nome: string; pontos: number 
             tick={{ fontSize: 11 }}
             width={60}
             tickFormatter={(v) => {
-              const s = v as string;
-              const primeiro = s.split(" ")[0];
+              const primeiro = formatShortName(v as string);
               return primeiro.length > 8 ? `${primeiro.slice(0, 7)}…` : primeiro;
             }}
           />

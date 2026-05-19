@@ -32,21 +32,12 @@ export async function atualizarPerfilAction(
     return { ok: false, error: "Nome completo precisa ter pelo menos 3 caracteres." };
   }
 
-  // Checa unicidade do nome_exibicao (case-insensitive) via admin client
-  const admin = createAdminClient();
-  const { data: existente } = await admin
-    .from("users")
-    .select("id")
-    .ilike("nome_exibicao", nomeExib)
-    .neq("id", authUser.id)
-    .maybeSingle();
-  if (existente) {
-    return {
-      ok: false,
-      error: "Esse nome já tá sendo usado por outro craque 😅 Tenta variar.",
-    };
-  }
+  // Nomes de exibição NÃO precisam ser únicos — dois "Fernando" podem
+  // coexistir no ranking. Para diferenciar, KPIs e ranking público
+  // mostram "Primeiro Último" (ex: Fernando Rocha) enquanto heatmap/bar
+  // chart usam só o primeiro nome.
 
+  const admin = createAdminClient();
   const { error } = await admin
     .from("users")
     .update({
