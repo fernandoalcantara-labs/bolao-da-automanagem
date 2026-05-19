@@ -24,7 +24,7 @@ export async function DashboardPublico() {
     { data: players },
     { data: config },
   ] = await Promise.all([
-    supabase.from("users").select("id, nome, pago").eq("pago", true),
+    supabase.from("users").select("id, nome, nome_exibicao, pago").eq("pago", true),
     supabase
       .from("ranking_snapshots")
       .select("user_id, rodada_label, rodada_ordem, posicao, pontos_totais, pontos_rodada")
@@ -45,7 +45,11 @@ export async function DashboardPublico() {
   const nomeBolao = String(conf.nome_bolao ?? "Bolão da AutoManagem");
   const rateio = (conf.rateio as RateioConfig) ?? RATEIO_DEFAULT;
 
-  const usersPagos = users ?? [];
+  // Mapeia pra usar nome_exibicao (público) em vez de nome (privado)
+  const usersPagos = (users ?? []).map((u: any) => ({
+    ...u,
+    nome: u.nome_exibicao ?? u.nome,
+  }));
   const usersById = new Map(usersPagos.map((u) => [u.id, u]));
   const totalArrecadado = usersPagos.length * valorAposta;
   const totalJogos = matches?.length ?? 0;

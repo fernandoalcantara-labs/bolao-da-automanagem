@@ -94,19 +94,26 @@ export function BottomNav({ user }: { user: BottomNavUser }) {
             </Link>
 
             {user && (
-              <div className="mb-3 flex items-center gap-2.5 rounded-xl border-2 border-festive-gold/30 bg-festive-gold/5 p-2.5">
+              <Link
+                href="/perfil"
+                onClick={() => setDrawerOpen(false)}
+                className="mb-3 flex items-center gap-2.5 rounded-xl border-2 border-festive-gold/30 bg-festive-gold/5 p-2.5 transition-colors hover:bg-festive-gold/10"
+                title="Editar perfil"
+              >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full gradient-gold text-base font-extrabold text-zinc-900 shadow-stack-gold">
                   {user.nome.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="line-clamp-1 text-sm font-extrabold">{user.nome}</p>
+                  <p className="line-clamp-1 text-sm font-extrabold">
+                    {user.nome} <span className="opacity-50">✏️</span>
+                  </p>
                   {user.role === "admin" && (
                     <p className="text-[10px] font-bold uppercase tracking-wider text-festive-green">
                       👑 Admin
                     </p>
                   )}
                 </div>
-              </div>
+              </Link>
             )}
 
             <nav className="flex-1 space-y-0.5">

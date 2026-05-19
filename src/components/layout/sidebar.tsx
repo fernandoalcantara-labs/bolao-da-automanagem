@@ -78,19 +78,25 @@ export function Sidebar({ user }: { user: SidebarUser }) {
       <div className="space-y-3 border-t-2 border-border/60 p-4">
         {user ? (
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
+            <Link
+              href="/perfil"
+              className="group flex items-center gap-2.5 rounded-lg p-1 transition-colors hover:bg-festive-gold/10"
+              title="Editar perfil"
+            >
               <div className="flex h-9 w-9 items-center justify-center rounded-full gradient-gold text-sm font-extrabold text-zinc-900 shadow-stack-gold">
                 {user.nome.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="line-clamp-1 text-sm font-extrabold">{user.nome}</p>
+                <p className="line-clamp-1 text-sm font-extrabold group-hover:text-festive-gold-dark">
+                  {user.nome} <span className="opacity-50">✏️</span>
+                </p>
                 {user.role === "admin" && (
                   <p className="text-[10px] font-bold uppercase tracking-wider text-festive-green">
                     👑 Admin
                   </p>
                 )}
               </div>
-            </div>
+            </Link>
             <button
               onClick={sair}
               className="btn-stack inline-flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-border bg-white px-3 py-2 text-xs font-bold text-muted-foreground transition-colors hover:border-festive-red/40 hover:bg-festive-red/5 hover:text-festive-red"

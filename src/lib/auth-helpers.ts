@@ -7,7 +7,7 @@ export async function getCurrentUser() {
   if (!user) return null;
   const { data: perfil } = await supabase
     .from("users")
-    .select("id, nome, email, telefone, role, pago")
+    .select("id, nome, nome_exibicao, email, telefone, role, pago")
     .eq("id", user.id)
     .single();
   return perfil ?? null;

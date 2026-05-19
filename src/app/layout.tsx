@@ -29,7 +29,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // os componentes Sidebar/BottomNav recebam o user atualizado via prop.
   const perfil = await getCurrentUser();
   const userNav = perfil
-    ? { id: perfil.id, nome: perfil.nome, role: perfil.role }
+    ? {
+        id: perfil.id,
+        nome: (perfil as any).nome_exibicao ?? perfil.nome,
+        role: perfil.role,
+      }
     : null;
 
   return (
