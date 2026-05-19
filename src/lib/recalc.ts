@@ -37,15 +37,113 @@ const ROUND_LABELS = [
   { ordem: 9, label: "Artilheiro", filtro: { fase: "artilheiro" as const } },
 ];
 
-export async function recalcularTudo(supabase: SB) {
-  const cfg = await carregarPontuacao(supabase);
+/**
+ * Resultado de um recálculo — usado pelo log do admin (QW3 item 17).
+ * Captura o estado de pontos por usuário antes/depois do recálculo
+ * pra mostrar o impacto da operação.
+ */
+export type RecalcLog = {
+  duracao_ms: number;
+  total_palpites_grupos: number;
+  total_palpites_mata: number;
+  total_palpites_artilheiro: number;
+  jogos_finalizados: number;
+  usuarios_alterados: Array<{
+    user_id: string;
+    nome: string;
+    antes: number;
+    depois: number;
+    delta: number;
+  }>;
+};
 
+export async function recalcularTudo(
+  supabase: SB,
+): Promise<{ ok: true; log: RecalcLog }> {
+  const t0 = Date.now();
+
+  // Captura pontos totais por usuário ANTES (último ranking_snapshot)
+  const pontosAntes = await capturarPontosTotais(supabase);
+
+  // Recalc
+  const cfg = await carregarPontuacao(supabase);
   await recalcularPalpitesGrupos(supabase, cfg);
   const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase);
   await recalcularPalpitesMata(supabase, cfg, faseAlcancada);
   await recalcularPalpiteArtilheiro(supabase);
   await gerarSnapshots(supabase, cfg, faseAlcancada);
-  return { ok: true };
+
+  // Captura pontos totais DEPOIS + diff
+  const pontosDepois = await capturarPontosTotais(supabase);
+
+  const { data: users } = await supabase
+    .from("users")
+    .select("id, nome, nome_exibicao");
+
+  const usuariosAlterados: RecalcLog["usuarios_alterados"] = [];
+  for (const u of (users ?? []) as any[]) {
+    const antes = pontosAntes.get(u.id) ?? 0;
+    const depois = pontosDepois.get(u.id) ?? 0;
+    const delta = depois - antes;
+    if (delta !== 0) {
+      usuariosAlterados.push({
+        user_id: u.id,
+        nome: (u.nome_exibicao as string) ?? u.nome,
+        antes,
+        depois,
+        delta,
+      });
+    }
+  }
+  // Ordena por |delta| decrescente — quem teve maior impacto primeiro
+  usuariosAlterados.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+
+  const [pg, pm, pa, jf] = await Promise.all([
+    supabase.from("palpites_grupos").select("id", { count: "exact", head: true }),
+    supabase.from("palpites_mata").select("id", { count: "exact", head: true }),
+    supabase.from("palpites_artilheiro").select("id", { count: "exact", head: true }),
+    supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "finalizado"),
+  ]);
+
+  return {
+    ok: true,
+    log: {
+      duracao_ms: Date.now() - t0,
+      total_palpites_grupos: pg.count ?? 0,
+      total_palpites_mata: pm.count ?? 0,
+      total_palpites_artilheiro: pa.count ?? 0,
+      jogos_finalizados: jf.count ?? 0,
+      usuarios_alterados: usuariosAlterados,
+    },
+  };
+}
+
+/**
+ * Pega pontos_totais da última rodada presente em ranking_snapshots.
+ * Map<user_id, pontos>. Se não houver snapshots ainda, retorna mapa vazio
+ * (a primeira chamada de recalc após reset terá tudo como "delta novo").
+ */
+async function capturarPontosTotais(supabase: SB): Promise<Map<string, number>> {
+  const { data: snaps } = await supabase
+    .from("ranking_snapshots")
+    .select("user_id, rodada_ordem, pontos_totais");
+  if (!snaps || snaps.length === 0) return new Map();
+  // Pra cada user, pega o pontos_totais da MAIOR rodada_ordem
+  const maxOrdemPorUser = new Map<string, number>();
+  for (const s of snaps as any[]) {
+    const cur = maxOrdemPorUser.get(s.user_id) ?? -1;
+    if (s.rodada_ordem > cur) maxOrdemPorUser.set(s.user_id, s.rodada_ordem);
+  }
+  const out = new Map<string, number>();
+  for (const s of snaps as any[]) {
+    if (s.rodada_ordem === maxOrdemPorUser.get(s.user_id)) {
+      out.set(s.user_id, s.pontos_totais);
+    }
+  }
+  return out;
 }
 
 async function carregarPontuacao(supabase: SB): Promise<PontuacaoConfig> {

@@ -18,6 +18,6 @@ export async function POST(_: NextRequest) {
     .single();
   if (perfil?.role !== "admin") return NextResponse.json({ error: "Apenas admin" }, { status: 403 });
 
-  await recalcularTudo(createAdminClient());
-  return NextResponse.json({ ok: true });
+  const result = await recalcularTudo(createAdminClient());
+  return NextResponse.json(result);
 }
