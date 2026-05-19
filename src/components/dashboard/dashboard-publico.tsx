@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { KpiCards } from "./kpi-cards";
 import { RankingTable } from "./ranking-table";
 import { MultiLineChart } from "./multi-line-chart";
-import { BarChartRodada } from "./bar-chart-rodada";
 import { Heatmap } from "./heatmap";
 import { PieCampeao, PieArtilheiro } from "./pies";
 import { ConfrontosRodada } from "./confrontos-rodada";
@@ -215,42 +214,23 @@ export async function DashboardPublico() {
             </Card>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="min-w-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>📊 Pontos na última rodada · {ultimaLabel}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BarChartRodada
-                  data={snapsUltima
-                    .map((s) => ({
-                      nome: usersById.get(s.user_id)?.nome ?? "—",
-                      pontos: s.pontos_rodada,
-                    }))
-                    .sort((a, b) => b.pontos - a.pontos)
-                    .slice(0, 15)}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="min-w-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
-                <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Heatmap
-                  users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
-                  snapshots={snapsPagas.map((s) => ({
-                    user_id: s.user_id,
-                    rodada_label: s.rodada_label,
-                    rodada_ordem: s.rodada_ordem,
-                    pontos_rodada: s.pontos_rodada,
-                  }))}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
+              <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Heatmap
+                users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
+                snapshots={snapsPagas.map((s) => ({
+                  user_id: s.user_id,
+                  rodada_label: s.rodada_label,
+                  rodada_ordem: s.rodada_ordem,
+                  pontos_rodada: s.pontos_rodada,
+                }))}
+              />
+            </CardContent>
+          </Card>
         </>
       ) : (
         <BolaoNaoIniciouCard
