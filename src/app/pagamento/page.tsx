@@ -50,6 +50,7 @@ export default async function PagamentoPage() {
           palpitesFeitos={stats.feitos}
           palpitesEsperados={stats.esperados}
           pago={user.pago}
+          contexto="pagamento"
         />
       )}
 

@@ -42,23 +42,14 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
               Nome
             </th>
             {rodadas.map(([, label]) => {
-              const isArtilheiro = label === "Artilheiro";
+              const isFinal = label === "Final";
               return (
                 <th
                   key={label}
-                  className={
-                    isArtilheiro
-                      ? "border-l-2 border-festive-gold-dark p-1.5 text-center text-[10px] font-extrabold uppercase tracking-wider text-festive-gold-dark"
-                      : "p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
-                  }
+                  className="p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                   style={{ minWidth: 48 }}
-                  title={
-                    isArtilheiro
-                      ? "Pontos do artilheiro (24 pts por acerto) — só preenche após o fim da Copa"
-                      : undefined
-                  }
                 >
-                  {isArtilheiro ? "🏆 " : ""}
+                  {isFinal ? "🏆 " : ""}
                   {label}
                 </th>
               );
@@ -71,20 +62,15 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
               <td className="sticky left-0 z-10 bg-white p-1.5 text-xs font-bold">
                 {formatShortName(u.nome)}
               </td>
-              {rodadas.map(([ord, label]) => {
+              {rodadas.map(([ord]) => {
                 const snap = snapshots.find((s) => s.rodada_ordem === ord && s.user_id === u.id);
                 const pts = snap?.pontos_rodada ?? 0;
-                const isArtilheiro = label === "Artilheiro";
                 return (
                   <td
                     key={ord}
-                    className={
-                      isArtilheiro
-                        ? "border-l-2 border-festive-gold-dark/40 border-y border-border/20 p-1.5 text-center font-mono font-bold"
-                        : "border border-border/20 p-1.5 text-center font-mono font-bold"
-                    }
+                    className="border border-border/20 p-1.5 text-center font-mono font-bold"
                     style={{ backgroundColor: color(pts), minWidth: 48 }}
-                    title={`${u.nome}: ${pts} pts${isArtilheiro ? " · 🏆 artilheiro" : ""}`}
+                    title={`${u.nome}: ${pts} pts`}
                   >
                     {pts}
                   </td>

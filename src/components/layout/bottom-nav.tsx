@@ -87,15 +87,16 @@ export function BottomNav({
             className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[9px] font-extrabold leading-tight"
           >
             <span
-              className="flex h-12 w-16 -translate-y-2 flex-col items-center justify-center rounded-xl"
+              className="flex h-11 w-14 flex-col items-center justify-center rounded-xl"
               style={{
                 background: "linear-gradient(135deg, #FFD60A 0%, #FF9F1C 100%)",
                 boxShadow: "0 3px 0 rgba(255,159,28,0.4)",
               }}
             >
-              <span className="text-base leading-none">🎉</span>
-              <span className="text-[8px] text-zinc-900">BORA PRO</span>
-              <span className="text-[8px] text-zinc-900">BOLÃO!</span>
+              <span className="text-sm leading-none">🎉</span>
+              <span className="text-[8px] font-extrabold leading-tight text-zinc-900">
+                BORA!
+              </span>
             </span>
           </Link>
         )}

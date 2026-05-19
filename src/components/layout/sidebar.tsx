@@ -61,6 +61,31 @@ export function Sidebar({
         <ShareButton nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} compact />
       </div>
 
+      {/* CTA "Bora pro Bolão" — só quando não logado */}
+      {!user && (
+        <Link
+          href="/login"
+          className="mx-3 mb-2 mt-4 flex flex-col items-center gap-1.5 rounded-2xl px-3 py-4 text-center"
+          style={{
+            background: "linear-gradient(135deg, #FFD60A 0%, #FF9F1C 100%)",
+            boxShadow: "0 4px 0 rgba(255,159,28,0.35)",
+          }}
+        >
+          <span className="text-3xl leading-none">🎉</span>
+          <p className="font-fredoka text-sm font-extrabold text-zinc-900">Bora pro Bolão!</p>
+          <p className="text-[10px] font-bold leading-tight text-zinc-900/80">
+            Cadastre seus palpites e concorra ao prêmio
+          </p>
+          <span
+            className="mt-1 rounded-lg px-3.5 py-2 text-xs font-extrabold text-white"
+            style={{ background: "#009C3B", boxShadow: "0 3px 0 #007A2E" }}
+          >
+            Entrar / Cadastrar
+          </span>
+          <p className="text-[10px] font-extrabold text-zinc-900/80">É rapidinho ⚡</p>
+        </Link>
+      )}
+
       <nav className="flex-1 space-y-1 px-3 pt-4">
         {items.map((item) => {
           const Icon = item.icon;

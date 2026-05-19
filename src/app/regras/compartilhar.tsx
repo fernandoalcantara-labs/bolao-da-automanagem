@@ -4,9 +4,28 @@ import * as React from "react";
 import { Share2, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
+import { shareMessageCompleto } from "@/lib/share-message";
+import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
-export function CompartilharRegras({ texto }: { texto: string }) {
+type Props = {
+  nomeBolao: string;
+  pontuacao: PontuacaoConfig;
+  rateio: RateioConfig;
+  valorAposta: number;
+  pixChave: string;
+  pixNome: string;
+  totalArrecadado: number;
+};
+
+export function CompartilharRegras(props: Props) {
   const [copied, setCopied] = React.useState(false);
+  const [appUrl, setAppUrl] = React.useState("https://bolao-da-automanagem.vercel.app");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") setAppUrl(window.location.origin);
+  }, []);
+
+  const texto = shareMessageCompleto({ ...props, appUrl });
 
   async function copiar() {
     await navigator.clipboard.writeText(texto);
@@ -22,7 +41,7 @@ export function CompartilharRegras({ texto }: { texto: string }) {
   async function compartilhar() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Regras do Bolão", text: texto });
+        await navigator.share({ title: "Regras do Bolão", text: texto, url: appUrl });
       } catch {
         // usuário cancelou
       }

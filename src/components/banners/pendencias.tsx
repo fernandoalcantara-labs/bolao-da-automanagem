@@ -10,6 +10,10 @@ export type PendenciasProps = {
   palpitesEsperados: number; // total que daria pra fazer
   pago: boolean;
   nomeUser?: string;
+  /** "painel" mostra os 2 banners completos com botões.
+   *  "pagamento" oculta banner de palpites (já está no painel) e remove
+   *  o botão Pagar do banner de pagamento (já estamos na tela). */
+  contexto?: "painel" | "pagamento";
 };
 
 const STORAGE_KEY_DISMISS = "banner-tudo-certo-dismissed";
@@ -18,6 +22,7 @@ export function BannersPendencia({
   palpitesFeitos,
   palpitesEsperados,
   pago,
+  contexto = "painel",
 }: PendenciasProps) {
   const [dismissed, setDismissed] = React.useState(false);
 
@@ -27,13 +32,16 @@ export function BannersPendencia({
     if (v === today) setDismissed(true);
   }, []);
 
-  const palpitesIncompletos = palpitesFeitos < palpitesEsperados;
+  // Em /pagamento, escondemos o banner de palpites (foco é só o PIX)
+  const palpitesIncompletos =
+    contexto !== "pagamento" && palpitesFeitos < palpitesEsperados;
   const pct = palpitesEsperados > 0
     ? Math.round((palpitesFeitos / palpitesEsperados) * 100)
     : 0;
   const tudoCerto = !palpitesIncompletos && pago;
 
   if (tudoCerto && dismissed) return null;
+  if (tudoCerto && contexto === "pagamento") return null;
 
   if (tudoCerto) {
     return (
@@ -65,7 +73,7 @@ export function BannersPendencia({
       )}
     >
       {palpitesIncompletos && <BannerPalpites palpitesFeitos={palpitesFeitos} palpitesEsperados={palpitesEsperados} pct={pct} />}
-      {!pago && <BannerPagamento />}
+      {!pago && <BannerPagamento mostrarCta={contexto !== "pagamento"} />}
     </div>
   );
 }
@@ -121,16 +129,9 @@ function BannerPalpites({
   );
 }
 
-function BannerPagamento() {
-  return (
-    <Link
-      href="/pagamento"
-      className="flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3 transition-transform hover:-translate-y-0.5"
-      style={{
-        background: "linear-gradient(135deg, #FFE5DD, #FFC9B4)",
-        borderColor: "#FF6B35",
-      }}
-    >
+function BannerPagamento({ mostrarCta = true }: { mostrarCta?: boolean }) {
+  const conteudo = (
+    <>
       <span className="text-2xl">💸</span>
       <div className="flex-1">
         <p className="text-sm font-extrabold" style={{ color: "#A8421A" }}>
@@ -140,12 +141,39 @@ function BannerPagamento() {
           Sem pagamento você não entra no ranking
         </p>
       </div>
-      <span
-        className="rounded-md px-2.5 py-1.5 text-xs font-extrabold text-white"
-        style={{ background: "#FF6B35", boxShadow: "0 2px 0 #C44A1F" }}
+      {mostrarCta && (
+        <span
+          className="rounded-md px-2.5 py-1.5 text-xs font-extrabold text-white"
+          style={{ background: "#FF6B35", boxShadow: "0 2px 0 #C44A1F" }}
+        >
+          Pagar →
+        </span>
+      )}
+    </>
+  );
+  if (!mostrarCta) {
+    return (
+      <div
+        className="flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3"
+        style={{
+          background: "linear-gradient(135deg, #FFE5DD, #FFC9B4)",
+          borderColor: "#FF6B35",
+        }}
       >
-        Pagar →
-      </span>
+        {conteudo}
+      </div>
+    );
+  }
+  return (
+    <Link
+      href="/pagamento"
+      className="flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3 transition-transform hover:-translate-y-0.5"
+      style={{
+        background: "linear-gradient(135deg, #FFE5DD, #FFC9B4)",
+        borderColor: "#FF6B35",
+      }}
+    >
+      {conteudo}
     </Link>
   );
 }
