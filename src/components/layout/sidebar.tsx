@@ -11,10 +11,19 @@ import { PoweredByClaudio } from "./powered-by-claudio";
 import { Mascot } from "@/components/ui/mascot";
 import { NAV_ITEMS } from "./nav-items";
 import { MICROCOPY } from "@/lib/microcopy";
+import { ShareButton } from "@/components/share/share-button";
 
 type SidebarUser = { id: string; nome: string; role: string } | null;
 
-export function Sidebar({ user }: { user: SidebarUser }) {
+export function Sidebar({
+  user,
+  nomeBolao,
+  valorArrecadado,
+}: {
+  user: SidebarUser;
+  nomeBolao: string;
+  valorArrecadado: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -37,17 +46,20 @@ export function Sidebar({ user }: { user: SidebarUser }) {
       className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r-2 border-border bg-white shadow-stack lg:flex"
       aria-label="Navegação principal"
     >
-      <Link href="/" className="flex items-center gap-3 px-5 py-5 border-b border-border/60">
-        <Mascot size={44} />
-        <span className="flex flex-col leading-tight">
-          <span className="font-fredoka text-base font-extrabold tracking-tight text-foreground">
-            Bolão da AutoManagem
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-4">
+        <Link href="/" className="flex items-center gap-2.5">
+          <Mascot size={40} />
+          <span className="flex flex-col leading-tight">
+            <span className="line-clamp-1 font-fredoka text-sm font-extrabold tracking-tight text-foreground">
+              {nomeBolao}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-festive-green">
+              🇧🇷 Copa 2026
+            </span>
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-festive-green">
-            🇧🇷 Copa 2026
-          </span>
-        </span>
-      </Link>
+        </Link>
+        <ShareButton nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} compact />
+      </div>
 
       <nav className="flex-1 space-y-1 px-3 pt-4">
         {items.map((item) => {

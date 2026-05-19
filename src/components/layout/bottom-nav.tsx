@@ -15,7 +15,13 @@ import { MICROCOPY } from "@/lib/microcopy";
 
 type BottomNavUser = { id: string; nome: string; role: string } | null;
 
-export function BottomNav({ user }: { user: BottomNavUser }) {
+export function BottomNav({
+  user,
+}: {
+  user: BottomNavUser;
+  nomeBolao?: string;
+  valorArrecadado?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = React.useState(false);

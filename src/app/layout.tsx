@@ -6,6 +6,7 @@ import { MobileHeader } from "@/components/layout/mobile-header";
 import { DesignedBySorriso } from "@/components/layout/designed-by-sorriso";
 import { Toaster } from "@/components/ui/toaster";
 import { getCurrentUser } from "@/lib/auth-helpers";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Bolão da AutoManagem · Copa do Mundo FIFA 2026",
@@ -24,10 +25,18 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Fetch do usuário no Server Component. O Next.js re-executa este layout
-  // sempre que router.refresh() é chamado, o que faz com que após o login
-  // os componentes Sidebar/BottomNav recebam o user atualizado via prop.
-  const perfil = await getCurrentUser();
+  const supabase = createClient();
+  const [perfil, configRes, pagosRes] = await Promise.all([
+    getCurrentUser(),
+    supabase.from("config").select("chave, valor").in("chave", ["nome_bolao", "valor_aposta"]),
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
+  ]);
+  const conf = Object.fromEntries(
+    ((configRes.data ?? []) as any[]).map((c: any) => [c.chave, c.valor]),
+  );
+  const nomeBolao = String(conf.nome_bolao ?? "Bolão da AutoManagem");
+  const valorArrecadado = (pagosRes.count ?? 0) * Number(conf.valor_aposta ?? 50);
+
   const userNav = perfil
     ? {
         id: perfil.id,
@@ -39,8 +48,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
-        <Sidebar user={userNav} />
-        <MobileHeader />
+        <Sidebar user={userNav} nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} />
+        <MobileHeader nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} />
         <div className="fixed right-4 top-4 z-30 hidden lg:block">
           <DesignedBySorriso onLight />
         </div>
@@ -52,7 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </main>
         </div>
-        <BottomNav user={userNav} />
+        <BottomNav user={userNav} nomeBolao={nomeBolao} valorArrecadado={valorArrecadado} />
         <Toaster />
       </body>
     </html>
