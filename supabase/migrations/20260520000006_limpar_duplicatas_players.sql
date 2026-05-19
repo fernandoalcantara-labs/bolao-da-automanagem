@@ -7,8 +7,9 @@
 -- Júnior" eram considerados distintos.
 --
 -- Estratégia:
---  1) Habilita extensão unaccent pra normalizar
---  2) Identifica grupo canônico por (lower(unaccent(trim(nome))), time_id)
+--  1) Habilita extensão unaccent + função wrapper IMMUTABLE
+--     (unaccent() nativo é STABLE → não funciona em índice funcional)
+--  2) Identifica grupo canônico por (lower(f_unaccent(trim(nome))), time_id)
 --  3) Mantém o jogador com MENOR created_at (primeiro cadastrado) — em
 --     empate, MENOR id pra ser determinístico
 --  4) Migra palpites_artilheiro das duplicatas pro canônico (sem perder
@@ -19,12 +20,26 @@
 
 create extension if not exists unaccent;
 
+-- Wrapper IMMUTABLE pra usar em índice funcional.
+-- unaccent() nativo é STABLE (pode mudar se o usuário mudar o dicionário
+-- na mesma sessão), e Postgres exige IMMUTABLE em expressões de índice.
+-- Fixar o dicionário 'public.unaccent' torna a chamada determinística.
+create or replace function public.f_unaccent(text)
+returns text
+language sql
+immutable
+parallel safe
+strict
+as $$
+  select public.unaccent('public.unaccent', $1)
+$$;
+
 -- 1) Mapeamento duplicado -> canônico
 --    Canônico = entrada mais antiga (menor created_at, depois menor id)
 with grupos as (
   select
     id,
-    lower(unaccent(trim(nome))) as nome_norm,
+    lower(public.f_unaccent(trim(nome))) as nome_norm,
     time_id,
     created_at
   from public.players
@@ -53,12 +68,12 @@ set player_id = m.id_canonico
 from mapeamento m
 where pa.player_id = m.id_duplicado;
 
--- 3) Soma gols_torneio dos duplicados no canônico antes de apagar
+-- 3) Pega o MAIOR gols_torneio das duplicatas antes de apagar
 --    (caso a API tenha gravado gols só num dos registros)
 with grupos as (
   select
     id,
-    lower(unaccent(trim(nome))) as nome_norm,
+    lower(public.f_unaccent(trim(nome))) as nome_norm,
     time_id,
     created_at,
     gols_torneio
@@ -95,7 +110,7 @@ where p.id = gm.id_canonico
 with grupos as (
   select
     id,
-    lower(unaccent(trim(nome))) as nome_norm,
+    lower(public.f_unaccent(trim(nome))) as nome_norm,
     time_id,
     created_at
   from public.players
@@ -119,12 +134,12 @@ where p.id = g.id
 --    A unique(nome, time_id) original continua existindo — esse índice
 --    é uma camada extra que pega variações de case/acentos.
 --    Não dá pra usar unique constraint funcional direto no Postgres,
---    então usamos índice único.
+--    então usamos índice único + função wrapper IMMUTABLE.
 create unique index if not exists players_nome_norm_time_unique
-  on public.players (lower(unaccent(trim(nome))), time_id)
+  on public.players (lower(public.f_unaccent(trim(nome))), time_id)
   where time_id is not null;
 
 -- Caso time_id seja null (jogador sem clube ainda), trata separado
 create unique index if not exists players_nome_norm_null_team_unique
-  on public.players (lower(unaccent(trim(nome))))
+  on public.players (lower(public.f_unaccent(trim(nome))))
   where time_id is null;
