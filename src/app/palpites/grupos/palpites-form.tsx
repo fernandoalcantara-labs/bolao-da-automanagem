@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { formatDateTime, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatarDataJogo } from "@/lib/datetime";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
 
@@ -230,7 +231,7 @@ function PorGrupo({
                       >
                         <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
                           <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
-                          <span>{formatDateTime(m.data_hora)}</span>
+                          <span>{formatarDataJogo(m.data_hora, "curto")}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
@@ -320,7 +321,7 @@ function PorRodada({
                   <CardContent className="flex items-center gap-3 p-3">
                     <div className="flex w-16 flex-col text-[10px] text-muted-foreground">
                       <Badge variant="muted" className="text-[10px]">{m.grupo}</Badge>
-                      <span className="mt-1">{formatDateTime(m.data_hora)}</span>
+                      <span className="mt-1">{formatarDataJogo(m.data_hora, "curto")}</span>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
                       <span className="line-clamp-1 text-sm font-medium">{casa.nome}</span>
