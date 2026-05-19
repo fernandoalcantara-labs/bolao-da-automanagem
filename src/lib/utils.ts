@@ -29,4 +29,9 @@ export function formatTime(date: string | Date) {
   return formatarDataJogo(date, "apenas_hora");
 }
 
-export const DEADLINE_FASE_GRUPOS = new Date("2026-06-11T20:00:00-04:00"); // Kickoff WC 2026 — México vs Cazaquistão (Estádio Azteca)
+// Kickoff oficial Copa do Mundo FIFA 2026 — México vs ? (Estádio Azteca, CDMX).
+// Sites brasileiros (Globo, Google) mostram 16:00 BRT como horário de início.
+// Antes estava como "2026-06-11T20:00:00-04:00" assumindo CDT (DST), mas o
+// México REVOGOU o horário de verão em 2022 — está em UTC-6 permanente.
+// 16:00 BRT (UTC-3) = 19:00 UTC = 13:00 CDMX (UTC-6) ✓
+export const DEADLINE_FASE_GRUPOS = new Date("2026-06-11T16:00:00-03:00");

@@ -12,10 +12,10 @@ import { Card, CardContent } from "@/components/ui/card";
  */
 export function BolaoNaoIniciouCard({
   participantes,
-  proximoJogoData,
+  deadlineFormatada,
 }: {
   participantes: number;
-  proximoJogoData: string | null;
+  deadlineFormatada: string | null;
 }) {
   return (
     <Card
@@ -33,10 +33,10 @@ export function BolaoNaoIniciouCard({
           O ranking, KPIs e gráficos aparecem aqui assim que os primeiros resultados forem
           finalizados. Enquanto isso, vai chutando os palpites! 🎯
         </p>
-        {proximoJogoData && (
+        {deadlineFormatada && (
           <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/60 px-3 py-1.5 text-xs font-extrabold text-zinc-900">
             <Calendar className="h-3.5 w-3.5" />
-            Primeiro jogo: {proximoJogoData}
+            Palpites até: {deadlineFormatada}
           </div>
         )}
         <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-zinc-900/60">

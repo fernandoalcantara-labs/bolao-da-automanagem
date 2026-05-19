@@ -9,6 +9,7 @@ import { ConfrontosRodada } from "./confrontos-rodada";
 import { PremiosCard } from "./premios-card";
 import { BolaoNaoIniciouCard } from "./bolao-nao-iniciou";
 import { formatarDataJogo } from "@/lib/datetime";
+import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { RateioConfig } from "@/types/database";
@@ -103,13 +104,9 @@ export async function DashboardPublico() {
   // confuso e visualmente quebrado. Empty state amigável é melhor.
   const bolaoIniciou = jogosFinalizados > 0 && (primeiro?.pontos ?? 0) > 0;
 
-  // Próximo jogo agendado (pra mostrar no empty state)
-  const proximoJogo = (matches ?? [])
-    .filter((m) => m.status === "agendado")
-    .sort((a, b) => a.data_hora.localeCompare(b.data_hora))[0];
-  const proximoJogoData = proximoJogo
-    ? formatarDataJogo(proximoJogo.data_hora, "completo")
-    : null;
+  // Data do kickoff = deadline dos palpites (hardcoded em DEADLINE_FASE_GRUPOS,
+  // unica fonte da verdade enquanto o seed do banco esta errado).
+  const deadlineFormatada = formatarDataJogo(DEADLINE_FASE_GRUPOS, "completo");
 
   // Lanterninha = quem tem MENOS pontos (sem ser top 3)
   let lanterninha: { nomes: string[]; pontos: number } | null = null;
@@ -258,7 +255,7 @@ export async function DashboardPublico() {
       ) : (
         <BolaoNaoIniciouCard
           participantes={usersPagos.length}
-          proximoJogoData={proximoJogoData}
+          deadlineFormatada={deadlineFormatada}
         />
       )}
 
