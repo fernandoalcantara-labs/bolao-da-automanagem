@@ -7,6 +7,8 @@ import { Heatmap } from "./heatmap";
 import { PieCampeao, PieArtilheiro } from "./pies";
 import { ConfrontosRodada } from "./confrontos-rodada";
 import { PremiosCard } from "./premios-card";
+import { BolaoNaoIniciouCard } from "./bolao-nao-iniciou";
+import { formatarDataJogo } from "@/lib/datetime";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { RateioConfig } from "@/types/database";
@@ -96,6 +98,19 @@ export async function DashboardPublico() {
   const segundo = posicaoAgrupada(1);
   const terceiro = posicaoAgrupada(2);
 
+  // "Bolão começou" = pelo menos 1 jogo finalizado E alguém com pontos > 0.
+  // Sem isso, todos empatados em 0 viram "todos em 1º com 0 pts" no KPI —
+  // confuso e visualmente quebrado. Empty state amigável é melhor.
+  const bolaoIniciou = jogosFinalizados > 0 && (primeiro?.pontos ?? 0) > 0;
+
+  // Próximo jogo agendado (pra mostrar no empty state)
+  const proximoJogo = (matches ?? [])
+    .filter((m) => m.status === "agendado")
+    .sort((a, b) => a.data_hora.localeCompare(b.data_hora))[0];
+  const proximoJogoData = proximoJogo
+    ? formatarDataJogo(proximoJogo.data_hora, "completo")
+    : null;
+
   // Lanterninha = quem tem MENOS pontos (sem ser top 3)
   let lanterninha: { nomes: string[]; pontos: number } | null = null;
   if (snapsUltima.length > 0) {
@@ -150,92 +165,101 @@ export async function DashboardPublico() {
         totalArrecadado={totalArrecadado}
       />
 
-      <KpiCards
-        primeiro={primeiro}
-        segundo={segundo}
-        terceiro={terceiro}
-        lanterninha={lanterninha}
-      />
+      {bolaoIniciou ? (
+        <>
+          <KpiCards
+            primeiro={primeiro}
+            segundo={segundo}
+            terceiro={terceiro}
+            lanterninha={lanterninha}
+          />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>📈 Posições ao longo das rodadas</CardTitle>
-            <CardDescription>Cada linha é um participante. Eixo Y invertido — quem está em cima está em 1º.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <MultiLineChart
-              users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
-              snapshots={snapsPagas.map((s) => ({
-                user_id: s.user_id,
-                rodada_label: s.rodada_label,
-                rodada_ordem: s.rodada_ordem,
-                posicao: s.posicao,
-                pontos_rodada: s.pontos_rodada,
-                pontos_totais: s.pontos_totais,
-              }))}
-              currentUserId={currentUserId}
-            />
-          </CardContent>
-        </Card>
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>📈 Posições ao longo das rodadas</CardTitle>
+                <CardDescription>Cada linha é um participante. Eixo Y invertido — quem está em cima está em 1º.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MultiLineChart
+                  users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
+                  snapshots={snapsPagas.map((s) => ({
+                    user_id: s.user_id,
+                    rodada_label: s.rodada_label,
+                    rodada_ordem: s.rodada_ordem,
+                    posicao: s.posicao,
+                    pontos_rodada: s.pontos_rodada,
+                    pontos_totais: s.pontos_totais,
+                  }))}
+                  currentUserId={currentUserId}
+                />
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>🏅 Ranking atual</CardTitle>
-            <CardDescription>Apenas participantes pagos.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <RankingTable
-              users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
-              snapshots={snapsPagas.map((s) => ({
-                user_id: s.user_id,
-                rodada_label: s.rodada_label,
-                rodada_ordem: s.rodada_ordem,
-                posicao: s.posicao,
-                pontos_rodada: s.pontos_rodada,
-                pontos_totais: s.pontos_totais,
-              }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>🏅 Ranking atual</CardTitle>
+                <CardDescription>Apenas participantes pagos.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <RankingTable
+                  users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
+                  snapshots={snapsPagas.map((s) => ({
+                    user_id: s.user_id,
+                    rodada_label: s.rodada_label,
+                    rodada_ordem: s.rodada_ordem,
+                    posicao: s.posicao,
+                    pontos_rodada: s.pontos_rodada,
+                    pontos_totais: s.pontos_totais,
+                  }))}
+                />
+              </CardContent>
+            </Card>
+          </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>📊 Pontos na última rodada · {ultimaLabel}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BarChartRodada
-              data={snapsUltima
-                .map((s) => ({
-                  nome: usersById.get(s.user_id)?.nome ?? "—",
-                  pontos: s.pontos_rodada,
-                }))
-                .sort((a, b) => b.pontos - a.pontos)
-                .slice(0, 15)}
-            />
-          </CardContent>
-        </Card>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="min-w-0 overflow-hidden">
+              <CardHeader>
+                <CardTitle>📊 Pontos na última rodada · {ultimaLabel}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BarChartRodada
+                  data={snapsUltima
+                    .map((s) => ({
+                      nome: usersById.get(s.user_id)?.nome ?? "—",
+                      pontos: s.pontos_rodada,
+                    }))
+                    .sort((a, b) => b.pontos - a.pontos)
+                    .slice(0, 15)}
+                />
+              </CardContent>
+            </Card>
 
-        <Card className="min-w-0 overflow-hidden">
-          <CardHeader>
-            <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
-            <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Heatmap
-              users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
-              snapshots={snapsPagas.map((s) => ({
-                user_id: s.user_id,
-                rodada_label: s.rodada_label,
-                rodada_ordem: s.rodada_ordem,
-                pontos_rodada: s.pontos_rodada,
-              }))}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="min-w-0 overflow-hidden">
+              <CardHeader>
+                <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
+                <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Heatmap
+                  users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
+                  snapshots={snapsPagas.map((s) => ({
+                    user_id: s.user_id,
+                    rodada_label: s.rodada_label,
+                    rodada_ordem: s.rodada_ordem,
+                    pontos_rodada: s.pontos_rodada,
+                  }))}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      ) : (
+        <BolaoNaoIniciouCard
+          participantes={usersPagos.length}
+          proximoJogoData={proximoJogoData}
+        />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
