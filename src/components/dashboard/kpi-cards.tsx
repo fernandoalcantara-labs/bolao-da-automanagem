@@ -1,6 +1,5 @@
 import { Crown, Medal, Award, Turtle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatRankingName } from "@/lib/format-name";
 
 export type Posicionado = {
   nomes: string[];
@@ -70,7 +69,7 @@ export function KpiCards(props: Props) {
         const p = props[i.key];
         const displayName = p?.nomes.length
           ? p.nomes.length === 1
-            ? formatRankingName(p.nomes[0])
+            ? p.nomes[0]
             : `${p.nomes.length} empatados`
           : "—";
         return (

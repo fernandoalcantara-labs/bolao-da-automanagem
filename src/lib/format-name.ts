@@ -1,39 +1,14 @@
 /**
  * Helpers de formatação de nome de exibição.
  *
- * Estratégia:
- *  - KPI Cards / Ranking público → "Primeiro Último" (Fernando Rocha)
- *    desambigua dois "Fernando" no mesmo bolão sem precisar de unique
- *  - Heatmap / Bar chart → "Primeiro" só (espaço escasso na visualização)
- *
- * Regra do ranking (QW3 item 16):
- *  - Uma palavra → mostra a palavra inteira ("Fernando", "Fernandinho")
- *  - Várias palavras + nome completo ≤ 20 chars → completo
- *  - Várias palavras + nome longo → "Primeiro Último"
- *    ("Fernando Aparecido da Silva" → "Fernando Silva")
+ * Estratégia (QW3 item 16, regra do Fernando):
+ *  - KPI Cards / Ranking público / multi-line chart tooltip / admin
+ *    → exibem `nome_exibicao` cru (escolha do usuário, configurável via
+ *      /perfil). Default vem como 'Primeiro Segundo' (primeiro nome +
+ *      primeira palavra do sobrenome) setado pelo trigger handle_new_user.
+ *  - Heatmap / Bar chart → `formatShortName` (só primeiro nome, espaço
+ *    escasso na visualização).
  */
-
-const MAX_LEN_COMPLETO = 20;
-
-/** Primeiro + último sobrenome, ou nome completo se couber. */
-export function formatRankingName(
-  nome: string | null | undefined,
-  maxLength: number = MAX_LEN_COMPLETO,
-): string {
-  if (!nome) return "—";
-  const trimmed = nome.trim();
-  if (trimmed === "") return "—";
-
-  const partes = trimmed.split(/\s+/).filter(Boolean);
-  if (partes.length === 0) return "—";
-  if (partes.length === 1) return partes[0];
-
-  // Nome completo cabe no limite — mostra inteiro pra ficar mais natural
-  if (trimmed.length <= maxLength) return trimmed;
-
-  // Senão, primeiro + último (forma compacta porém identificável)
-  return `${partes[0]} ${partes[partes.length - 1]}`;
-}
 
 /** Só o primeiro nome — pra contextos compactos (heatmap, bar chart). */
 export function formatShortName(nome: string | null | undefined): string {

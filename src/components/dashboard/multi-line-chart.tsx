@@ -5,7 +5,6 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { TOP_N_GRAFICO } from "@/lib/config-display";
-import { formatRankingName } from "@/lib/format-name";
 
 type User = { id: string; nome: string };
 type Snap = {
@@ -81,9 +80,9 @@ export function MultiLineChart({
   });
 
   const maxPos = ranking.length || 30;
-  // Nome no tooltip: "Primeiro Último" (ou completo se ≤20 chars).
-  // Desambigua dois "Fernando" sem precisar olhar avatar.
-  const userMap = new Map(exibidos.map((u) => [u.id, formatRankingName(u.nome)]));
+  // Nome no tooltip: usa nome_exibicao cru (escolha do usuario).
+  // Default 'Primeiro Segundo' do trigger; user pode editar em /perfil.
+  const userMap = new Map(exibidos.map((u) => [u.id, u.nome]));
 
   return (
     <div className="space-y-2">
@@ -182,7 +181,7 @@ export function MultiLineChart({
       {usuarioForaDoTop && (
         <div className="rounded-xl border-2 border-festive-orange/30 bg-festive-orange/10 p-2 text-center text-xs font-bold">
           🎯 Mostrando top {TOP_N_GRAFICO}. Você (
-          <span className="text-festive-orange">{formatRankingName(usuarioForaDoTop.nome)}</span>) está em{" "}
+          <span className="text-festive-orange">{usuarioForaDoTop.nome}</span>) está em{" "}
           {usuarioForaDoTop.posicao}º com {usuarioForaDoTop.pontos} pts. 💪 Bora subir!
         </div>
       )}

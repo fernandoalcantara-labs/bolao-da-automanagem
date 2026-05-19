@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { formatRankingName } from "@/lib/format-name";
+// nome_exibicao do user e' usado cru — quem personalizou via /perfil tem prioridade
 
 type RecalcLog = {
   duracao_ms: number;
@@ -136,7 +136,7 @@ export function AdminActions() {
                       <tbody>
                         {log.usuarios_alterados.map((u) => (
                           <tr key={u.user_id} className="border-t border-border/40">
-                            <td className="px-3 py-1.5 font-bold">{formatRankingName(u.nome)}</td>
+                            <td className="px-3 py-1.5 font-bold">{u.nome}</td>
                             <td className="px-3 py-1.5 text-right tabular-nums">{u.antes}</td>
                             <td className="px-3 py-1.5 text-right tabular-nums">{u.depois}</td>
                             <td
