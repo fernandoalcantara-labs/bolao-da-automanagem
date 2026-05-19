@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminActions } from "./admin-actions";
+import { BackupCsvSection, type BackupItem } from "./backup-csv-section";
 
 export const dynamic = "force-dynamic";
 
@@ -22,12 +23,37 @@ export default async function AdminPage() {
     { count: usuariosPagos },
     { count: totalJogos },
     { count: jogosFinalizados },
+    { data: backupsRaw },
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
     supabase.from("matches").select("id", { count: "exact", head: true }),
     supabase.from("matches").select("id", { count: "exact", head: true }).eq("status", "finalizado"),
+    supabase
+      .from("csv_backups")
+      .select("id, tipo, gerado_em, gerado_por, arquivo_nome, tamanho_bytes, total_usuarios, total_palpites")
+      .order("gerado_em", { ascending: false })
+      .limit(50),
   ]);
+
+  // Resolve nome dos admins que geraram backup manual (1 query batch)
+  const adminIds = Array.from(
+    new Set((backupsRaw ?? []).map((b: any) => b.gerado_por).filter(Boolean)),
+  );
+  const adminNomes = new Map<string, string>();
+  if (adminIds.length > 0) {
+    const { data: admins } = await supabase
+      .from("users")
+      .select("id, nome_exibicao, nome")
+      .in("id", adminIds);
+    for (const a of (admins ?? []) as any[]) {
+      adminNomes.set(a.id, a.nome_exibicao ?? a.nome);
+    }
+  }
+  const backups: BackupItem[] = (backupsRaw ?? []).map((b: any) => ({
+    ...b,
+    gerado_por_nome: b.gerado_por ? adminNomes.get(b.gerado_por) ?? null : null,
+  }));
 
   const cards = [
     {
@@ -90,6 +116,8 @@ export default async function AdminPage() {
           <AdminActions />
         </CardContent>
       </Card>
+
+      <BackupCsvSection backupsIniciais={backups} />
     </div>
   );
 }
