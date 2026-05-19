@@ -1,13 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Loader2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
+import { MemoriaCalculoToggle } from "./memoria-calculo";
 
 type Usuario = {
   id: string;
@@ -17,6 +16,7 @@ type Usuario = {
   role: "admin" | "user";
   pago: boolean;
   created_at: string;
+  pontos_totais?: number;
 };
 
 export function UsuariosTable({ users }: { users: Usuario[] }) {
@@ -43,51 +43,46 @@ export function UsuariosTable({ users }: { users: Usuario[] }) {
   }
 
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Telefone</TableHead>
-            <TableHead>Admin</TableHead>
-            <TableHead>Pago</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {state.map((u) => (
-            <TableRow key={u.id}>
-              <TableCell className="font-medium">{u.nome}</TableCell>
-              <TableCell className="text-muted-foreground">{u.email}</TableCell>
-              <TableCell className="text-muted-foreground">{u.telefone ?? "—"}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={u.role === "admin"}
-                    onCheckedChange={() => toggle(u.id, "role")}
-                    disabled={loading === u.id + "role"}
-                  />
-                  {u.role === "admin" && <Badge variant="default">admin</Badge>}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={u.pago}
-                    onCheckedChange={() => toggle(u.id, "pago")}
-                    disabled={loading === u.id + "pago"}
-                  />
-                  {u.pago ? (
-                    <Badge variant="success">pago</Badge>
-                  ) : (
-                    <Badge variant="warning">pendente</Badge>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <Card className="overflow-hidden">
+      <div className="divide-y-2 divide-border/40">
+        {state.map((u) => (
+          <div key={u.id} className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-[2fr_2fr_auto_auto_auto] sm:gap-4">
+              <div className="min-w-0">
+                <p className="line-clamp-1 font-bold">{u.nome}</p>
+                <p className="line-clamp-1 text-xs text-muted-foreground">{u.email}</p>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <p>📞 {u.telefone ?? "—"}</p>
+                {u.pontos_totais !== undefined && (
+                  <p className="font-bold text-festive-green">{u.pontos_totais} pts</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  checked={u.role === "admin"}
+                  onCheckedChange={() => toggle(u.id, "role")}
+                  disabled={loading === u.id + "role"}
+                />
+                {u.role === "admin" ? <Badge variant="default">admin</Badge> : <span className="text-[10px] text-muted-foreground">user</span>}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch
+                  checked={u.pago}
+                  onCheckedChange={() => toggle(u.id, "pago")}
+                  disabled={loading === u.id + "pago"}
+                />
+                {u.pago ? (
+                  <Badge variant="success">pago</Badge>
+                ) : (
+                  <Badge variant="warning">pendente</Badge>
+                )}
+              </div>
+              <MemoriaCalculoToggle userId={u.id} nome={u.nome} />
+            </div>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
