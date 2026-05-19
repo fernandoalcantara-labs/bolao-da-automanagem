@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/backup-deadline",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 18 * * *"
     }
   ]
 }

@@ -7,10 +7,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Cron job da Vercel — roda a cada 5 minutos.
+ * Cron job da Vercel — roda 1x por dia (limitacao do plano Hobby).
+ * Schedule: '0 18 * * *' = 18:00 UTC = 15:00 BRT, 1h antes do kickoff.
+ *
  * Gera o backup automatico do deadline da fase de grupos APENAS:
- *  1. Dentro da janela de ±15 min do DEADLINE_FASE_GRUPOS
+ *  1. Dentro da janela de 48h antes/depois do DEADLINE_FASE_GRUPOS
+ *     (janela larga porque o cron eh daily — precisa cobrir o dia
+ *     do deadline mesmo que o cron rode no dia anterior/posterior)
  *  2. Se ainda nao existe um backup tipo='deadline_grupos'
+ *     (idempotente — multiplas execucoes nao geram backups duplicados)
  *
  * Header esperado: Authorization: Bearer ${CRON_SECRET}
  */
@@ -23,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   const agora = Date.now();
   const deadline = DEADLINE_FASE_GRUPOS.getTime();
-  const JANELA_MS = 15 * 60 * 1000; // ±15 min
+  const JANELA_MS = 48 * 60 * 60 * 1000; // 48h
 
   if (Math.abs(agora - deadline) > JANELA_MS) {
     return NextResponse.json({ ok: true, skipped: "fora da janela do deadline", agora, deadline });
