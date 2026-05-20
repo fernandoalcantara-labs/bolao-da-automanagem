@@ -17,6 +17,35 @@ type SB = SupabaseClient;
 
 const BOM = "﻿";
 
+/**
+ * Helper de paginacao — busca TODAS as linhas de uma tabela em chunks
+ * de 1000. Necessario porque o PostgREST do Supabase Cloud tem
+ * max_rows=1000 hard cap (mesmo passando .limit(50000), ele corta).
+ *
+ * Bug encontrado no CT-21 da QW4: palpites_grupos tinha 2603 entries
+ * mas o CSV so' pegava as primeiras 1000 → metade dos users aparecia
+ * com '-' em jogos que eles palpitaram.
+ */
+async function fetchAll<T = any>(
+  supabase: SB,
+  table: string,
+  select: string,
+  orderBy?: string,
+): Promise<T[]> {
+  const all: T[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    let q = supabase.from(table).select(select).range(from, from + pageSize - 1);
+    if (orderBy) q = q.order(orderBy, { ascending: true });
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...(data as T[]));
+    if (data.length < pageSize) break;
+  }
+  return all;
+}
+
 function csvEscape(v: string | number | null | undefined): string {
   if (v === null || v === undefined) return '""';
   const s = String(v);
@@ -50,49 +79,37 @@ export async function gerarCsvCompleto(
   supabase: SB,
 ): Promise<{ csv: string; stats: CsvStats }> {
   // ============== Loads em paralelo ==============
-  // IMPORTANTE: Supabase tem default limit de 1000 rows. Como temos
-  // potencialmente 30 users × 72 jogos = 2160 palpites de grupos
-  // (e 30 × 31 = 930 palpites de mata), usamos .limit(50000) pra
-  // garantir que pega TUDO. Sem isso, o CSV vinha cortado pela
-  // metade — bug encontrado no CT-21 da QW4.
-  const LIMITE = 50000;
-  const [usersRes, matchesRes, teamsRes, playersRes, palpitesGruposRes, palpitesMataRes, palpitesArtRes, snapshotsRes] =
+  // CT-21 da QW4: PostgREST do Supabase Cloud tem max_rows=1000 hard
+  // cap. Tabelas potencialmente grandes (palpites_grupos com 2603+
+  // entries no caso real) precisam ser paginadas via fetchAll().
+  const [usuarios, matches, teams, players, palpitesGrupos, palpitesMata, palpitesArtilheiro, snapshots] =
     await Promise.all([
-      supabase
-        .from("users")
-        .select("id, nome, nome_exibicao, pago, role")
-        .order("nome_exibicao", { ascending: true })
-        .limit(LIMITE),
-      supabase
-        .from("matches")
-        .select("id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora")
-        .order("data_hora", { ascending: true })
-        .limit(LIMITE),
-      supabase.from("teams").select("id, nome, codigo_fifa, grupo").limit(LIMITE),
-      supabase.from("players").select("id, nome, time_id, gols_torneio").limit(LIMITE),
-      supabase
-        .from("palpites_grupos")
-        .select("user_id, match_id, placar_casa, placar_fora, pontos_calculados")
-        .limit(LIMITE),
-      supabase.from("palpites_mata").select("user_id, time_id, fase, acertou").limit(LIMITE),
-      supabase
-        .from("palpites_artilheiro")
-        .select("user_id, player_id, player_nome_manual, acertou")
-        .limit(LIMITE),
-      supabase
-        .from("ranking_snapshots")
-        .select("user_id, rodada_ordem, pontos_totais, pontos_rodada, posicao")
-        .limit(LIMITE),
+      fetchAll<any>(supabase, "users", "id, nome, nome_exibicao, pago, role", "nome_exibicao"),
+      fetchAll<any>(
+        supabase,
+        "matches",
+        "id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora",
+        "data_hora",
+      ),
+      fetchAll<any>(supabase, "teams", "id, nome, codigo_fifa, grupo"),
+      fetchAll<any>(supabase, "players", "id, nome, time_id, gols_torneio"),
+      fetchAll<any>(
+        supabase,
+        "palpites_grupos",
+        "user_id, match_id, placar_casa, placar_fora, pontos_calculados",
+      ),
+      fetchAll<any>(supabase, "palpites_mata", "user_id, time_id, fase, acertou"),
+      fetchAll<any>(
+        supabase,
+        "palpites_artilheiro",
+        "user_id, player_id, player_nome_manual, acertou",
+      ),
+      fetchAll<any>(
+        supabase,
+        "ranking_snapshots",
+        "user_id, rodada_ordem, pontos_totais, pontos_rodada, posicao",
+      ),
     ]);
-
-  const usuarios = (usersRes.data ?? []) as any[];
-  const matches = (matchesRes.data ?? []) as any[];
-  const teams = (teamsRes.data ?? []) as any[];
-  const players = (playersRes.data ?? []) as any[];
-  const palpitesGrupos = (palpitesGruposRes.data ?? []) as any[];
-  const palpitesMata = (palpitesMataRes.data ?? []) as any[];
-  const palpitesArtilheiro = (palpitesArtRes.data ?? []) as any[];
-  const snapshots = (snapshotsRes.data ?? []) as any[];
 
   // ============== Lookups ==============
   const teamById = new Map(teams.map((t) => [t.id, t]));
