@@ -6,7 +6,17 @@ import { Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FasePalpiteMata } from "@/types/database";
 import type { ParR32Resolvido } from "@/lib/bracket-2026";
-import { labelPosicao } from "@/lib/bracket-2026";
+import { labelPosicao, ORIGEM_TERCEIRO_LABEL } from "@/lib/bracket-2026";
+import {
+  R32_ESQUERDO_ORDEM,
+  R32_DIREITO_ORDEM,
+  R16,
+  QF,
+  SF,
+  FINAL,
+  labelJogo,
+  type NoMataMata,
+} from "@/lib/mata-mata-estrutura";
 
 export type Team = {
   id: string;
@@ -31,24 +41,68 @@ export type BracketProps = {
 /**
  * BracketView — chaveamento estilo Copa do Mundo (desktop ≥ lg).
  *
- * Layout: lado esquerdo (8 R32 → 4 R16 → 2 QF → 1 SF) + centro
- * (final + troféu + campeão + 3º lugar) + lado direito espelhado.
+ * Layout: lado esquerdo (R32 → R16 → QF → SF) + centro (final + troféu +
+ * campeão) + lado direito espelhado.
+ *
+ * O pareamento das fases superiores segue a estrutura oficial FIFA via
+ * `origemJogos` em `mata-mata-estrutura.ts` (Jogo 89 = vencedor de 73 ×
+ * vencedor de 74, etc) — NÃO mais "pares adjacentes no array".
  */
 export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps) {
-  const esquerdo = r32.filter((p) => p.ladoEsquerdo);
-  const direito = r32.filter((p) => !p.ladoEsquerdo);
+  // Indexa R32 por matchNumber pra resolver vencedores recursivamente
+  const r32PorJogo = React.useMemo(() => {
+    const m = new Map<number, ParR32Resolvido>();
+    for (const par of r32) m.set(par.matchNumber, par);
+    return m;
+  }, [r32]);
 
-  // R16 = pares de R32: (R32-1, R32-2), (R32-3, R32-4), etc.
-  const r16Esquerdo = agruparEmPares(esquerdo);
-  const r16Direito = agruparEmPares(direito);
+  /**
+   * Resolve os time_ids dos vencedores escolhidos pelo user num jogo
+   * de qualquer fase. Recursivo:
+   *  - R32 (73-88): retorna casa e fora se foram escolhidos em "8avos"
+   *  - R16/QF/SF/Final: resolve recursivamente os candidatos dos
+   *    `origemJogos` e filtra por quem o user escolheu na fase atual
+   */
+  function vencedoresDoJogo(jogo: number, fasePicks: FasePalpiteMata): string[] {
+    // R32?
+    const par = r32PorJogo.get(jogo);
+    if (par) {
+      const ids: string[] = [];
+      if (par.casaTime?.time_id && picks["8avos"].has(par.casaTime.time_id)) ids.push(par.casaTime.time_id);
+      if (par.foraTime?.time_id && picks["8avos"].has(par.foraTime.time_id)) ids.push(par.foraTime.time_id);
+      return ids;
+    }
+    // Fase superior: pega os 2 jogos de origem
+    const no = encontrarNo(jogo);
+    if (!no || !no.origemJogos) return [];
+    const [a, b] = no.origemJogos;
+    const candidatos: string[] = [];
+    // Recursão pra cada jogo de origem — pega ambos times do match anterior
+    candidatos.push(...timesDoJogo(a));
+    candidatos.push(...timesDoJogo(b));
+    // Filtra só os que o user escolheu pra ESTA fase
+    return candidatos.filter((tid) => picks[fasePicks].has(tid));
+  }
 
-  // QF = pares de R16
-  const qfEsquerdo = agruparPares(r16Esquerdo);
-  const qfDireito = agruparPares(r16Direito);
-
-  // SF = pares de QF (1 SF de cada lado)
-  const sfEsquerdo = qfEsquerdo; // já é 1 grupo de 2 QFs
-  const sfDireito = qfDireito;
+  /** Os 2 times que disputaram um jogo (independente de pick). */
+  function timesDoJogo(jogo: number): string[] {
+    const par = r32PorJogo.get(jogo);
+    if (par) {
+      const ids: string[] = [];
+      if (par.casaTime?.time_id) ids.push(par.casaTime.time_id);
+      if (par.foraTime?.time_id) ids.push(par.foraTime.time_id);
+      return ids;
+    }
+    // Fase superior: 2 times = vencedores dos 2 origemJogos
+    const no = encontrarNo(jogo);
+    if (!no || !no.origemJogos) return [];
+    const [a, b] = no.origemJogos;
+    const fase = faseDoNo(no);
+    const vencedoresA = timesDoJogo(a).filter((tid) => picks[fase].has(tid));
+    const vencedoresB = timesDoJogo(b).filter((tid) => picks[fase].has(tid));
+    // Pega 1 vencedor de cada lado (se houver)
+    return [...vencedoresA.slice(0, 1), ...vencedoresB.slice(0, 1)];
+  }
 
   return (
     <div
@@ -57,36 +111,93 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
     >
       <div className="flex min-w-[1100px] items-stretch gap-3">
         {/* Lado esquerdo */}
-        <ColunaRound titulo="16 avos" matches={renderR32(esquerdo, teams, picks, onPick, fechado)} altura={8} />
-        <ColunaRound titulo="Oitavas" matches={renderR16(r16Esquerdo, teams, picks, onPick, fechado)} altura={4} />
-        <ColunaRound titulo="Quartas" matches={renderQF(qfEsquerdo, teams, picks, onPick, fechado)} altura={2} />
-        <ColunaRound titulo="Semi" matches={renderSF(sfEsquerdo, teams, picks, onPick, fechado)} altura={1} />
+        <ColunaRound
+          titulo="16 avos"
+          altura={8}
+          matches={R32_ESQUERDO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+        />
+        <ColunaRound
+          titulo="Oitavas"
+          altura={4}
+          matches={R16.filter((n) => n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
+        <ColunaRound
+          titulo="Quartas"
+          altura={2}
+          matches={QF.filter((n) => n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
+        <ColunaRound
+          titulo="Semi"
+          altura={1}
+          matches={SF.filter((n) => n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
 
         {/* Centro */}
         <CentroBracket teams={teams} picks={picks} onPick={onPick} fechado={fechado} />
 
         {/* Lado direito (espelhado) */}
-        <ColunaRound titulo="Semi" matches={renderSF(sfDireito, teams, picks, onPick, fechado)} altura={1} alinhamento="right" />
-        <ColunaRound titulo="Quartas" matches={renderQF(qfDireito, teams, picks, onPick, fechado)} altura={2} alinhamento="right" />
-        <ColunaRound titulo="Oitavas" matches={renderR16(r16Direito, teams, picks, onPick, fechado)} altura={4} alinhamento="right" />
-        <ColunaRound titulo="16 avos" matches={renderR32(direito, teams, picks, onPick, fechado)} altura={8} alinhamento="right" />
+        <ColunaRound
+          titulo="Semi"
+          altura={1}
+          alinhamento="right"
+          matches={SF.filter((n) => !n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
+        <ColunaRound
+          titulo="Quartas"
+          altura={2}
+          alinhamento="right"
+          matches={QF.filter((n) => !n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
+        <ColunaRound
+          titulo="Oitavas"
+          altura={4}
+          alinhamento="right"
+          matches={R16.filter((n) => !n.ladoEsquerdo).map((n) =>
+            renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+          )}
+        />
+        <ColunaRound
+          titulo="16 avos"
+          altura={8}
+          alinhamento="right"
+          matches={R32_DIREITO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+        />
       </div>
     </div>
   );
 }
 
-// ──────────────────────────── Auxiliares de estrutura ────────────────────────────
+// ──────────────────────────── Helpers da estrutura ────────────────────────────
 
-function agruparEmPares<T>(arr: T[]): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += 2) out.push([arr[i], arr[i + 1]]);
-  return out;
+function encontrarNo(jogo: number): NoMataMata | undefined {
+  if (jogo === FINAL.jogo) return FINAL;
+  return [...R16, ...QF, ...SF].find((n) => n.jogo === jogo);
 }
 
-function agruparPares<T>(arr: T[][]): T[][][] {
-  const out: T[][][] = [];
-  for (let i = 0; i < arr.length; i += 2) out.push([arr[i], arr[i + 1]]);
-  return out;
+function faseDoNo(no: NoMataMata): FasePalpiteMata {
+  // Mapeia fase do nó pra fase de pick que decide quem AVANÇA dele
+  switch (no.fase) {
+    case "r16":
+      return "8avos"; // picks de 8avos definem quem ganha o R32; mas pra "avançar do R16" usamos "quartas"
+    case "qf":
+      return "quartas";
+    case "sf":
+      return "semi";
+    case "final":
+      return "final";
+    default:
+      return "8avos";
+  }
 }
 
 // ──────────────────────────── Coluna por round ────────────────────────────
@@ -110,7 +221,7 @@ function ColunaRound({
     altura === 2 ? "gap-[10rem]" :
     "";
   return (
-    <div className="flex flex-col" style={{ minWidth: 170 }}>
+    <div className="flex flex-col" style={{ minWidth: 180 }}>
       <p
         className={cn(
           "mb-2 text-[10px] font-extrabold uppercase tracking-widest text-festive-green",
@@ -124,104 +235,77 @@ function ColunaRound({
   );
 }
 
-// ──────────────────────────── Cards de match por round ────────────────────────────
+// ──────────────────────────── Cards de match ────────────────────────────
 
-function renderR32(
-  pares: ParR32Resolvido[],
-  teams: Record<string, Team>,
-  picks: Record<FasePalpiteMata, Set<string>>,
-  onPick: (fase: FasePalpiteMata, id: string) => void,
-  fechado: boolean,
-): React.ReactNode[] {
-  return pares.map((par) => {
-    const casaId = par.casaTime?.time_id;
-    const foraId = par.foraTime?.time_id;
-    const casa = casaId ? teams[casaId] : null;
-    const fora = foraId ? teams[foraId] : null;
-    const palpiteCasa = casaId ? picks["8avos"].has(casaId) : false;
-    const palpiteFora = foraId ? picks["8avos"].has(foraId) : false;
-    return (
-      <div key={par.ordem} className="rounded-xl border-2 border-border bg-white p-1.5 shadow-stack">
-        <MatchSlot
-          label={labelPosicao(par.casa)}
-          team={casa}
-          escolhido={palpiteCasa}
-          onClick={casaId && !fechado ? () => onPick("8avos", casaId) : undefined}
-        />
-        <div className="my-1 h-px bg-border" />
-        <MatchSlot
-          label={labelPosicao(par.fora)}
-          team={fora}
-          escolhido={palpiteFora}
-          onClick={foraId && !fechado ? () => onPick("8avos", foraId) : undefined}
-        />
-      </div>
-    );
-  });
+function labelOrigemSlot(
+  par: ParR32Resolvido,
+  lado: "casa" | "fora",
+): string {
+  const slot = lado === "casa" ? par.casa : par.fora;
+  const origemTerceiro = lado === "casa" ? par.casaOrigemTerceiro : par.foraOrigemTerceiro;
+  if (slot.tipo === "3" && origemTerceiro !== null) {
+    return ORIGEM_TERCEIRO_LABEL(origemTerceiro);
+  }
+  return labelPosicao(slot);
 }
 
-function renderR16(
-  pares: ParR32Resolvido[][],
+function renderCardR32(
+  par: ParR32Resolvido | undefined,
   teams: Record<string, Team>,
   picks: Record<FasePalpiteMata, Set<string>>,
   onPick: (fase: FasePalpiteMata, id: string) => void,
   fechado: boolean,
-): React.ReactNode[] {
-  return pares.map((par, i) => {
-    // Os 2 vencedores que o usuário escolheu no R32 (em "8avos") são os
-    // contendores deste R16. Se houver < 2 picks, mostra placeholder.
-    const candidatos: string[] = par
-      .flatMap((p) => [p.casaTime?.time_id, p.foraTime?.time_id])
-      .filter((id): id is string => !!id && picks["8avos"].has(id));
-    return renderProximoRound("quartas", candidatos, teams, picks, onPick, fechado, i);
-  });
-}
-
-function renderQF(
-  pares: ParR32Resolvido[][][],
-  teams: Record<string, Team>,
-  picks: Record<FasePalpiteMata, Set<string>>,
-  onPick: (fase: FasePalpiteMata, id: string) => void,
-  fechado: boolean,
-): React.ReactNode[] {
-  return pares.map((par, i) => {
-    const candidatos: string[] = par
-      .flat()
-      .flatMap((p) => [p.casaTime?.time_id, p.foraTime?.time_id])
-      .filter((id): id is string => !!id && picks["quartas"].has(id));
-    return renderProximoRound("semi", candidatos, teams, picks, onPick, fechado, i);
-  });
-}
-
-function renderSF(
-  pares: ParR32Resolvido[][][],
-  teams: Record<string, Team>,
-  picks: Record<FasePalpiteMata, Set<string>>,
-  onPick: (fase: FasePalpiteMata, id: string) => void,
-  fechado: boolean,
-): React.ReactNode[] {
-  const candidatos: string[] = pares
-    .flat(2)
-    .flatMap((p) => [p.casaTime?.time_id, p.foraTime?.time_id])
-    .filter((id): id is string => !!id && picks["semi"].has(id));
-  return [renderProximoRound("final", candidatos, teams, picks, onPick, fechado, 0)];
-}
-
-function renderProximoRound(
-  fase: FasePalpiteMata,
-  candidatos: string[],
-  teams: Record<string, Team>,
-  picks: Record<FasePalpiteMata, Set<string>>,
-  onPick: (fase: FasePalpiteMata, id: string) => void,
-  fechado: boolean,
-  key: number,
 ): React.ReactNode {
+  if (!par) return null;
+  const casaId = par.casaTime?.time_id;
+  const foraId = par.foraTime?.time_id;
+  const casa = casaId ? teams[casaId] : null;
+  const fora = foraId ? teams[foraId] : null;
+  const palpiteCasa = casaId ? picks["8avos"].has(casaId) : false;
+  const palpiteFora = foraId ? picks["8avos"].has(foraId) : false;
   return (
-    <div key={key} className="rounded-xl border-2 border-border bg-white p-1.5 shadow-stack">
+    <div key={par.matchNumber} className="rounded-xl border-2 border-border bg-white p-1.5 shadow-stack">
+      <BadgeJogo jogo={par.matchNumber} />
+      <MatchSlot
+        label={labelOrigemSlot(par, "casa")}
+        team={casa}
+        escolhido={palpiteCasa}
+        onClick={casaId && !fechado ? () => onPick("8avos", casaId) : undefined}
+      />
+      <div className="my-1 h-px bg-border" />
+      <MatchSlot
+        label={labelOrigemSlot(par, "fora")}
+        team={fora}
+        escolhido={palpiteFora}
+        onClick={foraId && !fechado ? () => onPick("8avos", foraId) : undefined}
+      />
+    </div>
+  );
+}
+
+function renderCardFaseSuperior(
+  no: NoMataMata,
+  fasePicksAnterior: FasePalpiteMata, // qual fase de picks decide quem CHEGOU neste jogo
+  fasePicksDeste: FasePalpiteMata, // qual fase de picks decide quem AVANÇA deste jogo
+  vencedoresDoJogo: (jogo: number, fase: FasePalpiteMata) => string[],
+  teams: Record<string, Team>,
+  picks: Record<FasePalpiteMata, Set<string>>,
+  onPick: (fase: FasePalpiteMata, id: string) => void,
+  fechado: boolean,
+): React.ReactNode {
+  // Candidatos = vencedores dos 2 origemJogos (1 de cada)
+  if (!no.origemJogos) return null;
+  const [a, b] = no.origemJogos;
+  const candidatosA = vencedoresDoJogo(a, fasePicksAnterior);
+  const candidatosB = vencedoresDoJogo(b, fasePicksAnterior);
+  const candidatos = [candidatosA[0] ?? null, candidatosB[0] ?? null];
+  return (
+    <div key={no.jogo} className="rounded-xl border-2 border-border bg-white p-1.5 shadow-stack">
+      <BadgeJogo jogo={no.jogo} />
       {[0, 1].map((slot) => {
         const tid = candidatos[slot];
         const team = tid ? teams[tid] : null;
-        const escolhido = tid ? picks[fase].has(tid) : false;
+        const escolhido = tid ? picks[fasePicksDeste].has(tid) : false;
         return (
           <React.Fragment key={slot}>
             {slot === 1 && <div className="my-1 h-px bg-border" />}
@@ -229,12 +313,22 @@ function renderProximoRound(
               label={team ? "" : "—"}
               team={team}
               escolhido={escolhido}
-              onClick={tid && !fechado ? () => onPick(fase, tid) : undefined}
+              onClick={tid && !fechado ? () => onPick(fasePicksDeste, tid) : undefined}
             />
           </React.Fragment>
         );
       })}
     </div>
+  );
+}
+
+// ──────────────────────────── Badge "Jogo NN" ────────────────────────────
+
+function BadgeJogo({ jogo }: { jogo: number }) {
+  return (
+    <p className="mb-1 text-center text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+      {labelJogo(jogo)}
+    </p>
   );
 }
 
@@ -272,8 +366,11 @@ function MatchSlot({
       ) : (
         <span className="inline-block h-3.5 w-5 rounded-sm bg-muted" />
       )}
-      <span className="team-name flex-1">
-        {team?.nome ?? label ?? "—"}
+      <span className="flex flex-1 flex-col leading-tight">
+        <span className="team-name">{team?.nome ?? label ?? "—"}</span>
+        {team && label && (
+          <span className="text-[9px] font-medium opacity-70">{label}</span>
+        )}
       </span>
       {escolhido && <span className="text-white">✓</span>}
     </button>
@@ -302,7 +399,7 @@ function CentroBracket({
       <Trophy className="h-12 w-12 text-festive-gold-dark drop-shadow-md" />
       <div className="w-full">
         <p className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-widest text-festive-gold-dark">
-          Final
+          {labelJogo(FINAL.jogo)}
         </p>
         <div className="rounded-xl border-2 border-festive-gold-dark/50 bg-white p-1.5 shadow-stack-gold">
           {[0, 1].map((slot) => {

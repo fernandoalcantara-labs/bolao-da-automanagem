@@ -6,7 +6,7 @@ import { MataMataForm } from "./mata-mata-form";
 import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
+import { resolverBracketR32, R32_PARES, detectarEmpateTerceiros } from "@/lib/bracket-2026";
 import type { Grupo } from "@/types/database";
 import type { JogoFinalizado } from "@/lib/classification";
 
@@ -74,7 +74,16 @@ export default async function MataMataPage() {
     ? resolverBracketR32(jogosPalpitados)
     : palpitados > 0
       ? resolverBracketR32(jogosPalpitados) // parcial — alguns slots ficam null
-      : R32_PARES.map((p) => ({ ...p, casaTime: null, foraTime: null }));
+      : R32_PARES.map((p) => ({
+          ...p,
+          casaTime: null,
+          foraTime: null,
+          casaOrigemTerceiro: null,
+          foraOrigemTerceiro: null,
+        }));
+
+  // Empate "relevante" entre 3os colocados — banner amarelo se houver
+  const empateTerceiros = todosPalpitados ? detectarEmpateTerceiros(jogosPalpitados) : null;
 
   return (
     <div className="space-y-5">
@@ -122,6 +131,7 @@ export default async function MataMataPage() {
         r32={r32Resolvido}
         fechado={fechado}
         userId={user.id}
+        empateTerceiros={empateTerceiros}
       />
     </div>
   );

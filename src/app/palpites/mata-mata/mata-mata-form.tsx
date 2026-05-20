@@ -1,20 +1,17 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
-import { Loader2, Save, ChevronRight, LayoutGrid, List } from "lucide-react";
+import { Loader2, Save, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
-import { cn } from "@/lib/utils";
 import type { FasePalpiteMata } from "@/types/database";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti, bigConfetti } from "@/lib/confetti";
 import { BracketView, type Team as BracketTeam } from "./bracket-view";
-import type { ParR32Resolvido } from "@/lib/bracket-2026";
+import type { ParR32Resolvido, EmpateTerceiros } from "@/lib/bracket-2026";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 
@@ -47,12 +44,14 @@ export function MataMataForm({
   r32,
   fechado,
   userId,
+  empateTerceiros,
 }: {
   teams: Team[];
   palpites: Palpite[];
   r32: ParR32Resolvido[];
   fechado: boolean;
   userId: string;
+  empateTerceiros?: EmpateTerceiros | null;
 }) {
   const storageKey = `bolao:palpites:mata:${userId}`;
 
@@ -122,50 +121,12 @@ export function MataMataForm({
     },
   });
   const [saving, setSaving] = React.useState(false);
-  const [aba, setAba] = React.useState<FasePalpiteMata>("8avos");
-  const [modo, setModo] = React.useState<"bracket" | "lista">("bracket");
-
-  React.useEffect(() => {
-    const saved = window.localStorage.getItem("mata-mata-modo");
-    if (saved === "bracket" || saved === "lista") setModo(saved);
-  }, []);
-  function changeModo(m: "bracket" | "lista") {
-    setModo(m);
-    window.localStorage.setItem("mata-mata-modo", m);
-  }
 
   // Mapa rápido id→team
   const teamMap = React.useMemo(
     () => Object.fromEntries(teams.map((t) => [t.id, t])) as Record<string, BracketTeam>,
     [teams],
   );
-
-  // Pareamentos por fase — pra saber qual é o "adversário" de cada time num match
-  // Pareamento R16 (oitavas → quartas): cada par de 2 R32 matches dá 1 R16 match
-  const adversarioPorFase = React.useMemo(() => {
-    const map: Record<FasePalpiteMata, Map<string, string>> = {
-      "16avos": new Map(),
-      "8avos": new Map(),
-      "quartas": new Map(),
-      "semi": new Map(),
-      "final": new Map(),
-      "campeao": new Map(),
-    };
-
-    // R32: cada par tem 2 times — adversários diretos
-    for (const par of r32) {
-      const a = par.casaTime?.time_id;
-      const b = par.foraTime?.time_id;
-      if (a && b) {
-        map["8avos"].set(a, b);
-        map["8avos"].set(b, a);
-      }
-    }
-    // Para fases seguintes (quartas, semi, final, campeao), o adversário só é
-    // conhecido quando o usuário fez seus picks. Como o usuário pode trocar de
-    // ideia, calculamos dinamicamente via picks atuais. Mantemos vazio aqui.
-    return map;
-  }, [r32]);
 
   function pickInMatch(fase: FasePalpiteMata, timeId: string) {
     if (fechado) return;
@@ -243,61 +204,41 @@ export function MataMataForm({
 
   return (
     <div className="space-y-4">
-      {/* Toggle modo */}
+      {/* Banner de empate entre 3os colocados (tarefa 4 do fix-matamata) */}
+      {empateTerceiros && (
+        <Card className="border-2 border-festive-orange/40 bg-festive-orange/5">
+          <CardContent className="flex items-start gap-3 p-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-festive-orange" />
+            <p className="text-sm font-medium">
+              ⚠️ Pelos seus palpites,{" "}
+              <strong className="text-festive-orange">{empateTerceiros.quantidade}</strong>{" "}
+              seleções estão empatadas em pontos/saldo/gols pró na disputa pelos 8 melhores
+              terceiros. Nessa situação, a FIFA usa o ranking pré-Copa. No nosso bolão, estamos
+              usando ordem alfabética para desempatar — isso pode mudar as equipes classificadas
+              em terceiro.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Header com progresso e autosave */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-md border border-border bg-card/40 p-0.5">
-          <button
-            onClick={() => changeModo("bracket")}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold transition-colors",
-              modo === "bracket"
-                ? "bg-festive-green text-white"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Bracket
-          </button>
-          <button
-            onClick={() => changeModo("lista")}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded px-3 py-1.5 text-xs font-bold transition-colors",
-              modo === "lista"
-                ? "bg-festive-green text-white"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <List className="h-3.5 w-3.5" /> Por fase
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <ProgressoFases picks={picks} />
-          {!fechado && <AutosaveStatusBadge status={autosaveStatus} />}
-        </div>
+        <ProgressoFases picks={picks} />
+        {!fechado && <AutosaveStatusBadge status={autosaveStatus} />}
       </div>
 
-      {modo === "bracket" ? (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground lg:hidden">
-            👉 Arrasta horizontalmente pra ver todo o bracket. Toca num time pra marcar como vencedor.
-          </p>
-          <BracketView
-            r32={r32}
-            teams={teamMap}
-            picks={picks}
-            onPick={pickInMatch}
-            fechado={fechado}
-          />
-        </div>
-      ) : (
-        <ListaPorFase
-          teams={teams}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground lg:hidden">
+          👉 Arrasta horizontalmente pra ver todo o bracket. Toca num time pra marcar como vencedor.
+        </p>
+        <BracketView
+          r32={r32}
+          teams={teamMap}
           picks={picks}
-          pickInMatch={pickInMatch}
-          aba={aba}
-          setAba={setAba}
+          onPick={pickInMatch}
           fechado={fechado}
         />
-      )}
+      </div>
 
       {!fechado && (
         <div className="sticky bottom-20 z-10 flex justify-end lg:bottom-4">
@@ -358,98 +299,4 @@ function encontrarAdversario(
     return finalistas.find((id) => id !== timeId) ?? null;
   }
   return null;
-}
-
-// ───────────────────────────────────────── Lista por fase (fallback / mobile) ────────────────────
-
-function ListaPorFase({
-  teams,
-  picks,
-  pickInMatch,
-  aba,
-  setAba,
-  fechado,
-}: {
-  teams: Team[];
-  picks: Record<FasePalpiteMata, Set<string>>;
-  pickInMatch: (fase: FasePalpiteMata, timeId: string) => void;
-  aba: FasePalpiteMata;
-  setAba: (v: FasePalpiteMata) => void;
-  fechado: boolean;
-}) {
-  function timesDisponiveis(fase: FasePalpiteMata): Team[] {
-    const idx = FASES.findIndex((f) => f.key === fase);
-    if (idx === 0) return teams; // 8avos: todos
-    const faseAnterior = FASES[idx - 1].key;
-    const ids = picks[faseAnterior];
-    return teams.filter((t) => ids.has(t.id));
-  }
-
-  return (
-    <Tabs value={aba} onValueChange={(v) => setAba(v as FasePalpiteMata)}>
-      <TabsList className="flex h-auto flex-wrap gap-1 bg-muted/40 p-1">
-        {FASES.map((f) => {
-          const total = picks[f.key].size;
-          const ok = total === f.quantidade;
-          return (
-            <TabsTrigger key={f.key} value={f.key} className="gap-2">
-              {f.label}
-              <Badge variant={ok ? "success" : "muted"}>
-                {total}/{f.quantidade}
-              </Badge>
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
-
-      {FASES.map((f) => {
-        const disponiveis = timesDisponiveis(f.key);
-        const idx = FASES.findIndex((x) => x.key === f.key);
-        return (
-          <TabsContent key={f.key} value={f.key} className="space-y-3">
-            <div className="rounded-md border-2 border-dashed border-border bg-card/40 p-3 text-xs font-medium text-muted-foreground">
-              {f.descricao} ·{" "}
-              {disponiveis.length === teams.length
-                ? "Escolha entre todas as seleções"
-                : `Apenas times escolhidos em "${FASES[idx - 1].label}" aparecem aqui`}
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {disponiveis.map((t) => {
-                const picked = picks[f.key].has(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    disabled={fechado}
-                    onClick={() => pickInMatch(f.key, t.id)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-xl border-2 border-border bg-white p-2.5 text-left transition-all hover:border-festive-green/40",
-                      picked && "border-festive-green bg-festive-green/10 shadow-stack-green",
-                      t.tbd && "opacity-75",
-                    )}
-                  >
-                    <Image
-                      src={t.bandeira_url}
-                      alt={t.nome}
-                      width={24}
-                      height={18}
-                      className="rounded-sm shadow"
-                      unoptimized
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <p className="team-name text-sm font-extrabold">{t.nome}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Grupo {t.grupo}
-                      </p>
-                    </div>
-                    {picked && <ChevronRight className="h-3.5 w-3.5 text-festive-green" />}
-                  </button>
-                );
-              })}
-            </div>
-          </TabsContent>
-        );
-      })}
-    </Tabs>
-  );
 }
