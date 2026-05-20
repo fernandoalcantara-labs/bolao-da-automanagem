@@ -14,6 +14,7 @@ import { BracketView, type Team as BracketTeam } from "./bracket-view";
 import type { ParR32Resolvido, EmpateTerceiros } from "@/lib/bracket-2026";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
+import { aplicarPick, ORDEM_FASES } from "@/lib/mata-mata-picks";
 
 type Team = {
   id: string;
@@ -33,8 +34,6 @@ const FASES: { key: FasePalpiteMata; label: string; quantidade: number; descrica
   { key: "final", label: "Final", quantidade: 2, descricao: "2 finalistas (20 pts cada)" },
   { key: "campeao", label: "Campeão", quantidade: 1, descricao: "Campeão (40 pts) — o outro finalista é vice (24)" },
 ];
-
-const ORDEM_FASES: FasePalpiteMata[] = ["16avos", "8avos", "quartas", "semi", "final", "campeao"];
 
 type PicksSerial = Record<FasePalpiteMata, string[]>;
 
@@ -131,55 +130,17 @@ export function MataMataForm({
   function pickInMatch(fase: FasePalpiteMata, timeId: string) {
     if (fechado) return;
     setPicks((prev) => {
-      const next = { ...prev };
-      // Clone todos os sets
-      for (const f of ORDEM_FASES) next[f] = new Set(prev[f]);
-
-      const jaTem = prev[fase].has(timeId);
-      if (jaTem) {
-        // Toggle off: remove desta fase e de todas as posteriores
-        const idx = ORDEM_FASES.indexOf(fase);
-        for (let i = idx; i < ORDEM_FASES.length; i++) {
-          next[ORDEM_FASES[i]].delete(timeId);
-        }
-        return next;
+      const res = aplicarPick(prev, fase, timeId, r32);
+      if (!res.ok) {
+        const fasecfg = FASES.find((f) => f.key === res.fase);
+        toast({
+          title: `Limite atingido em ${fasecfg?.label ?? res.fase}`,
+          description: `Você já tem ${res.quantidade} picks aqui. Desmarque um pra trocar.`,
+          variant: "destructive",
+        });
+        return prev;
       }
-
-      // Toggle on: respeitando limite e removendo adversário no mesmo match
-      const fasecfg = FASES.find((f) => f.key === fase);
-      if (fasecfg && next[fase].size >= fasecfg.quantidade) {
-        // Caso especial campeao: substitui o atual
-        if (fase === "campeao") {
-          next[fase] = new Set([timeId]);
-        } else {
-          toast({
-            title: `Limite atingido em ${fasecfg.label}`,
-            description: `Você já tem ${fasecfg.quantidade} picks aqui. Desmarque um pra trocar.`,
-            variant: "destructive",
-          });
-          return prev;
-        }
-      } else {
-        next[fase].add(timeId);
-      }
-
-      // Adversário no mesmo match precisa SAIR da mesma fase e posteriores
-      const adv = encontrarAdversario(fase, timeId, prev, r32);
-      if (adv) {
-        const idx = ORDEM_FASES.indexOf(fase);
-        for (let i = idx; i < ORDEM_FASES.length; i++) {
-          next[ORDEM_FASES[i]].delete(adv);
-        }
-      }
-
-      // Cascata pra trás: adiciona o time em todas as fases ANTERIORES também
-      // (necessário pra consistência — se chega à semi, naturalmente passou pelas oitavas)
-      const idx = ORDEM_FASES.indexOf(fase);
-      for (let i = 1; i < idx; i++) {
-        next[ORDEM_FASES[i]].add(timeId);
-      }
-
-      return next;
+      return res.picks;
     });
   }
 
@@ -270,33 +231,4 @@ function ProgressoFases({ picks }: { picks: Record<FasePalpiteMata, Set<string>>
   );
 }
 
-// ───────────────────────────────────────── Adversário ─────────────────────────────────────────
-
-function encontrarAdversario(
-  fase: FasePalpiteMata,
-  timeId: string,
-  picks: Record<FasePalpiteMata, Set<string>>,
-  r32: ParR32Resolvido[],
-): string | null {
-  if (fase === "8avos") {
-    // Adversário direto vem do match do R32
-    for (const par of r32) {
-      const a = par.casaTime?.time_id;
-      const b = par.foraTime?.time_id;
-      if (a === timeId) return b ?? null;
-      if (b === timeId) return a ?? null;
-    }
-    return null;
-  }
-  // Pra fases adiante, o adversário é o outro time que estava no MESMO sub-bracket
-  // que o user havia picado na fase anterior. Estratégia: encontrar todos os times
-  // da fase anterior que descendem do mesmo "ramo" e excluir o próprio.
-  // Simplificação MVP: pega os 2 finalistas (esquerda/direita do bracket) pra "final"
-  // e os outros casos não removem automaticamente — o cascade já garante consistência.
-  if (fase === "campeao") {
-    // Adversário do campeão = outro finalista
-    const finalistas = [...picks.final];
-    return finalistas.find((id) => id !== timeId) ?? null;
-  }
-  return null;
-}
+// Lógica de adversário/pick agora vive em @/lib/mata-mata-picks (testável).

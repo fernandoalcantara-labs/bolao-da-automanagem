@@ -1,0 +1,1832 @@
+[
+  {
+    "email": "fernandoarocha@gmail.com",
+    "usuario": "FERNANDO ALCANTARA ROCHA",
+    "grupos": {
+      "A": [
+        {
+          "pos": 1,
+          "time": "México",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Coreia do Sul",
+          "pts": 4,
+          "saldo": -4,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "África do Sul",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Tchéquia",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        }
+      ],
+      "B": [
+        {
+          "pos": 1,
+          "time": "Canadá",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Suíça",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Catar",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Bósnia e Herzegovina",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 3
+        }
+      ],
+      "C": [
+        {
+          "pos": 1,
+          "time": "Brasil",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Marrocos",
+          "pts": 6,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Escócia",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 0
+        },
+        {
+          "pos": 4,
+          "time": "Haiti",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 0
+        }
+      ],
+      "D": [
+        {
+          "pos": 1,
+          "time": "Turquia",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Austrália",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Paraguai",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Estados Unidos",
+          "pts": 2,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "E": [
+        {
+          "pos": 1,
+          "time": "Alemanha",
+          "pts": 7,
+          "saldo": 7,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Costa do Marfim",
+          "pts": 6,
+          "saldo": 0,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Equador",
+          "pts": 4,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Curaçao",
+          "pts": 0,
+          "saldo": -9,
+          "gp": 0
+        }
+      ],
+      "F": [
+        {
+          "pos": 1,
+          "time": "Tunísia",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Holanda",
+          "pts": 5,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Japão",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 5
+        },
+        {
+          "pos": 4,
+          "time": "Suécia",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 4
+        }
+      ],
+      "G": [
+        {
+          "pos": 1,
+          "time": "Nova Zelândia",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 9
+        },
+        {
+          "pos": 2,
+          "time": "Bélgica",
+          "pts": 5,
+          "saldo": 2,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Irã",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 6
+        },
+        {
+          "pos": 4,
+          "time": "Egito",
+          "pts": 1,
+          "saldo": -5,
+          "gp": 4
+        }
+      ],
+      "H": [
+        {
+          "pos": 1,
+          "time": "Uruguai",
+          "pts": 5,
+          "saldo": 8,
+          "gp": 12
+        },
+        {
+          "pos": 2,
+          "time": "Cabo Verde",
+          "pts": 4,
+          "saldo": -7,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Espanha",
+          "pts": 4,
+          "saldo": 1,
+          "gp": 5
+        },
+        {
+          "pos": 4,
+          "time": "Arábia Saudita",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 2
+        }
+      ],
+      "I": [
+        {
+          "pos": 1,
+          "time": "França",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Noruega",
+          "pts": 6,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Iraque",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Senegal",
+          "pts": 0,
+          "saldo": -4,
+          "gp": 0
+        }
+      ],
+      "J": [
+        {
+          "pos": 1,
+          "time": "Argentina",
+          "pts": 7,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Argélia",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Áustria",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 5
+        },
+        {
+          "pos": 4,
+          "time": "Jordânia",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 3
+        }
+      ],
+      "K": [
+        {
+          "pos": 1,
+          "time": "Colômbia",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Portugal",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "RD do Congo",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Uzbequistão",
+          "pts": 0,
+          "saldo": -4,
+          "gp": 1
+        }
+      ],
+      "L": [
+        {
+          "pos": 1,
+          "time": "Inglaterra",
+          "pts": 7,
+          "saldo": 2,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Croácia",
+          "pts": 6,
+          "saldo": 4,
+          "gp": 10
+        },
+        {
+          "pos": 3,
+          "time": "Gana",
+          "pts": 3,
+          "saldo": -3,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Panamá",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 3
+        }
+      ]
+    }
+  },
+  {
+    "email": "lucasloures@gmail.com",
+    "usuario": "Lucas Loures",
+    "grupos": {
+      "A": [
+        {
+          "pos": 1,
+          "time": "México",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Tchéquia",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Coreia do Sul",
+          "pts": 4,
+          "saldo": 1,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "África do Sul",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 3
+        }
+      ],
+      "B": [
+        {
+          "pos": 1,
+          "time": "Suíça",
+          "pts": 5,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 2,
+          "time": "Bósnia e Herzegovina",
+          "pts": 4,
+          "saldo": 1,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Catar",
+          "pts": 4,
+          "saldo": 3,
+          "gp": 9
+        },
+        {
+          "pos": 4,
+          "time": "Canadá",
+          "pts": 2,
+          "saldo": -6,
+          "gp": 4
+        }
+      ],
+      "C": [
+        {
+          "pos": 1,
+          "time": "Brasil",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Marrocos",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Haiti",
+          "pts": 3,
+          "saldo": -3,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Escócia",
+          "pts": 0,
+          "saldo": -5,
+          "gp": 1
+        }
+      ],
+      "D": [
+        {
+          "pos": 1,
+          "time": "Estados Unidos",
+          "pts": 7,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Turquia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Paraguai",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Austrália",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 2
+        }
+      ],
+      "E": [
+        {
+          "pos": 1,
+          "time": "Alemanha",
+          "pts": 7,
+          "saldo": 5,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Costa do Marfim",
+          "pts": 6,
+          "saldo": -2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Curaçao",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Equador",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 3
+        }
+      ],
+      "F": [
+        {
+          "pos": 1,
+          "time": "Holanda",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Japão",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Tunísia",
+          "pts": 2,
+          "saldo": -3,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Suécia",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 1
+        }
+      ],
+      "G": [
+        {
+          "pos": 1,
+          "time": "Bélgica",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 2,
+          "time": "Irã",
+          "pts": 5,
+          "saldo": 1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Nova Zelândia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Egito",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        }
+      ],
+      "H": [
+        {
+          "pos": 1,
+          "time": "Espanha",
+          "pts": 9,
+          "saldo": 4,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Uruguai",
+          "pts": 6,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Arábia Saudita",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Cabo Verde",
+          "pts": 1,
+          "saldo": -5,
+          "gp": 1
+        }
+      ],
+      "I": [
+        {
+          "pos": 1,
+          "time": "França",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Senegal",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "Iraque",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Noruega",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "J": [
+        {
+          "pos": 1,
+          "time": "Argentina",
+          "pts": 9,
+          "saldo": 4,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Argélia",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Jordânia",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Áustria",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 1
+        }
+      ],
+      "K": [
+        {
+          "pos": 1,
+          "time": "Portugal",
+          "pts": 9,
+          "saldo": 4,
+          "gp": 4
+        },
+        {
+          "pos": 2,
+          "time": "Colômbia",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "RD do Congo",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Uzbequistão",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "L": [
+        {
+          "pos": 1,
+          "time": "Croácia",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Inglaterra",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Panamá",
+          "pts": 3,
+          "saldo": -3,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Gana",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        }
+      ]
+    }
+  },
+  {
+    "email": "motta.penido@gmail.com",
+    "usuario": "Deusdedit Motta",
+    "grupos": {
+      "A": [
+        {
+          "pos": 1,
+          "time": "México",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Coreia do Sul",
+          "pts": 5,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Tchéquia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "África do Sul",
+          "pts": 0,
+          "saldo": -5,
+          "gp": 1
+        }
+      ],
+      "B": [
+        {
+          "pos": 1,
+          "time": "Suíça",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 3
+        },
+        {
+          "pos": 2,
+          "time": "Canadá",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Catar",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Bósnia e Herzegovina",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        }
+      ],
+      "C": [
+        {
+          "pos": 1,
+          "time": "Brasil",
+          "pts": 9,
+          "saldo": 8,
+          "gp": 9
+        },
+        {
+          "pos": 2,
+          "time": "Marrocos",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Escócia",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Haiti",
+          "pts": 0,
+          "saldo": -8,
+          "gp": 0
+        }
+      ],
+      "D": [
+        {
+          "pos": 1,
+          "time": "Estados Unidos",
+          "pts": 9,
+          "saldo": 4,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Paraguai",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Turquia",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Austrália",
+          "pts": 0,
+          "saldo": -4,
+          "gp": 1
+        }
+      ],
+      "E": [
+        {
+          "pos": 1,
+          "time": "Alemanha",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Equador",
+          "pts": 5,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Costa do Marfim",
+          "pts": 4,
+          "saldo": 1,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Curaçao",
+          "pts": 0,
+          "saldo": -8,
+          "gp": 0
+        }
+      ],
+      "F": [
+        {
+          "pos": 1,
+          "time": "Holanda",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Suécia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Tunísia",
+          "pts": 3,
+          "saldo": -4,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Japão",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 3
+        }
+      ],
+      "G": [
+        {
+          "pos": 1,
+          "time": "Irã",
+          "pts": 5,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 2,
+          "time": "Bélgica",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Egito",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Nova Zelândia",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 3
+        }
+      ],
+      "H": [
+        {
+          "pos": 1,
+          "time": "Espanha",
+          "pts": 7,
+          "saldo": 6,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Uruguai",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Cabo Verde",
+          "pts": 3,
+          "saldo": -3,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Arábia Saudita",
+          "pts": 0,
+          "saldo": -6,
+          "gp": 1
+        }
+      ],
+      "I": [
+        {
+          "pos": 1,
+          "time": "França",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Noruega",
+          "pts": 6,
+          "saldo": 3,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "Senegal",
+          "pts": 3,
+          "saldo": 0,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Iraque",
+          "pts": 0,
+          "saldo": -9,
+          "gp": 0
+        }
+      ],
+      "J": [
+        {
+          "pos": 1,
+          "time": "Argentina",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Áustria",
+          "pts": 4,
+          "saldo": 1,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Jordânia",
+          "pts": 3,
+          "saldo": -4,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Argélia",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "K": [
+        {
+          "pos": 1,
+          "time": "Portugal",
+          "pts": 7,
+          "saldo": 5,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Colômbia",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "RD do Congo",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Uzbequistão",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 1
+        }
+      ],
+      "L": [
+        {
+          "pos": 1,
+          "time": "Inglaterra",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Gana",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Panamá",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Croácia",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 1
+        }
+      ]
+    }
+  },
+  {
+    "email": "rodrigoluismoreira@gmail.com",
+    "usuario": "Rodrigo Carvalho",
+    "grupos": {
+      "A": [
+        {
+          "pos": 1,
+          "time": "México",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Tchéquia",
+          "pts": 5,
+          "saldo": 1,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "África do Sul",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Coreia do Sul",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        }
+      ],
+      "B": [
+        {
+          "pos": 1,
+          "time": "Suíça",
+          "pts": 7,
+          "saldo": 5,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Canadá",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "Bósnia e Herzegovina",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Catar",
+          "pts": 1,
+          "saldo": -5,
+          "gp": 1
+        }
+      ],
+      "C": [
+        {
+          "pos": 1,
+          "time": "Brasil",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 9
+        },
+        {
+          "pos": 2,
+          "time": "Marrocos",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Escócia",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Haiti",
+          "pts": 0,
+          "saldo": -7,
+          "gp": 1
+        }
+      ],
+      "D": [
+        {
+          "pos": 1,
+          "time": "Estados Unidos",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Turquia",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Paraguai",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Austrália",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        }
+      ],
+      "E": [
+        {
+          "pos": 1,
+          "time": "Alemanha",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Costa do Marfim",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Equador",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Curaçao",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 0
+        }
+      ],
+      "F": [
+        {
+          "pos": 1,
+          "time": "Holanda",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Suécia",
+          "pts": 5,
+          "saldo": 1,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Japão",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Tunísia",
+          "pts": 0,
+          "saldo": -4,
+          "gp": 1
+        }
+      ],
+      "G": [
+        {
+          "pos": 1,
+          "time": "Bélgica",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Egito",
+          "pts": 6,
+          "saldo": 1,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Irã",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Nova Zelândia",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "H": [
+        {
+          "pos": 1,
+          "time": "Espanha",
+          "pts": 7,
+          "saldo": 5,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Uruguai",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Arábia Saudita",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Cabo Verde",
+          "pts": 1,
+          "saldo": -6,
+          "gp": 0
+        }
+      ],
+      "I": [
+        {
+          "pos": 1,
+          "time": "França",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Noruega",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Senegal",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 4
+        },
+        {
+          "pos": 4,
+          "time": "Iraque",
+          "pts": 0,
+          "saldo": -6,
+          "gp": 1
+        }
+      ],
+      "J": [
+        {
+          "pos": 1,
+          "time": "Argentina",
+          "pts": 9,
+          "saldo": 8,
+          "gp": 10
+        },
+        {
+          "pos": 2,
+          "time": "Áustria",
+          "pts": 6,
+          "saldo": -1,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Argélia",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Jordânia",
+          "pts": 0,
+          "saldo": -5,
+          "gp": 2
+        }
+      ],
+      "K": [
+        {
+          "pos": 1,
+          "time": "Portugal",
+          "pts": 7,
+          "saldo": 6,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Colômbia",
+          "pts": 7,
+          "saldo": 4,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "RD do Congo",
+          "pts": 3,
+          "saldo": -5,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Uzbequistão",
+          "pts": 0,
+          "saldo": -5,
+          "gp": 2
+        }
+      ],
+      "L": [
+        {
+          "pos": 1,
+          "time": "Inglaterra",
+          "pts": 9,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Croácia",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Gana",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Panamá",
+          "pts": 0,
+          "saldo": -3,
+          "gp": 2
+        }
+      ]
+    }
+  },
+  {
+    "email": "vitorbaracho@gmail.com",
+    "usuario": "Vitor Baracho",
+    "grupos": {
+      "A": [
+        {
+          "pos": 1,
+          "time": "México",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 4
+        },
+        {
+          "pos": 2,
+          "time": "Tchéquia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "África do Sul",
+          "pts": 3,
+          "saldo": -3,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Coreia do Sul",
+          "pts": 3,
+          "saldo": 0,
+          "gp": 2
+        }
+      ],
+      "B": [
+        {
+          "pos": 1,
+          "time": "Suíça",
+          "pts": 7,
+          "saldo": 2,
+          "gp": 3
+        },
+        {
+          "pos": 2,
+          "time": "Bósnia e Herzegovina",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Canadá",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Catar",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 0
+        }
+      ],
+      "C": [
+        {
+          "pos": 1,
+          "time": "Brasil",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Marrocos",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Escócia",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Haiti",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 1
+        }
+      ],
+      "D": [
+        {
+          "pos": 1,
+          "time": "Turquia",
+          "pts": 9,
+          "saldo": 3,
+          "gp": 5
+        },
+        {
+          "pos": 2,
+          "time": "Estados Unidos",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Paraguai",
+          "pts": 3,
+          "saldo": -1,
+          "gp": 5
+        },
+        {
+          "pos": 4,
+          "time": "Austrália",
+          "pts": 0,
+          "saldo": -4,
+          "gp": 2
+        }
+      ],
+      "E": [
+        {
+          "pos": 1,
+          "time": "Alemanha",
+          "pts": 9,
+          "saldo": 8,
+          "gp": 9
+        },
+        {
+          "pos": 2,
+          "time": "Costa do Marfim",
+          "pts": 4,
+          "saldo": -1,
+          "gp": 2
+        },
+        {
+          "pos": 3,
+          "time": "Equador",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Curaçao",
+          "pts": 1,
+          "saldo": -6,
+          "gp": 1
+        }
+      ],
+      "F": [
+        {
+          "pos": 1,
+          "time": "Holanda",
+          "pts": 6,
+          "saldo": 4,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Japão",
+          "pts": 4,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Suécia",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 2
+        },
+        {
+          "pos": 4,
+          "time": "Tunísia",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 2
+        }
+      ],
+      "G": [
+        {
+          "pos": 1,
+          "time": "Bélgica",
+          "pts": 7,
+          "saldo": 2,
+          "gp": 3
+        },
+        {
+          "pos": 2,
+          "time": "Egito",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 4
+        },
+        {
+          "pos": 3,
+          "time": "Irã",
+          "pts": 2,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Nova Zelândia",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 1
+        }
+      ],
+      "H": [
+        {
+          "pos": 1,
+          "time": "Espanha",
+          "pts": 9,
+          "saldo": 7,
+          "gp": 10
+        },
+        {
+          "pos": 2,
+          "time": "Uruguai",
+          "pts": 6,
+          "saldo": 4,
+          "gp": 8
+        },
+        {
+          "pos": 3,
+          "time": "Arábia Saudita",
+          "pts": 3,
+          "saldo": -4,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Cabo Verde",
+          "pts": 0,
+          "saldo": -7,
+          "gp": 0
+        }
+      ],
+      "I": [
+        {
+          "pos": 1,
+          "time": "França",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Senegal",
+          "pts": 4,
+          "saldo": -2,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Noruega",
+          "pts": 2,
+          "saldo": -1,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Iraque",
+          "pts": 1,
+          "saldo": -2,
+          "gp": 2
+        }
+      ],
+      "J": [
+        {
+          "pos": 1,
+          "time": "Argentina",
+          "pts": 9,
+          "saldo": 5,
+          "gp": 7
+        },
+        {
+          "pos": 2,
+          "time": "Áustria",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 3,
+          "time": "Jordânia",
+          "pts": 3,
+          "saldo": -2,
+          "gp": 1
+        },
+        {
+          "pos": 4,
+          "time": "Argélia",
+          "pts": 1,
+          "saldo": -3,
+          "gp": 2
+        }
+      ],
+      "K": [
+        {
+          "pos": 1,
+          "time": "Portugal",
+          "pts": 9,
+          "saldo": 6,
+          "gp": 8
+        },
+        {
+          "pos": 2,
+          "time": "Colômbia",
+          "pts": 6,
+          "saldo": 3,
+          "gp": 6
+        },
+        {
+          "pos": 3,
+          "time": "Uzbequistão",
+          "pts": 1,
+          "saldo": -4,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "RD do Congo",
+          "pts": 1,
+          "saldo": -5,
+          "gp": 1
+        }
+      ],
+      "L": [
+        {
+          "pos": 1,
+          "time": "Croácia",
+          "pts": 7,
+          "saldo": 3,
+          "gp": 6
+        },
+        {
+          "pos": 2,
+          "time": "Inglaterra",
+          "pts": 6,
+          "saldo": 2,
+          "gp": 5
+        },
+        {
+          "pos": 3,
+          "time": "Gana",
+          "pts": 4,
+          "saldo": 0,
+          "gp": 3
+        },
+        {
+          "pos": 4,
+          "time": "Panamá",
+          "pts": 0,
+          "saldo": -5,
+          "gp": 1
+        }
+      ]
+    }
+  }
+]
