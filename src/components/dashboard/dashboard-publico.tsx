@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { KpiCards } from "./kpi-cards";
 import { RankingTable } from "./ranking-table";
 import { MultiLineChart } from "./multi-line-chart";
@@ -18,6 +19,14 @@ import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export async function DashboardPublico() {
   const supabase = createClient();
+  // Admin client (service_role, bypass RLS) usado APENAS pra ler os
+  // palpites agregados das pies (campeao + artilheiro). Pre-deadline,
+  // as policies de palpites_mata/artilheiro restringem SELECT ao proprio
+  // user_id, oque causava as pies aparecerem vazias/parciais pra
+  // visitantes e users novos. Bug encontrado no CT-21 da QW4.
+  // Como so' usamos os campos time_id/player_id (agregados pra contagem),
+  // nao vazamos quem palpitou no quê — só os totais por time/jogador.
+  const supabaseAdmin = createAdminClient();
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser?.id ?? null;
   const stats = currentUserId
@@ -44,8 +53,9 @@ export async function DashboardPublico() {
       .select("id, fase, rodada, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora")
       .order("data_hora", { ascending: true }),
     supabase.from("teams").select("id, nome, bandeira_url"),
-    supabase.from("palpites_mata").select("user_id, time_id").eq("fase", "campeao"),
-    supabase.from("palpites_artilheiro").select("user_id, player_id"),
+    // PIES — admin client (ver comentário acima)
+    supabaseAdmin.from("palpites_mata").select("user_id, time_id").eq("fase", "campeao"),
+    supabaseAdmin.from("palpites_artilheiro").select("user_id, player_id"),
     supabase.from("players").select("id, nome"),
     supabase.from("config").select("chave, valor"),
   ]);

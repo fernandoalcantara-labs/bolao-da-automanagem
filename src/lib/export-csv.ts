@@ -164,13 +164,15 @@ export async function gerarCsvCompleto(
   linhasMata.push(
     [csvEscape("Fase"), csvEscape("Time Palpitado (count)"), usuariosColsCsv].join(","),
   );
+  // OBS: '16avos' (Round of 32) NÃO é palpitado manualmente — é resolvido
+  // automaticamente pelos palpites de grupos (regras FIFA). Por isso a
+  // listagem começa em '8avos'.
   const ORDEM_FASES: Array<{ chave: string; label: string }> = [
-    { chave: "16avos", label: "16 avos" },
-    { chave: "8avos", label: "Oitavas (8)" },
-    { chave: "quartas", label: "Quartas (4)" },
-    { chave: "semi", label: "Semi (2)" },
-    { chave: "final", label: "Final (1 vice + 1 campeão)" },
-    { chave: "campeao", label: "Campeão (1)" },
+    { chave: "8avos", label: "Oitavas (16 picks)" },
+    { chave: "quartas", label: "Quartas (8 picks)" },
+    { chave: "semi", label: "Semi (4 picks)" },
+    { chave: "final", label: "Final (2 picks)" },
+    { chave: "campeao", label: "Campeão (1 pick)" },
   ];
   for (const f of ORDEM_FASES) {
     const cols = usuarios.map((u) => {
