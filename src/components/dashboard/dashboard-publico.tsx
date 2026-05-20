@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { KpiCards } from "./kpi-cards";
 import { RankingTable } from "./ranking-table";
 import { MultiLineChart } from "./multi-line-chart";
-import { BarChartRodada } from "./bar-chart-rodada";
 import { Heatmap } from "./heatmap";
 import { PieCampeao, PieArtilheiro } from "./pies";
 import { ConfrontosRodada } from "./confrontos-rodada";
@@ -19,6 +19,14 @@ import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export async function DashboardPublico() {
   const supabase = createClient();
+  // Admin client (service_role, bypass RLS) usado APENAS pra ler os
+  // palpites agregados das pies (campeao + artilheiro). Pre-deadline,
+  // as policies de palpites_mata/artilheiro restringem SELECT ao proprio
+  // user_id, oque causava as pies aparecerem vazias/parciais pra
+  // visitantes e users novos. Bug encontrado no CT-21 da QW4.
+  // Como so' usamos os campos time_id/player_id (agregados pra contagem),
+  // nao vazamos quem palpitou no quê — só os totais por time/jogador.
+  const supabaseAdmin = createAdminClient();
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser?.id ?? null;
   const stats = currentUserId
@@ -45,8 +53,9 @@ export async function DashboardPublico() {
       .select("id, fase, rodada, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora")
       .order("data_hora", { ascending: true }),
     supabase.from("teams").select("id, nome, bandeira_url"),
-    supabase.from("palpites_mata").select("user_id, time_id").eq("fase", "campeao"),
-    supabase.from("palpites_artilheiro").select("user_id, player_id"),
+    // PIES — admin client (ver comentário acima)
+    supabaseAdmin.from("palpites_mata").select("user_id, time_id").eq("fase", "campeao"),
+    supabaseAdmin.from("palpites_artilheiro").select("user_id, player_id"),
     supabase.from("players").select("id, nome"),
     supabase.from("config").select("chave, valor"),
   ]);
@@ -129,7 +138,7 @@ export async function DashboardPublico() {
     <div className="animate-fade-up space-y-6">
       <header className="space-y-3">
         <p className="inline-flex items-center gap-1.5 rounded-full bg-festive-green/15 px-3 py-1 text-[11px] font-extrabold uppercase tracking-widest text-festive-green">
-          🇧🇷 FIFA World Cup 2026 · {ultimaLabel}
+          🇧🇷 FIFA World Cup 2026
         </p>
         <h1 className="font-fredoka text-3xl font-extrabold tracking-tight sm:text-4xl">
           {nomeBolao}
@@ -215,42 +224,23 @@ export async function DashboardPublico() {
             </Card>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="min-w-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>📊 Pontos na última rodada · {ultimaLabel}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BarChartRodada
-                  data={snapsUltima
-                    .map((s) => ({
-                      nome: usersById.get(s.user_id)?.nome ?? "—",
-                      pontos: s.pontos_rodada,
-                    }))
-                    .sort((a, b) => b.pontos - a.pontos)
-                    .slice(0, 15)}
-                />
-              </CardContent>
-            </Card>
-
-            <Card className="min-w-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
-                <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Heatmap
-                  users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
-                  snapshots={snapsPagas.map((s) => ({
-                    user_id: s.user_id,
-                    rodada_label: s.rodada_label,
-                    rodada_ordem: s.rodada_ordem,
-                    pontos_rodada: s.pontos_rodada,
-                  }))}
-                />
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="min-w-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>🔥 Heatmap · pontos por rodada</CardTitle>
+              <CardDescription>Verde mais forte = mais pontos · arraste pro lado pra ver tudo.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Heatmap
+                users={usersPagos.map((u) => ({ id: u.id, nome: u.nome }))}
+                snapshots={snapsPagas.map((s) => ({
+                  user_id: s.user_id,
+                  rodada_label: s.rodada_label,
+                  rodada_ordem: s.rodada_ordem,
+                  pontos_rodada: s.pontos_rodada,
+                }))}
+              />
+            </CardContent>
+          </Card>
         </>
       ) : (
         <BolaoNaoIniciouCard

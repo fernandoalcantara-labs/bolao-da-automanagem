@@ -4,7 +4,10 @@
     {
       "path": "/api/sync-matches",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/backup-deadline",
+      "schedule": "0 18 * * *"
     }
   ]
 }
-

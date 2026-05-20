@@ -103,7 +103,8 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                         .filter((it) => {
                           if (filtro === "todos") return true;
                           if (filtro === "acertos") return it.tipo === "exato" || it.tipo === "vencedor";
-                          if (filtro === "erros") return it.tipo === "erro";
+                          // "Erros" agrupa quem errou E quem nao palpitou (0 pts em ambos)
+                          if (filtro === "erros") return it.tipo === "erro" || it.tipo === "nao_palpitou";
                           if (filtro === "pendentes") return it.tipo === "pendente";
                           return true;
                         })
@@ -115,6 +116,8 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                               it.tipo === "exato" && "bg-festive-green/10",
                               it.tipo === "vencedor" && "bg-festive-gold/10",
                               it.tipo === "erro" && "bg-muted/40",
+                              it.tipo === "nao_palpitou" && "bg-muted/20",
+                              it.tipo === "pendente" && "bg-white",
                             )}
                           >
                             <td className="p-2 font-bold">R{it.rodada}</td>
@@ -132,7 +135,10 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                               </div>
                             </td>
                             <td className="p-2 text-center font-mono">
-                              {it.palpite_casa ?? "-"}×{it.palpite_fora ?? "-"}
+                              {it.tipo === "nao_palpitou" || (it.palpite_casa === null && it.palpite_fora === null)
+                                ? <span className="text-muted-foreground">🚫 —</span>
+                                : <>{it.palpite_casa ?? "-"}×{it.palpite_fora ?? "-"}</>
+                              }
                             </td>
                             <td className="p-2 text-center font-mono">
                               {it.status === "finalizado"
@@ -141,13 +147,15 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                             </td>
                             <td className="p-2 text-right font-extrabold">
                               {it.tipo === "exato" ? (
-                                <span className="text-festive-green">+{it.pontos}</span>
+                                <span className="text-festive-green">✅ +{it.pontos}</span>
                               ) : it.tipo === "vencedor" ? (
-                                <span className="text-festive-gold-dark">+{it.pontos}</span>
+                                <span className="text-festive-gold-dark">⚠️ +{it.pontos}</span>
                               ) : it.tipo === "pendente" ? (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">⏳</span>
+                              ) : it.tipo === "nao_palpitou" ? (
+                                <span className="text-muted-foreground">🚫 0</span>
                               ) : (
-                                <span className="text-muted-foreground">0</span>
+                                <span className="text-muted-foreground">❌ 0</span>
                               )}
                             </td>
                           </tr>
@@ -166,6 +174,42 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                   </table>
                 </div>
               </section>
+
+              {/* 16 avos (Round of 32) — derivado dos palpites de grupos */}
+              {data.r32.length > 0 && (
+                <section className="space-y-2">
+                  <h3 className="font-fredoka text-base font-extrabold">
+                    🎯 16 avos · {data.r32.length} classificados
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Times que vão ao mata-mata segundo os palpites de grupos do usuário (regras
+                    FIFA: 1º + 2º de cada grupo + 8 melhores 3ºs).
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
+                    {data.r32.map((t) => (
+                      <div
+                        key={t.time_id}
+                        className="flex items-center gap-1.5 rounded-md border border-border/40 bg-white p-1.5 text-xs"
+                      >
+                        {t.time_bandeira && (
+                          <Image
+                            src={t.time_bandeira}
+                            alt={t.time_nome}
+                            width={16}
+                            height={11}
+                            unoptimized
+                            className="rounded-sm"
+                          />
+                        )}
+                        <span className="team-name flex-1 font-medium">{t.time_nome}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {t.posicao_grupo}·{t.grupo}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Mata-mata */}
               <section className="space-y-2">
