@@ -12,6 +12,8 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
+import type { Grupo } from "@/types/database";
 
 type SB = SupabaseClient;
 
@@ -181,9 +183,50 @@ export async function gerarCsvCompleto(
   linhasMata.push(
     [csvEscape("Fase"), csvEscape("Time Palpitado (count)"), usuariosColsCsv].join(","),
   );
-  // OBS: '16avos' (Round of 32) NÃO é palpitado manualmente — é resolvido
-  // automaticamente pelos palpites de grupos (regras FIFA). Por isso a
-  // listagem começa em '8avos'.
+  // Linha "16 avos" — os 32 classificados pelos palpites de grupos de
+  // cada user (regulamento FIFA: 1º + 2º de cada grupo + 8 melhores 3ºs).
+  // Calculado a partir dos palpites_grupos do user.
+  const matchesGruposById = new Map(
+    matches.filter((m) => m.fase === "grupos").map((m) => [m.id, m]),
+  );
+  function jogosVirtuaisDoUser(userId: string): JogoFinalizado[] {
+    const out: JogoFinalizado[] = [];
+    for (const p of palpitesGrupos) {
+      if (p.user_id !== userId) continue;
+      const m = matchesGruposById.get(p.match_id);
+      if (!m || !m.grupo || !m.time_casa_id || !m.time_fora_id) continue;
+      out.push({
+        grupo: m.grupo as Grupo,
+        time_casa_id: m.time_casa_id,
+        time_fora_id: m.time_fora_id,
+        placar_casa: p.placar_casa,
+        placar_fora: p.placar_fora,
+      });
+    }
+    return out;
+  }
+  const cols16avos = usuarios.map((u) => {
+    const jogos = jogosVirtuaisDoUser(u.id);
+    if (jogos.length === 0) return csvEscape("-");
+    try {
+      const r = classificadosParaMataMata(jogos);
+      const nomes = r.todosClassificados
+        .map((t) => teamById.get(t.time_id)?.nome ?? "?")
+        .join(", ");
+      return csvEscape(nomes || "-");
+    } catch {
+      return csvEscape("(palpites incompletos)");
+    }
+  });
+  linhasMata.push(
+    [
+      csvEscape("16 avos (32 classificados)"),
+      csvEscape("(do palpite de grupos)"),
+      cols16avos.join(","),
+    ].join(","),
+  );
+
+  // Demais fases — palpitadas manualmente
   const ORDEM_FASES: Array<{ chave: string; label: string }> = [
     { chave: "8avos", label: "Oitavas (16 picks)" },
     { chave: "quartas", label: "Quartas (8 picks)" },

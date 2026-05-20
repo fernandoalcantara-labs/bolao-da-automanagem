@@ -15,6 +15,8 @@ import {
   pontosPalpiteMata,
 } from "./scoring";
 import { calcularFaseAlcancadaPorTime } from "./recalc";
+import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
+import type { Grupo } from "@/types/database";
 
 export type BreakdownGrupoItem = {
   match_id: string;
@@ -51,10 +53,23 @@ export type BreakdownArtilheiro = {
   ja_definido: boolean;
 };
 
+/** Time classificado ao Round of 32 — derivado dos palpites de grupos */
+export type BreakdownR32Item = {
+  time_id: string;
+  time_nome: string;
+  time_bandeira: string;
+  grupo: string;
+  posicao_grupo: "1º" | "2º" | "3º (melhor)";
+};
+
 export type Breakdown = {
   user_id: string;
   nome: string;
   grupos: { items: BreakdownGrupoItem[]; subtotal: number };
+  /** 32 times classificados ao R32 (16 avos) pelos palpites de grupos.
+   *  Não rende pontos diretamente — é informativo. Vazio se palpites
+   *  de grupos incompletos. */
+  r32: BreakdownR32Item[];
   mata: { items: BreakdownMataItem[]; subtotal: number };
   artilheiro: BreakdownArtilheiro | null;
   total: number;
@@ -163,6 +178,52 @@ export async function calcularBreakdown(
     });
   }
 
+  // ─────────────── R32 (16 avos) — 32 classificados pelos palpites ──
+  // Não rende pontos diretamente, mas o user e o admin querem ver quem
+  // ele "manda" pro mata-mata a partir dos palpites de grupos (regras
+  // FIFA: 1º + 2º de cada grupo + 8 melhores 3ºs).
+  const r32Items: BreakdownR32Item[] = [];
+  if ((palpitesG ?? []).length > 0) {
+    const matchesGruposById = new Map(
+      ((matchesG ?? []) as any[]).map((m) => [m.id, m]),
+    );
+    const jogosVirtuais: JogoFinalizado[] = [];
+    for (const p of (palpitesG ?? []) as any[]) {
+      const m = matchesGruposById.get(p.match_id);
+      if (!m || !m.grupo || !m.time_casa_id || !m.time_fora_id) continue;
+      jogosVirtuais.push({
+        grupo: m.grupo as Grupo,
+        time_casa_id: m.time_casa_id,
+        time_fora_id: m.time_fora_id,
+        placar_casa: p.placar_casa,
+        placar_fora: p.placar_fora,
+      });
+    }
+    try {
+      const r = classificadosParaMataMata(jogosVirtuais);
+      const primeirosIds = new Set(r.primeiros.map((t) => t.time_id));
+      const segundosIds = new Set(r.segundos.map((t) => t.time_id));
+      for (const t of r.todosClassificados) {
+        const time = teamMap.get(t.time_id) as any;
+        const posicao_grupo: BreakdownR32Item["posicao_grupo"] =
+          primeirosIds.has(t.time_id)
+            ? "1º"
+            : segundosIds.has(t.time_id)
+              ? "2º"
+              : "3º (melhor)";
+        r32Items.push({
+          time_id: t.time_id,
+          time_nome: time?.nome ?? "—",
+          time_bandeira: time?.bandeira_url ?? "",
+          grupo: t.grupo,
+          posicao_grupo,
+        });
+      }
+    } catch {
+      // palpites incompletos — deixa r32Items vazio
+    }
+  }
+
   // ─────────────── Mata-mata ───────────────
   const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase as any);
   const { data: palpitesM } = await supabase
@@ -249,6 +310,7 @@ export async function calcularBreakdown(
     user_id: userId,
     nome,
     grupos: { items: gruposItems, subtotal: gruposSubtotal },
+    r32: r32Items,
     mata: { items: mataItems, subtotal: mataSubtotal },
     artilheiro,
     total,
@@ -264,6 +326,14 @@ export function breakdownParaTexto(b: Breakdown): string {
   lines.push(`Memória de cálculo - ${b.nome}`);
   lines.push("═".repeat(40));
   lines.push("");
+
+  if (b.r32.length > 0) {
+    lines.push(`16 AVOS (classificados pelos palpites de grupos): ${b.r32.length} times`);
+    for (const t of b.r32) {
+      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}`);
+    }
+    lines.push("");
+  }
 
   lines.push(`FASE DE GRUPOS: ${b.grupos.subtotal} pts`);
   // QW4 item 23.6 — inclui TODOS os 72 jogos, não só os finalizados.

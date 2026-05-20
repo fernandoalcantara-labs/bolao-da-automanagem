@@ -175,6 +175,42 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                 </div>
               </section>
 
+              {/* 16 avos (Round of 32) — derivado dos palpites de grupos */}
+              {data.r32.length > 0 && (
+                <section className="space-y-2">
+                  <h3 className="font-fredoka text-base font-extrabold">
+                    🎯 16 avos · {data.r32.length} classificados
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Times que vão ao mata-mata segundo os palpites de grupos do usuário (regras
+                    FIFA: 1º + 2º de cada grupo + 8 melhores 3ºs).
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
+                    {data.r32.map((t) => (
+                      <div
+                        key={t.time_id}
+                        className="flex items-center gap-1.5 rounded-md border border-border/40 bg-white p-1.5 text-xs"
+                      >
+                        {t.time_bandeira && (
+                          <Image
+                            src={t.time_bandeira}
+                            alt={t.time_nome}
+                            width={16}
+                            height={11}
+                            unoptimized
+                            className="rounded-sm"
+                          />
+                        )}
+                        <span className="team-name flex-1 font-medium">{t.time_nome}</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">
+                          {t.posicao_grupo}·{t.grupo}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               {/* Mata-mata */}
               <section className="space-y-2">
                 <h3 className="font-fredoka text-base font-extrabold">🏆 Mata-mata</h3>
