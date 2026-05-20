@@ -177,30 +177,35 @@ describe("Estrutura mata-mata-estrutura.ts", () => {
     expect(FINAL.jogo).toBe(104);
   });
 
-  it("origemJogos bate com a tabela oficial FIFA", () => {
+  it("origemJogos bate com a tabela oficial FIFA (corrigida 2026-05-20)", () => {
     const m = new Map<number, [number, number]>();
     for (const n of [...R16, ...QF, ...SF, FINAL]) {
       if (n.origemJogos) m.set(n.jogo, n.origemJogos);
     }
-    // R16
-    expect(m.get(89)).toEqual([73, 74]);
-    expect(m.get(90)).toEqual([75, 76]);
-    expect(m.get(91)).toEqual([77, 78]);
+    // R16 — pareamento oficial corrigido
+    expect(m.get(89)).toEqual([74, 77]);
+    expect(m.get(90)).toEqual([73, 75]);
+    expect(m.get(91)).toEqual([76, 78]);
     expect(m.get(92)).toEqual([79, 80]);
-    expect(m.get(93)).toEqual([81, 82]);
-    expect(m.get(94)).toEqual([83, 84]);
-    expect(m.get(95)).toEqual([85, 86]);
-    expect(m.get(96)).toEqual([87, 88]);
+    expect(m.get(93)).toEqual([83, 84]);
+    expect(m.get(94)).toEqual([81, 82]);
+    expect(m.get(95)).toEqual([86, 88]);
+    expect(m.get(96)).toEqual([85, 87]);
     // QF
     expect(m.get(97)).toEqual([89, 90]);
-    expect(m.get(99)).toEqual([91, 92]);
     expect(m.get(98)).toEqual([93, 94]);
+    expect(m.get(99)).toEqual([91, 92]);
     expect(m.get(100)).toEqual([95, 96]);
-    // SF
-    expect(m.get(101)).toEqual([97, 99]);
-    expect(m.get(102)).toEqual([98, 100]);
+    // SF — pareamento corrigido (101 = 97×98, 102 = 99×100)
+    expect(m.get(101)).toEqual([97, 98]);
+    expect(m.get(102)).toEqual([99, 100]);
     // Final
     expect(m.get(104)).toEqual([101, 102]);
+  });
+
+  it("R32_ESQUERDO_ORDEM e R32_DIREITO_ORDEM seguem a ordem oficial corrigida", () => {
+    expect([...R32_ESQUERDO_ORDEM]).toEqual([74, 77, 73, 75, 83, 84, 81, 82]);
+    expect([...R32_DIREITO_ORDEM]).toEqual([76, 78, 79, 80, 86, 88, 85, 87]);
   });
 
   it("labelJogo(104) === 'Final' e outros mostram 'Jogo NN'", () => {
@@ -217,6 +222,18 @@ describe("Estrutura mata-mata-estrutura.ts", () => {
     expect([...todos].sort((a, b) => a - b)).toEqual([
       73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88,
     ]);
+  });
+
+  it("R32_PARES.ladoEsquerdo bate com R32_ESQUERDO_ORDEM/R32_DIREITO_ORDEM", () => {
+    const esquerdaSet = new Set<number>(R32_ESQUERDO_ORDEM);
+    const direitaSet = new Set<number>(R32_DIREITO_ORDEM);
+    for (const par of R32_PARES) {
+      if (par.ladoEsquerdo) {
+        expect(esquerdaSet.has(par.matchNumber), `Jogo ${par.matchNumber} marcado como esquerda mas não está em R32_ESQUERDO_ORDEM`).toBe(true);
+      } else {
+        expect(direitaSet.has(par.matchNumber), `Jogo ${par.matchNumber} marcado como direita mas não está em R32_DIREITO_ORDEM`).toBe(true);
+      }
+    }
   });
 });
 

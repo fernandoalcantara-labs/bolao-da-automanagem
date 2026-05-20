@@ -67,24 +67,25 @@ export type ParR32 = {
  *   match 87 (1K): 3 do grupo D/E/I/J/L
  */
 export const R32_PARES: ParR32[] = [
-  // Lado esquerdo (chave superior do bracket — 8 matches)
-  { ordem: 1, matchNumber: 79, ladoEsquerdo: true, casa: { tipo: "1", grupo: "A" }, fora: { tipo: "3", grupos: ["C", "E", "F", "H", "I"] } },
-  { ordem: 2, matchNumber: 76, ladoEsquerdo: true, casa: { tipo: "1", grupo: "C" }, fora: { tipo: "2", grupo: "F" } },
-  { ordem: 3, matchNumber: 74, ladoEsquerdo: true, casa: { tipo: "1", grupo: "E" }, fora: { tipo: "3", grupos: ["A", "B", "C", "D", "F"] } },
-  { ordem: 4, matchNumber: 73, ladoEsquerdo: true, casa: { tipo: "2", grupo: "A" }, fora: { tipo: "2", grupo: "B" } },
-  { ordem: 5, matchNumber: 85, ladoEsquerdo: true, casa: { tipo: "1", grupo: "B" }, fora: { tipo: "3", grupos: ["E", "F", "G", "I", "J"] } },
-  { ordem: 6, matchNumber: 75, ladoEsquerdo: true, casa: { tipo: "1", grupo: "F" }, fora: { tipo: "2", grupo: "C" } },
-  { ordem: 7, matchNumber: 81, ladoEsquerdo: true, casa: { tipo: "1", grupo: "D" }, fora: { tipo: "3", grupos: ["B", "E", "F", "I", "J"] } },
-  { ordem: 8, matchNumber: 88, ladoEsquerdo: true, casa: { tipo: "2", grupo: "D" }, fora: { tipo: "2", grupo: "G" } },
-  // Lado direito (chave inferior do bracket — 8 matches)
-  { ordem: 9, matchNumber: 82, ladoEsquerdo: false, casa: { tipo: "1", grupo: "G" }, fora: { tipo: "3", grupos: ["A", "E", "H", "I", "J"] } },
-  { ordem: 10, matchNumber: 84, ladoEsquerdo: false, casa: { tipo: "1", grupo: "H" }, fora: { tipo: "2", grupo: "J" } },
-  { ordem: 11, matchNumber: 77, ladoEsquerdo: false, casa: { tipo: "1", grupo: "I" }, fora: { tipo: "3", grupos: ["C", "D", "F", "G", "H"] } },
+  // ladoEsquerdo segue a estrutura oficial FIFA (corrigida 2026-05-20):
+  // ESQUERDA: 73, 74, 75, 77, 81, 82, 83, 84
+  // DIREITA:  76, 78, 79, 80, 85, 86, 87, 88
+  { ordem: 1, matchNumber: 79, ladoEsquerdo: false, casa: { tipo: "1", grupo: "A" }, fora: { tipo: "3", grupos: ["C", "E", "F", "H", "I"] } },
+  { ordem: 2, matchNumber: 76, ladoEsquerdo: false, casa: { tipo: "1", grupo: "C" }, fora: { tipo: "2", grupo: "F" } },
+  { ordem: 3, matchNumber: 74, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "E" }, fora: { tipo: "3", grupos: ["A", "B", "C", "D", "F"] } },
+  { ordem: 4, matchNumber: 73, ladoEsquerdo: true,  casa: { tipo: "2", grupo: "A" }, fora: { tipo: "2", grupo: "B" } },
+  { ordem: 5, matchNumber: 85, ladoEsquerdo: false, casa: { tipo: "1", grupo: "B" }, fora: { tipo: "3", grupos: ["E", "F", "G", "I", "J"] } },
+  { ordem: 6, matchNumber: 75, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "F" }, fora: { tipo: "2", grupo: "C" } },
+  { ordem: 7, matchNumber: 81, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "D" }, fora: { tipo: "3", grupos: ["B", "E", "F", "I", "J"] } },
+  { ordem: 8, matchNumber: 88, ladoEsquerdo: false, casa: { tipo: "2", grupo: "D" }, fora: { tipo: "2", grupo: "G" } },
+  { ordem: 9, matchNumber: 82, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "G" }, fora: { tipo: "3", grupos: ["A", "E", "H", "I", "J"] } },
+  { ordem: 10, matchNumber: 84, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "H" }, fora: { tipo: "2", grupo: "J" } },
+  { ordem: 11, matchNumber: 77, ladoEsquerdo: true,  casa: { tipo: "1", grupo: "I" }, fora: { tipo: "3", grupos: ["C", "D", "F", "G", "H"] } },
   { ordem: 12, matchNumber: 78, ladoEsquerdo: false, casa: { tipo: "2", grupo: "E" }, fora: { tipo: "2", grupo: "I" } },
   { ordem: 13, matchNumber: 86, ladoEsquerdo: false, casa: { tipo: "1", grupo: "J" }, fora: { tipo: "2", grupo: "H" } },
   { ordem: 14, matchNumber: 80, ladoEsquerdo: false, casa: { tipo: "1", grupo: "L" }, fora: { tipo: "3", grupos: ["E", "H", "I", "J", "K"] } },
   { ordem: 15, matchNumber: 87, ladoEsquerdo: false, casa: { tipo: "1", grupo: "K" }, fora: { tipo: "3", grupos: ["D", "E", "I", "J", "L"] } },
-  { ordem: 16, matchNumber: 83, ladoEsquerdo: false, casa: { tipo: "2", grupo: "K" }, fora: { tipo: "2", grupo: "L" } },
+  { ordem: 16, matchNumber: 83, ladoEsquerdo: true,  casa: { tipo: "2", grupo: "K" }, fora: { tipo: "2", grupo: "L" } },
 ];
 
 // ────────────────────────────────────────────────────────────────────────
