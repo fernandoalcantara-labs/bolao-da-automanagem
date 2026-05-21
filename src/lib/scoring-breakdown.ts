@@ -123,7 +123,10 @@ export async function calcularBreakdown(
       .eq("user_id", userId),
     supabase
       .from("matches")
-      .select("id, rodada, data_hora, time_casa_id, time_fora_id, placar_casa, placar_fora, status")
+      // IMPORTANTE: `grupo` é OBRIGATÓRIO pro cálculo do R32 abaixo
+      // (classificadosParaMataMata precisa do grupo de cada jogo).
+      // Sem ele, jogosVirtuais fica vazio e a seção 🎯 16 avos some.
+      .select("id, rodada, grupo, data_hora, time_casa_id, time_fora_id, placar_casa, placar_fora, status")
       .eq("fase", "grupos")
       .order("data_hora"),
     supabase.from("teams").select("id, nome, bandeira_url"),
