@@ -119,7 +119,7 @@ describe("classificação na fase de grupos", () => {
     expect(brasil.gols_pro).toBe(2);
   });
 
-  it("aplica cascata de desempate: pontos → saldo → gols pró → h2h", async () => {
+  it("aplica cascata de desempate: pontos → confronto direto → saldo → gols pró", async () => {
     const { classificarPorGrupo } = await import("../src/lib/classification");
     const jogos = [
       { grupo: "A" as const, time_casa_id: "A", time_fora_id: "B", placar_casa: 1, placar_fora: 0 },
