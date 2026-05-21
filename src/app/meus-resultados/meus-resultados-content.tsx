@@ -162,58 +162,19 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
         </CardContent>
       </Card>
 
-      {/* 16 avos (Round of 32) — derivado dos palpites de grupos */}
-      {breakdown.r32.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              🎯 16 avos · {breakdown.r32.length} classificados
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Times que vão ao mata-mata segundo seus palpites de grupos (regras FIFA: 1º + 2º +
-              melhores 3ºs).
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 md:grid-cols-4">
-              {breakdown.r32.map((t) => (
-                <div
-                  key={t.time_id}
-                  className="flex items-center gap-1.5 rounded-md border border-border/40 bg-white p-1.5 text-xs"
-                >
-                  {t.time_bandeira && (
-                    <Image
-                      src={t.time_bandeira}
-                      alt={t.time_nome}
-                      width={16}
-                      height={11}
-                      unoptimized
-                      className="rounded-sm"
-                    />
-                  )}
-                  <span className="team-name flex-1 font-medium">{t.time_nome}</span>
-                  <span className="flex flex-col items-end text-[10px] font-bold text-muted-foreground leading-tight">
-                    <span>{t.posicao_grupo}·{t.grupo}</span>
-                    {t.posicao_terceiro !== null && (
-                      <span className="text-festive-orange">
-                        {t.posicao_terceiro}º melhor 3º
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Mata-mata */}
+      {/* Mata-mata (com 16 avos integrado no topo) */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">🏟️ Mata-mata · {breakdown.mata.subtotal} pts</CardTitle>
+          {breakdown.r32.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Os 32 classificados das 16 avos vêm dos seus palpites de grupos (regras FIFA: 1º +
+              2º + 8 melhores 3ºs). 16 avos não pontua — pontos só a partir das oitavas.
+            </p>
+          )}
         </CardHeader>
         <CardContent>
-          {breakdown.mata.items.length === 0 ? (
+          {breakdown.r32.length === 0 && breakdown.mata.items.length === 0 ? (
             <p className="text-sm text-muted-foreground">Você ainda não palpitou no mata-mata.</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border bg-white">
@@ -227,8 +188,50 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* 16 avos — 32 classificados derivados dos palpites de grupos.
+                      A origem (1ºA / 2ºB / Nº melhor 3º) aparece à direita do
+                      nome do time. Não pontua → 0 pts. */}
+                  {breakdown.r32.map((t) => (
+                    <tr
+                      key={`r32-${t.time_id}`}
+                      className={cn(
+                        "border-t border-border/40",
+                        t.acertou && "bg-festive-green/10",
+                        t.pendente && "bg-festive-page/40",
+                      )}
+                    >
+                      <td className="p-2 font-bold">16 avos</td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-1">
+                          {t.time_bandeira && (
+                            <Image src={t.time_bandeira} alt={t.time_nome} width={16} height={11} unoptimized className="rounded-sm" />
+                          )}
+                          <span className="team-name">{t.time_nome}</span>
+                          <span className="ml-1 text-[10px] font-bold text-muted-foreground">
+                            ({t.posicao_terceiro !== null
+                              ? `${t.posicao_terceiro}º melhor 3º · ${t.grupo}`
+                              : `${t.posicao_grupo} ${t.grupo}`})
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-2 text-center">
+                        {t.pendente ? "⏳" : t.acertou ? "✅" : "❌"}
+                      </td>
+                      <td className="p-2 text-right font-extrabold">
+                        <span className="text-muted-foreground">0</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {/* Fases palpitadas (8avos → campeao) */}
                   {breakdown.mata.items.map((it, idx) => (
-                    <tr key={`${it.fase}-${it.time_id}-${idx}`} className="border-t border-border/40">
+                    <tr
+                      key={`${it.fase}-${it.time_id}-${idx}`}
+                      className={cn(
+                        "border-t border-border/40",
+                        it.acertou && "bg-festive-green/10",
+                        it.pendente && "bg-festive-page/40",
+                      )}
+                    >
                       <td className="p-2 font-bold capitalize">{it.fase}</td>
                       <td className="p-2">
                         <div className="flex items-center gap-1">
@@ -238,7 +241,9 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                           <span className="team-name">{it.time_nome}</span>
                         </div>
                       </td>
-                      <td className="p-2 text-center">{it.acertou ? "✅" : "❌"}</td>
+                      <td className="p-2 text-center">
+                        {it.pendente ? "⏳" : it.acertou ? "✅" : "❌"}
+                      </td>
                       <td className="p-2 text-right font-extrabold">
                         {it.pontos > 0 ? (
                           <span className="text-festive-green">+{it.pontos}</span>

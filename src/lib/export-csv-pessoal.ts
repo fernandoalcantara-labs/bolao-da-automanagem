@@ -70,42 +70,42 @@ export function gerarCsvPessoal(b: Breakdown): string {
   linhas.push(csvEscape("Subtotal fase de grupos:") + "," + csvEscape(b.grupos.subtotal));
   linhas.push("");
 
-  // 16 avos (R32 derivado dos palpites de grupos) — vem DEPOIS da fase
-  // de grupos porque é consequência dos palpites de placar
-  if (b.r32.length > 0) {
-    linhas.push("[16 AVOS — 32 CLASSIFICADOS (pelos seus palpites de grupos)]");
-    linhas.push(
-      [
-        csvEscape("Posição"),
-        csvEscape("Grupo"),
-        csvEscape("Time"),
-        csvEscape("Ranking 3º (se aplicável)"),
-      ].join(","),
-    );
-    for (const t of b.r32) {
-      linhas.push(
-        [
-          csvEscape(t.posicao_grupo),
-          csvEscape(t.grupo),
-          csvEscape(t.time_nome),
-          csvEscape(t.posicao_terceiro !== null ? `${t.posicao_terceiro}º melhor 3º` : ""),
-        ].join(","),
-      );
-    }
-    linhas.push("");
-  }
-
-  // Mata-mata
+  // Mata-mata — inclui 16 avos no topo (32 classificados derivados dos
+  // palpites de grupos) seguido das fases palpitadas. 16 avos não pontua.
   linhas.push("[MATA-MATA]");
   linhas.push(
-    [csvEscape("Fase"), csvEscape("Time Palpitado"), csvEscape("Acertou?"), csvEscape("Pontos")].join(","),
+    [
+      csvEscape("Fase"),
+      csvEscape("Time Palpitado"),
+      csvEscape("Origem"),
+      csvEscape("Acertou?"),
+      csvEscape("Pontos"),
+    ].join(","),
   );
+  for (const t of b.r32) {
+    const origem =
+      t.posicao_terceiro !== null
+        ? `${t.posicao_terceiro}º melhor 3º (grupo ${t.grupo})`
+        : `${t.posicao_grupo} grupo ${t.grupo}`;
+    const acertouLabel = t.pendente ? "Pendente" : t.acertou ? "Sim" : "Não";
+    linhas.push(
+      [
+        csvEscape("16 avos"),
+        csvEscape(t.time_nome),
+        csvEscape(origem),
+        csvEscape(acertouLabel),
+        csvEscape(0),
+      ].join(","),
+    );
+  }
   for (const it of b.mata.items) {
+    const acertouLabel = it.pendente ? "Pendente" : it.acertou ? "Sim" : "Não";
     linhas.push(
       [
         csvEscape(it.fase),
         csvEscape(it.time_nome),
-        csvEscape(it.acertou ? "Sim" : "Não"),
+        csvEscape(""),
+        csvEscape(acertouLabel),
         csvEscape(it.pontos),
       ].join(","),
     );
@@ -176,21 +176,23 @@ export function gerarTextoPessoal(b: Breakdown): string {
   linhas.push(`Subtotal grupos: ${b.grupos.subtotal} pts`);
   linhas.push("");
 
-  if (b.r32.length > 0) {
-    linhas.push(`16 AVOS — ${b.r32.length} CLASSIFICADOS (pelos seus palpites de grupos)`);
-    for (const t of b.r32) {
-      const sufixo =
-        t.posicao_terceiro !== null
-          ? ` [${t.posicao_terceiro}º melhor 3º]`
-          : "";
-      linhas.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
-    }
-    linhas.push("");
-  }
-
+  // MATA-MATA com 16 avos integrado no topo (32 classificados pelos
+  // palpites de grupos). 16 avos não pontua → 0 pts.
   linhas.push("MATA-MATA");
+  if (b.r32.length > 0) {
+    linhas.push(`16 avos — ${b.r32.length} classificados (pelos seus palpites de grupos)`);
+    for (const t of b.r32) {
+      const origem =
+        t.posicao_terceiro !== null
+          ? `${t.posicao_terceiro}º melhor 3º · ${t.grupo}`
+          : `${t.posicao_grupo} ${t.grupo}`;
+      const icon = t.pendente ? "⏳" : t.acertou ? "✅" : "❌";
+      linhas.push(`- 16 avos: ${t.time_nome} (${origem}) ${icon}`);
+    }
+  }
   for (const it of b.mata.items) {
-    linhas.push(`${it.fase}: ${it.time_nome} ${it.acertou ? "✅" : "❌"} ${it.pontos > 0 ? `+${it.pontos}pts` : ""}`);
+    const icon = it.pendente ? "⏳" : it.acertou ? "✅" : "❌";
+    linhas.push(`${it.fase}: ${it.time_nome} ${icon} ${it.pontos > 0 ? `+${it.pontos}pts` : ""}`);
   }
   linhas.push(`Subtotal mata-mata: ${b.mata.subtotal} pts`);
   linhas.push("");
