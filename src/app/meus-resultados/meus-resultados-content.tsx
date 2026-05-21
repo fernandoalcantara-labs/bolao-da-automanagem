@@ -197,7 +197,6 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                       className={cn(
                         "border-t border-border/40",
                         t.acertou && "bg-festive-green/10",
-                        t.pendente && "bg-festive-page/40",
                       )}
                     >
                       <td className="p-2 font-bold">16 avos</td>
@@ -229,7 +228,6 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                       className={cn(
                         "border-t border-border/40",
                         it.acertou && "bg-festive-green/10",
-                        it.pendente && "bg-festive-page/40",
                       )}
                     >
                       <td className="p-2 font-bold capitalize">{it.fase}</td>

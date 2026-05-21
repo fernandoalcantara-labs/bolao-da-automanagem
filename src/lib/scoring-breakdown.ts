@@ -306,10 +306,25 @@ export async function calcularBreakdown(
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const cls = classificarPalpiteMata(p.fase as FasePalpiteMata, real as any);
     const pontos = cls.acertou && cls.faseEfetiva ? pontosPalpiteMata(cls.faseEfetiva, cfg) : 0;
-    // Pendente: o time ainda está vivo no torneio (tem jogo agendado/em
-    // andamento) e ainda não chegou na fase palpitada. Não dá pra dizer
-    // se errou definitivamente. Acertou já cobre o caso positivo.
-    const pendente = !cls.acertou && timesAindaAtivos.has(p.time_id);
+    // Pendente: ainda não dá pra afirmar se o palpite acertou OU errou.
+    // = !acertou E !timeJaEliminado
+    //
+    // Time foi DEFINITIVAMENTE eliminado?
+    //  - campeão → não, ganhou tudo
+    //  - faseReal === "grupos" → eliminado SE a fase de grupos REAL
+    //    inteira terminou (caso contrário ainda há jogos pra disputar)
+    //  - faseReal !== "grupos" && !== "campeao" → chegou ao mata e
+    //    parou em alguma fase. Se não há jogo futuro pra esse time no
+    //    bracket, foi eliminado.
+    let timeJaEliminado: boolean;
+    if (real === "campeao") {
+      timeJaEliminado = false;
+    } else if (real === "grupos") {
+      timeJaEliminado = todosGruposFinalizados;
+    } else {
+      timeJaEliminado = !timesAindaAtivos.has(p.time_id);
+    }
+    const pendente = !cls.acertou && !timeJaEliminado;
     mataItems.push({
       fase: p.fase as FasePalpiteMata,
       time_id: p.time_id,
