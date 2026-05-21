@@ -41,6 +41,10 @@ export type BreakdownMataItem = {
   time_nome: string;
   time_bandeira: string;
   acertou: boolean;
+  /** true quando o resultado real desse palpite ainda não foi lançado:
+   *  o time não atingiu (ainda) a fase palpitada MAS também não foi
+   *  eliminado — ainda pode chegar lá. Implica acertou=false. */
+  pendente: boolean;
   pontos: number;
   fase_real: string;
 };
@@ -63,6 +67,12 @@ export type BreakdownR32Item = {
   /** Quando o time é 3º (melhor), sua posição (1-8) no ranking dos
    *  8 melhores terceiros. null pra 1º/2º. */
   posicao_terceiro: number | null;
+  /** O time realmente avançou pra R32 na fase de grupos REAL?
+   *  (i.e., faseAlcancada !== "grupos"). */
+  acertou: boolean;
+  /** true quando a fase de grupos REAL ainda não terminou — o resultado
+   *  desse palpite ainda não está decidido. Implica acertou=false. */
+  pendente: boolean;
 };
 
 export type Breakdown = {
@@ -184,6 +194,39 @@ export async function calcularBreakdown(
     });
   }
 
+  // Fase de grupos REAL finalizada? Usado pra marcar palpites R32 como
+  // pendentes enquanto a fase de grupos ainda não terminou (todos os 72
+  // jogos finalizados).
+  const matchesGList = (matchesG ?? []) as any[];
+  const todosGruposFinalizados =
+    matchesGList.length > 0 &&
+    matchesGList.every((m) => m.status === "finalizado");
+
+  // ─────────────── Mata-mata: dados auxiliares pra pendência ──
+  // Carregamos faseAlcancada + lista de jogos do mata-mata.
+  // `timesAindaAtivos` = times com pelo menos um jogo de mata-mata
+  // PENDENTE (status != finalizado) onde o time já foi alocado.
+  // Se um time não está no set, ou ele venceu a final (campeão) ou foi
+  // eliminado, ou simplesmente nunca foi pra mata-mata.
+  const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase as any);
+  const [{ data: palpitesM }, { data: matchesM }] = await Promise.all([
+    supabase
+      .from("palpites_mata")
+      .select("time_id, fase")
+      .eq("user_id", userId),
+    supabase
+      .from("matches")
+      .select("fase, time_casa_id, time_fora_id, status")
+      .in("fase", ["16avos", "8avos", "quartas", "semi", "3lugar", "final"]),
+  ]);
+  const timesAindaAtivos = new Set<string>();
+  for (const m of (matchesM ?? []) as any[]) {
+    if (m.status === "finalizado") continue;
+    if (m.fase === "3lugar") continue; // 3o lugar não conta pra avanço
+    if (m.time_casa_id) timesAindaAtivos.add(m.time_casa_id);
+    if (m.time_fora_id) timesAindaAtivos.add(m.time_fora_id);
+  }
+
   // ─────────────── R32 (16 avos) — 32 classificados pelos palpites ──
   // Não rende pontos diretamente, mas o user e o admin querem ver quem
   // ele "manda" pro mata-mata a partir dos palpites de grupos (regras
@@ -191,7 +234,7 @@ export async function calcularBreakdown(
   const r32Items: BreakdownR32Item[] = [];
   if ((palpitesG ?? []).length > 0) {
     const matchesGruposById = new Map(
-      ((matchesG ?? []) as any[]).map((m) => [m.id, m]),
+      matchesGList.map((m) => [m.id, m]),
     );
     const jogosVirtuais: JogoFinalizado[] = [];
     for (const p of (palpitesG ?? []) as any[]) {
@@ -224,6 +267,12 @@ export async function calcularBreakdown(
           : isSegundo
             ? "2º"
             : "3º (melhor)";
+        // Acertou? o time realmente avançou ao mata-mata?
+        const faseReal = faseAlcancada.get(t.time_id) ?? "grupos";
+        const acertou = faseReal !== "grupos";
+        // Pendente: enquanto a fase de grupos não terminar, não dá pra
+        // afirmar se o time avançou ou não na realidade.
+        const pendente = !todosGruposFinalizados && !acertou;
         r32Items.push({
           time_id: t.time_id,
           time_nome: time?.nome ?? "—",
@@ -232,6 +281,8 @@ export async function calcularBreakdown(
           posicao_grupo,
           posicao_terceiro:
             !isPrimeiro && !isSegundo ? posTerceiroPorId.get(t.time_id) ?? null : null,
+          acertou,
+          pendente,
         });
       }
     } catch {
@@ -239,13 +290,7 @@ export async function calcularBreakdown(
     }
   }
 
-  // ─────────────── Mata-mata ───────────────
-  const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase as any);
-  const { data: palpitesM } = await supabase
-    .from("palpites_mata")
-    .select("time_id, fase")
-    .eq("user_id", userId);
-
+  // ─────────────── Mata-mata: monta items dos palpites ──
   const ordemFase: Record<FasePalpiteMata, number> = {
     "16avos": 0,
     "8avos": 1,
@@ -261,12 +306,32 @@ export async function calcularBreakdown(
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const cls = classificarPalpiteMata(p.fase as FasePalpiteMata, real as any);
     const pontos = cls.acertou && cls.faseEfetiva ? pontosPalpiteMata(cls.faseEfetiva, cfg) : 0;
+    // Pendente: ainda não dá pra afirmar se o palpite acertou OU errou.
+    // = !acertou E !timeJaEliminado
+    //
+    // Time foi DEFINITIVAMENTE eliminado?
+    //  - campeão → não, ganhou tudo
+    //  - faseReal === "grupos" → eliminado SE a fase de grupos REAL
+    //    inteira terminou (caso contrário ainda há jogos pra disputar)
+    //  - faseReal !== "grupos" && !== "campeao" → chegou ao mata e
+    //    parou em alguma fase. Se não há jogo futuro pra esse time no
+    //    bracket, foi eliminado.
+    let timeJaEliminado: boolean;
+    if (real === "campeao") {
+      timeJaEliminado = false;
+    } else if (real === "grupos") {
+      timeJaEliminado = todosGruposFinalizados;
+    } else {
+      timeJaEliminado = !timesAindaAtivos.has(p.time_id);
+    }
+    const pendente = !cls.acertou && !timeJaEliminado;
     mataItems.push({
       fase: p.fase as FasePalpiteMata,
       time_id: p.time_id,
       time_nome: time?.nome ?? "—",
       time_bandeira: time?.bandeira_url ?? "",
       acertou: cls.acertou,
+      pendente,
       pontos,
       fase_real:
         real === "grupos"
@@ -367,22 +432,24 @@ export function breakdownParaTexto(b: Breakdown): string {
   }
   lines.push("");
 
-  if (b.r32.length > 0) {
-    lines.push(`16 AVOS (classificados pelos palpites de grupos): ${b.r32.length} times`);
-    for (const t of b.r32) {
-      const sufixo =
-        t.posicao_terceiro !== null
-          ? ` [${t.posicao_terceiro}º melhor 3º]`
-          : "";
-      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
-    }
-    lines.push("");
-  }
-
+  // Mata-mata começa pela seção "16 avos" (32 classificados pelos
+  // palpites de grupos) e segue com as fases palpitadas. Não pontua
+  // a parte de R32 — só os palpites de mata-mata mesmo.
   lines.push(`MATA-MATA: ${b.mata.subtotal} pts`);
+  if (b.r32.length > 0) {
+    lines.push(`16 avos — ${b.r32.length} classificados (pelos palpites de grupos)`);
+    for (const t of b.r32) {
+      const origem =
+        t.posicao_terceiro !== null
+          ? `${t.posicao_terceiro}º melhor 3º (grupo ${t.grupo})`
+          : `${t.posicao_grupo} grupo ${t.grupo}`;
+      const status = t.pendente ? "⏳" : t.acertou ? "✅" : "❌";
+      lines.push(`- 16 avos: ${t.time_nome} [${origem}] ${status} 0`);
+    }
+  }
   for (const it of b.mata.items) {
-    const ok = it.acertou ? "✅" : "❌";
-    lines.push(`- ${FASE_LABELS[it.fase]}: ${it.time_nome} ${ok} ${it.pontos > 0 ? `+${it.pontos}` : "0"}`);
+    const status = it.pendente ? "⏳" : it.acertou ? "✅" : "❌";
+    lines.push(`- ${FASE_LABELS[it.fase]}: ${it.time_nome} ${status} ${it.pontos > 0 ? `+${it.pontos}` : "0"}`);
   }
   lines.push("");
 
