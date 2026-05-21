@@ -342,18 +342,6 @@ export function breakdownParaTexto(b: Breakdown): string {
   lines.push("═".repeat(40));
   lines.push("");
 
-  if (b.r32.length > 0) {
-    lines.push(`16 AVOS (classificados pelos palpites de grupos): ${b.r32.length} times`);
-    for (const t of b.r32) {
-      const sufixo =
-        t.posicao_terceiro !== null
-          ? ` [${t.posicao_terceiro}º melhor 3º]`
-          : "";
-      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
-    }
-    lines.push("");
-  }
-
   lines.push(`FASE DE GRUPOS: ${b.grupos.subtotal} pts`);
   // QW4 item 23.6 — inclui TODOS os 72 jogos, não só os finalizados.
   for (const it of b.grupos.items) {
@@ -378,6 +366,18 @@ export function breakdownParaTexto(b: Breakdown): string {
     lines.push(`- R${it.rodada} ${it.casa_nome} ${real} ${it.fora_nome} (palpitou ${palpite}): ${tag}`);
   }
   lines.push("");
+
+  if (b.r32.length > 0) {
+    lines.push(`16 AVOS (classificados pelos palpites de grupos): ${b.r32.length} times`);
+    for (const t of b.r32) {
+      const sufixo =
+        t.posicao_terceiro !== null
+          ? ` [${t.posicao_terceiro}º melhor 3º]`
+          : "";
+      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
+    }
+    lines.push("");
+  }
 
   lines.push(`MATA-MATA: ${b.mata.subtotal} pts`);
   for (const it of b.mata.items) {
