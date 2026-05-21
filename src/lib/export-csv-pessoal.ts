@@ -24,6 +24,30 @@ export function gerarCsvPessoal(b: Breakdown): string {
   linhas.push(`Total: ${b.total} pts · Posição atual: ${b.posicao_atual ?? "—"}º`);
   linhas.push("");
 
+  // 16 avos (R32 derivado dos palpites de grupos)
+  if (b.r32.length > 0) {
+    linhas.push("[16 AVOS — 32 CLASSIFICADOS (pelos seus palpites de grupos)]");
+    linhas.push(
+      [
+        csvEscape("Posição"),
+        csvEscape("Grupo"),
+        csvEscape("Time"),
+        csvEscape("Ranking 3º (se aplicável)"),
+      ].join(","),
+    );
+    for (const t of b.r32) {
+      linhas.push(
+        [
+          csvEscape(t.posicao_grupo),
+          csvEscape(t.grupo),
+          csvEscape(t.time_nome),
+          csvEscape(t.posicao_terceiro !== null ? `${t.posicao_terceiro}º melhor 3º` : ""),
+        ].join(","),
+      );
+    }
+    linhas.push("");
+  }
+
   // Fase de grupos
   linhas.push("[FASE DE GRUPOS]");
   linhas.push(
@@ -121,6 +145,18 @@ export function gerarTextoPessoal(b: Breakdown): string {
   linhas.push(`${b.nome} · ${b.total} pts · ${b.posicao_atual ?? "—"}º lugar`);
   linhas.push("━".repeat(40));
   linhas.push("");
+  if (b.r32.length > 0) {
+    linhas.push(`16 AVOS — ${b.r32.length} CLASSIFICADOS (pelos seus palpites de grupos)`);
+    for (const t of b.r32) {
+      const sufixo =
+        t.posicao_terceiro !== null
+          ? ` [${t.posicao_terceiro}º melhor 3º]`
+          : "";
+      linhas.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
+    }
+    linhas.push("");
+  }
+
   linhas.push("FASE DE GRUPOS");
   for (const it of b.grupos.items) {
     const palpite =
