@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Trophy } from "lucide-react";
+import { Trophy, Minus, Plus, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FasePalpiteMata } from "@/types/database";
 import type { ParR32Resolvido } from "@/lib/bracket-2026";
@@ -104,74 +104,171 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
     return [...vencedoresA.slice(0, 1), ...vencedoresB.slice(0, 1)];
   }
 
+  // ─── Zoom (Tarefa 2 QW5) ───
+  // Estado de zoom: 1.0 = tamanho normal, < 1 encolhe pra caber no mobile.
+  // Limites 0.35–1.0 (passo 0.05). "Ajustar à tela" calcula com base na
+  // largura visível do container externo.
+  const [zoom, setZoom] = React.useState(1);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const [naturalHeight, setNaturalHeight] = React.useState(0);
+
+  // Mede altura natural do conteúdo (sem zoom) — transform: scale() não
+  // afeta o scrollHeight, então o valor medido é sempre o tamanho 1:1.
+  React.useEffect(() => {
+    if (!contentRef.current) return;
+    const update = () => {
+      if (contentRef.current) setNaturalHeight(contentRef.current.scrollHeight);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(contentRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  function zoomIn() {
+    setZoom((z) => Math.min(1, +(z + 0.05).toFixed(2)));
+  }
+  function zoomOut() {
+    setZoom((z) => Math.max(0.35, +(z - 0.05).toFixed(2)));
+  }
+  function ajustarATela() {
+    if (!containerRef.current) return;
+    // -32 pra descontar padding interno (p-3 sm:p-4) + sombra da borda
+    const w = containerRef.current.clientWidth - 32;
+    const target = w / 1100;
+    setZoom(Math.max(0.35, Math.min(1, +target.toFixed(2))));
+  }
+
+  // Altura do wrapper externo = altura natural × zoom (encolhe junto)
+  const alturaContainer = naturalHeight > 0 ? naturalHeight * zoom + 24 : undefined;
+
   return (
     <div
-      className="overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
-      style={{ WebkitOverflowScrolling: "touch" }}
+      ref={containerRef}
+      className="relative overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
+      style={{ WebkitOverflowScrolling: "touch", height: alturaContainer }}
     >
-      <div className="flex min-w-[1100px] items-stretch gap-3">
-        {/* Lado esquerdo */}
-        <ColunaRound
-          titulo="16 avos"
-          altura={8}
-          matches={R32_ESQUERDO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
-        />
-        <ColunaRound
-          titulo="Oitavas"
-          altura={4}
-          matches={R16.filter((n) => n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
-        <ColunaRound
-          titulo="Quartas"
-          altura={2}
-          matches={QF.filter((n) => n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
-        <ColunaRound
-          titulo="Semi"
-          altura={1}
-          matches={SF.filter((n) => n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
+      {/* Controles flutuantes de zoom (não escalam — ficam fixos no canto). */}
+      <div className="absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full border border-border bg-white/95 p-1 shadow-stack backdrop-blur">
+        <button
+          type="button"
+          onClick={zoomOut}
+          aria-label="Diminuir zoom"
+          className="rounded-full p-1.5 transition-colors hover:bg-festive-page disabled:opacity-40 active:scale-95"
+          disabled={zoom <= 0.35}
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <Minus className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={ajustarATela}
+          aria-label="Ajustar à tela"
+          className="rounded-full p-1.5 transition-colors hover:bg-festive-page active:scale-95"
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={zoomIn}
+          aria-label="Aumentar zoom"
+          className="rounded-full p-1.5 transition-colors hover:bg-festive-page disabled:opacity-40 active:scale-95"
+          disabled={zoom >= 1}
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
+        <span className="px-1.5 text-[10px] font-bold tabular-nums text-muted-foreground">
+          {Math.round(zoom * 100)}%
+        </span>
+      </div>
 
-        {/* Centro */}
-        <CentroBracket teams={teams} picks={picks} onPick={onPick} fechado={fechado} />
+      {/* Wrapper de layout: reserva no DOM o tamanho VISUAL (1100×zoom)
+          pra evitar scrollbar fantasma quando zoom < 1. O transform de
+          dentro encolhe o conteúdo real. */}
+      <div style={{ width: 1100 * zoom }}>
+        {/* Wrapper escalado: contém TUDO que precisa encolher junto
+            (faixa de títulos + bracket). transform-origin top-left
+            pra o encolhimento sair do canto esquerdo. */}
+        <div
+          ref={contentRef}
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: "top left",
+            width: 1100,
+          }}
+        >
+        {/* Faixa de títulos das fases (Tarefa 5 QW5)
+            Cada TituloCol usa as MESMAS larguras das colunas abaixo
+            (minWidth: 180 nas ColunaRound + 196px no Centro com px-2).
+            Resultado: títulos alinhados verticalmente sobre as colunas. */}
+        <div className="mb-2 flex min-w-[1100px] items-end gap-3">
+          <TituloCol titulo="16 avos" />
+          <TituloCol titulo="Oitavas" />
+          <TituloCol titulo="Quartas" />
+          <TituloCol titulo="Semi" />
+          <TituloCol titulo="Final" alinhamento="center" largura={180} />
+          <TituloCol titulo="Semi" alinhamento="right" />
+          <TituloCol titulo="Quartas" alinhamento="right" />
+          <TituloCol titulo="Oitavas" alinhamento="right" />
+          <TituloCol titulo="16 avos" alinhamento="right" />
+        </div>
 
-        {/* Lado direito (espelhado) */}
-        <ColunaRound
-          titulo="Semi"
-          altura={1}
-          alinhamento="right"
-          matches={SF.filter((n) => !n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
-        <ColunaRound
-          titulo="Quartas"
-          altura={2}
-          alinhamento="right"
-          matches={QF.filter((n) => !n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
-        <ColunaRound
-          titulo="Oitavas"
-          altura={4}
-          alinhamento="right"
-          matches={R16.filter((n) => !n.ladoEsquerdo).map((n) =>
-            renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
-          )}
-        />
-        <ColunaRound
-          titulo="16 avos"
-          altura={8}
-          alinhamento="right"
-          matches={R32_DIREITO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
-        />
+        <div className="flex min-w-[1100px] items-stretch gap-3">
+          {/* Lado esquerdo */}
+          <ColunaRound
+            altura={8}
+            matches={R32_ESQUERDO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+          />
+          <ColunaRound
+            altura={4}
+            matches={R16.filter((n) => n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+          <ColunaRound
+            altura={2}
+            matches={QF.filter((n) => n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+          <ColunaRound
+            altura={1}
+            matches={SF.filter((n) => n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+
+          {/* Centro */}
+          <CentroBracket teams={teams} picks={picks} onPick={onPick} fechado={fechado} />
+
+          {/* Lado direito (espelhado) */}
+          <ColunaRound
+            altura={1}
+            matches={SF.filter((n) => !n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+          <ColunaRound
+            altura={2}
+            matches={QF.filter((n) => !n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+          <ColunaRound
+            altura={4}
+            matches={R16.filter((n) => !n.ladoEsquerdo).map((n) =>
+              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+            )}
+          />
+          <ColunaRound
+            altura={8}
+            matches={R32_DIREITO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+          />
+        </div>
+        </div>
       </div>
     </div>
   );
@@ -201,20 +298,18 @@ function faseDoNo(no: NoMataMata): FasePalpiteMata {
 }
 
 // ──────────────────────────── Coluna por round ────────────────────────────
+// QW5 T5: o título saiu daqui pra uma faixa única no topo do bracket.
+// ColunaRound agora renderiza só os cards centralizados verticalmente.
 
 function ColunaRound({
-  titulo,
   matches,
   altura,
-  alinhamento = "left",
 }: {
-  titulo: string;
   matches: React.ReactNode[];
   altura: number;
-  alinhamento?: "left" | "right";
 }) {
   // Espaçamento entre matches cresce conforme avança nas fases:
-  // 8 matches → space-y-2, 4 → space-y-12, 2 → space-y-32, 1 → centro
+  // 8 matches → gap-2, 4 → gap-[3.5rem], 2 → gap-[10rem], 1 → centro
   const spacing =
     altura === 8 ? "gap-2" :
     altura === 4 ? "gap-[3.5rem]" :
@@ -222,15 +317,33 @@ function ColunaRound({
     "";
   return (
     <div className="flex flex-col" style={{ minWidth: 180 }}>
-      <p
-        className={cn(
-          "mb-2 text-[10px] font-extrabold uppercase tracking-widest text-festive-green",
-          alinhamento === "right" && "text-right",
-        )}
-      >
-        {titulo}
-      </p>
       <div className={cn("flex flex-1 flex-col justify-center", spacing)}>{matches}</div>
+    </div>
+  );
+}
+
+// QW5 T5: faixa de títulos no topo do bracket. Cada coluna usa a MESMA
+// largura mínima (180px) das ColunaRound, garantindo que o texto fique
+// exatamente sobre a coluna correspondente abaixo.
+function TituloCol({
+  titulo,
+  alinhamento = "left",
+  largura = 180,
+}: {
+  titulo: string;
+  alinhamento?: "left" | "center" | "right";
+  largura?: number;
+}) {
+  return (
+    <div
+      style={{ minWidth: largura }}
+      className={cn(
+        "text-[10px] font-extrabold uppercase tracking-widest text-festive-green",
+        alinhamento === "center" && "text-center",
+        alinhamento === "right" && "text-right",
+      )}
+    >
+      {titulo}
     </div>
   );
 }
@@ -395,7 +508,7 @@ function CentroBracket({
   const campeao = [...picks.campeao][0];
 
   return (
-    <div className="flex min-w-[180px] flex-col items-center justify-center gap-3 px-2">
+    <div className="flex flex-col items-center justify-center gap-3" style={{ minWidth: 180 }}>
       <Trophy className="h-12 w-12 text-festive-gold-dark drop-shadow-md" />
       <div className="w-full">
         <p className="mb-1 text-center text-[10px] font-extrabold uppercase tracking-widest text-festive-gold-dark">
