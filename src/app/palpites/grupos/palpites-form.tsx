@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
-import { Loader2, Save, LayoutGrid, ListOrdered } from "lucide-react";
+import { Loader2, Save, LayoutGrid, ListOrdered, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -225,6 +225,19 @@ function PorGrupo({
     return [...m.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [matches]);
 
+  // QW5 T1 — Grupos colapsáveis. Estado: Set de grupos RECOLHIDOS.
+  // Padrão = todos expandidos. Apenas estado React (sem localStorage,
+  // seguindo padrão do projeto pra estado de UI efêmera).
+  const [recolhidos, setRecolhidos] = React.useState<Set<string>>(() => new Set());
+  function toggleGrupo(grupo: string) {
+    setRecolhidos((prev) => {
+      const next = new Set(prev);
+      if (next.has(grupo)) next.delete(grupo);
+      else next.add(grupo);
+      return next;
+    });
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {porGrupo.map(([grupo, jogos]) => {
@@ -232,11 +245,23 @@ function PorGrupo({
         const palpitadosNoGrupo = jogos.filter(
           (j) => state[j.id]?.c !== "" && state[j.id]?.f !== "",
         ).length;
+        const isRecolhido = recolhidos.has(grupo);
+        const painelId = `grupo-${grupo}-jogos`;
         return (
           <Card key={grupo} className="overflow-hidden">
             <CardContent className="space-y-3 p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              {/* Header clicável: expande/recolhe o grupo. Mantém o
+                  micro-resumo (badges + flags + progresso) sempre visível
+                  pra ajudar no mobile a saber o que tem dentro. */}
+              <button
+                type="button"
+                onClick={() => toggleGrupo(grupo)}
+                aria-expanded={!isRecolhido}
+                aria-controls={painelId}
+                className="-m-3 flex w-[calc(100%+1.5rem)] items-center justify-between gap-2 rounded p-3 text-left transition-colors hover:bg-festive-page/40"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   <Badge className="text-sm">Grupo {grupo}</Badge>
                   <div className="flex -space-x-1">
                     {times.map((t) => (
@@ -253,70 +278,79 @@ function PorGrupo({
                     ))}
                   </div>
                 </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {palpitadosNoGrupo}/6 palpites
-                </span>
-              </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground">
+                    {palpitadosNoGrupo}/6
+                  </span>
+                  {isRecolhido ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </button>
 
-              <div className="space-y-1.5">
-                {jogos
-                  .sort((a, b) => a.data_hora.localeCompare(b.data_hora))
-                  .map((m) => {
-                    const casa = teams[m.time_casa_id];
-                    const fora = teams[m.time_fora_id];
-                    if (!casa || !fora) return null;
-                    const v = state[m.id];
-                    const dis = fechado || m.status !== "agendado";
-                    return (
-                      <div
-                        key={m.id}
-                        className="rounded border border-border/40 bg-card/30 p-2"
-                      >
-                        <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
-                          <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
-                            <span className="team-name font-medium">{casa.nome}</span>
-                            <Image src={casa.bandeira_url} alt={casa.nome} width={20} height={14} unoptimized className="rounded-sm" />
+              {!isRecolhido && (
+                <div id={painelId} className="space-y-1.5">
+                  {jogos
+                    .sort((a, b) => a.data_hora.localeCompare(b.data_hora))
+                    .map((m) => {
+                      const casa = teams[m.time_casa_id];
+                      const fora = teams[m.time_fora_id];
+                      if (!casa || !fora) return null;
+                      const v = state[m.id];
+                      const dis = fechado || m.status !== "agendado";
+                      return (
+                        <div
+                          key={m.id}
+                          className="rounded border border-border/40 bg-card/30 p-2"
+                        >
+                          <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
+                            <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
                           </div>
-                          <input
-                            inputMode="numeric"
-                            className={cn(
-                              "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
-                              v?.c ? "border-festive-green" : "border-dashed border-festive-green/40",
-                            )}
-                            value={v?.c ?? ""}
-                            onChange={(e) => update(m.id, "c", e.target.value)}
-                            disabled={dis}
-                            aria-label={`Placar de ${casa.nome}`}
-                          />
-                          <span className="font-bold text-muted-foreground">×</span>
-                          <input
-                            inputMode="numeric"
-                            className={cn(
-                              "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
-                              v?.f ? "border-festive-green" : "border-dashed border-festive-green/40",
-                            )}
-                            value={v?.f ?? ""}
-                            onChange={(e) => update(m.id, "f", e.target.value)}
-                            disabled={dis}
-                            aria-label={`Placar de ${fora.nome}`}
-                          />
-                          <div className="flex flex-1 items-center gap-1.5 text-xs">
-                            <Image src={fora.bandeira_url} alt={fora.nome} width={20} height={14} unoptimized className="rounded-sm" />
-                            <span className="team-name font-medium">{fora.nome}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
+                              <span className="team-name font-medium">{casa.nome}</span>
+                              <Image src={casa.bandeira_url} alt={casa.nome} width={20} height={14} unoptimized className="rounded-sm" />
+                            </div>
+                            <input
+                              inputMode="numeric"
+                              className={cn(
+                                "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                                v?.c ? "border-festive-green" : "border-dashed border-festive-green/40",
+                              )}
+                              value={v?.c ?? ""}
+                              onChange={(e) => update(m.id, "c", e.target.value)}
+                              disabled={dis}
+                              aria-label={`Placar de ${casa.nome}`}
+                            />
+                            <span className="font-bold text-muted-foreground">×</span>
+                            <input
+                              inputMode="numeric"
+                              className={cn(
+                                "h-11 w-11 shrink-0 rounded-xl border-2 bg-white px-0 text-center font-fredoka text-lg font-extrabold tabular-nums transition-colors focus:outline-none focus:ring-2 focus:ring-festive-green/30 disabled:cursor-not-allowed disabled:opacity-50",
+                                v?.f ? "border-festive-green" : "border-dashed border-festive-green/40",
+                              )}
+                              value={v?.f ?? ""}
+                              onChange={(e) => update(m.id, "f", e.target.value)}
+                              disabled={dis}
+                              aria-label={`Placar de ${fora.nome}`}
+                            />
+                            <div className="flex flex-1 items-center gap-1.5 text-xs">
+                              <Image src={fora.bandeira_url} alt={fora.nome} width={20} height={14} unoptimized className="rounded-sm" />
+                              <span className="team-name font-medium">{fora.nome}</span>
+                            </div>
                           </div>
+                          {m.status === "finalizado" && (
+                            <p className="mt-1 text-center text-[10px] text-emerald-400">
+                              Resultado: {m.placar_casa}-{m.placar_fora}
+                            </p>
+                          )}
                         </div>
-                        {m.status === "finalizado" && (
-                          <p className="mt-1 text-center text-[10px] text-emerald-400">
-                            Resultado: {m.placar_casa}-{m.placar_fora}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-              </div>
+                      );
+                    })}
+                </div>
+              )}
             </CardContent>
           </Card>
         );

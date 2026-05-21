@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, Save, AlertTriangle } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -165,23 +165,6 @@ export function MataMataForm({
 
   return (
     <div className="space-y-4">
-      {/* Banner de empate entre 3os colocados (tarefa 4 do fix-matamata) */}
-      {empateTerceiros && (
-        <Card className="border-2 border-festive-orange/40 bg-festive-orange/5">
-          <CardContent className="flex items-start gap-3 p-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-festive-orange" />
-            <p className="text-sm font-medium">
-              ⚠️ Pelos seus palpites,{" "}
-              <strong className="text-festive-orange">{empateTerceiros.quantidade}</strong>{" "}
-              seleções estão empatadas em pontos/saldo/gols pró na disputa pelos 8 melhores
-              terceiros. Nessa situação, a FIFA usa o ranking pré-Copa. No nosso bolão, estamos
-              usando ordem alfabética para desempatar — isso pode mudar as equipes classificadas
-              em terceiro.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Header com progresso e autosave */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ProgressoFases picks={picks} />
@@ -189,8 +172,11 @@ export function MataMataForm({
       </div>
 
       <div className="space-y-2">
+        {/* QW5 T2: dica de mobile atualizada — agora menciona os botões
+            de zoom em vez de só "arrastar". */}
         <p className="text-xs font-medium text-muted-foreground lg:hidden">
-          👉 Arrasta horizontalmente pra ver todo o bracket. Toca num time pra marcar como vencedor.
+          👉 Use os botões de zoom (canto superior direito) ou arraste pra ver o bracket. Toca num
+          time pra marcar como vencedor.
         </p>
         <BracketView
           r32={r32}
@@ -200,6 +186,26 @@ export function MataMataForm({
           fechado={fechado}
         />
       </div>
+
+      {/* QW5 T3+T4: Banner de empate entre 3os colocados — movido pra
+          DEPOIS do bracket, sem ícone de alerta, tom informativo neutro.
+          Texto reescrito pra explicar o critério real (cartões amarelos
+          durante a Copa) e tranquilizar o user (não afeta palpites). */}
+      {empateTerceiros && (
+        <Card className="border-2 border-border bg-festive-page">
+          <CardContent className="p-3">
+            <p className="text-sm text-muted-foreground">
+              Pelos seus palpites,{" "}
+              <strong className="text-festive-green">{empateTerceiros.quantidade}</strong>{" "}
+              seleções estão empatadas em pontos/saldo/gols pró na disputa pelos 8 melhores
+              terceiros. Durante a Copa, o critério de desempate vai ser número de cartões
+              amarelos, o que não conseguimos simular por agora. No nosso bolão, estamos usando
+              ordem alfabética para desempatar — não se preocupe, pois isso não vai impactar
+              nos próximos palpites.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {!fechado && (
         <div className="sticky bottom-20 z-10 flex justify-end lg:bottom-4">
