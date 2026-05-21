@@ -60,6 +60,9 @@ export type BreakdownR32Item = {
   time_bandeira: string;
   grupo: string;
   posicao_grupo: "1º" | "2º" | "3º (melhor)";
+  /** Quando o time é 3º (melhor), sua posição (1-8) no ranking dos
+   *  8 melhores terceiros. null pra 1º/2º. */
+  posicao_terceiro: number | null;
 };
 
 export type Breakdown = {
@@ -206,20 +209,29 @@ export async function calcularBreakdown(
       const r = classificadosParaMataMata(jogosVirtuais);
       const primeirosIds = new Set(r.primeiros.map((t) => t.time_id));
       const segundosIds = new Set(r.segundos.map((t) => t.time_id));
+      // Mapa time_id → posição (1-8) no ranking dos melhores terceiros.
+      // terceirosClassificados ja' vem ordenado (1º melhor → 8º melhor).
+      const posTerceiroPorId = new Map<string, number>();
+      r.terceirosClassificados.forEach((t, i) =>
+        posTerceiroPorId.set(t.time_id, i + 1),
+      );
       for (const t of r.todosClassificados) {
         const time = teamMap.get(t.time_id) as any;
-        const posicao_grupo: BreakdownR32Item["posicao_grupo"] =
-          primeirosIds.has(t.time_id)
-            ? "1º"
-            : segundosIds.has(t.time_id)
-              ? "2º"
-              : "3º (melhor)";
+        const isPrimeiro = primeirosIds.has(t.time_id);
+        const isSegundo = segundosIds.has(t.time_id);
+        const posicao_grupo: BreakdownR32Item["posicao_grupo"] = isPrimeiro
+          ? "1º"
+          : isSegundo
+            ? "2º"
+            : "3º (melhor)";
         r32Items.push({
           time_id: t.time_id,
           time_nome: time?.nome ?? "—",
           time_bandeira: time?.bandeira_url ?? "",
           grupo: t.grupo,
           posicao_grupo,
+          posicao_terceiro:
+            !isPrimeiro && !isSegundo ? posTerceiroPorId.get(t.time_id) ?? null : null,
         });
       }
     } catch {
@@ -333,7 +345,11 @@ export function breakdownParaTexto(b: Breakdown): string {
   if (b.r32.length > 0) {
     lines.push(`16 AVOS (classificados pelos palpites de grupos): ${b.r32.length} times`);
     for (const t of b.r32) {
-      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}`);
+      const sufixo =
+        t.posicao_terceiro !== null
+          ? ` [${t.posicao_terceiro}º melhor 3º]`
+          : "";
+      lines.push(`- ${t.posicao_grupo} grupo ${t.grupo}: ${t.time_nome}${sufixo}`);
     }
     lines.push("");
   }
