@@ -202,8 +202,13 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                           />
                         )}
                         <span className="team-name flex-1 font-medium">{t.time_nome}</span>
-                        <span className="text-[10px] font-bold text-muted-foreground">
-                          {t.posicao_grupo}·{t.grupo}
+                        <span className="flex flex-col items-end text-[10px] font-bold text-muted-foreground leading-tight">
+                          <span>{t.posicao_grupo}·{t.grupo}</span>
+                          {t.posicao_terceiro !== null && (
+                            <span className="text-festive-orange">
+                              {t.posicao_terceiro}º melhor 3º
+                            </span>
+                          )}
                         </span>
                       </div>
                     ))}
