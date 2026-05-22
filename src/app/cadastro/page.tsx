@@ -9,7 +9,7 @@ export default function CadastroPage() {
       <div className="mb-5 flex flex-col items-center gap-2 text-center">
         <Mascot size={56} />
         <h1 className="font-fredoka text-2xl font-extrabold">Tô dentro! 🎉</h1>
-        <p className="text-sm text-muted-foreground">Vagas limitadas a 30 participantes</p>
+        <p className="text-sm text-muted-foreground">Bora participar do bolão dos amigos! 🇧🇷⚽</p>
       </div>
       <Card>
         <CardHeader>

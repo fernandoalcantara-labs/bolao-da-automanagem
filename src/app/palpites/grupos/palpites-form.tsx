@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
-// formatarDataJogo removido temporariamente — datas do seed estão erradas
-// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
+import { formatarDataRelativa } from "@/lib/datetime";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
@@ -307,6 +306,7 @@ function PorGrupo({
                         >
                           <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
                             <Badge variant="muted" className="text-[10px]">R{m.rodada}</Badge>
+                            <span className="font-medium">{formatarDataRelativa(m.data_hora)}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <div className="flex flex-1 items-center justify-end gap-1.5 text-right text-xs">
@@ -395,8 +395,9 @@ function PorRodada({
               return (
                 <Card key={m.id} className="overflow-hidden">
                   <CardContent className="flex items-center gap-3 p-3">
-                    <div className="flex w-16 flex-col text-[10px] text-muted-foreground">
+                    <div className="flex w-16 flex-col gap-0.5 text-[10px] text-muted-foreground">
                       <Badge variant="muted" className="text-[10px]">{m.grupo}</Badge>
+                      <span className="font-medium leading-tight">{formatarDataRelativa(m.data_hora)}</span>
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
                       <span className="team-name text-sm font-medium">{casa.nome}</span>
