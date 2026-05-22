@@ -23,10 +23,10 @@ import { createClient } from "@supabase/supabase-js";
 import {
   SELECOES,
   bandeiraUrl,
-  gerarJogosFaseGrupos,
   ARTILHEIROS_CANDIDATOS,
   FASES_MATA_MATA,
 } from "../src/data/world-cup-2026";
+import { CALENDARIO_GRUPOS_2026 } from "../src/data/world-cup-2026-schedule";
 import type { Database, FasePalpiteMata, Grupo } from "../src/types/database";
 import { classificadosParaMataMata } from "../src/lib/classification";
 import { recalcularTudo } from "../src/lib/recalc";
@@ -121,38 +121,36 @@ async function seedMatchesGrupos() {
   console.log("→ Jogos da fase de grupos (72)…");
   await supabase.from("matches").delete().gt("created_at", "1900-01-01");
 
-  const { data: teams } = await supabase.from("teams").select("id, nome, grupo, codigo_fifa");
+  const { data: teams } = await supabase.from("teams").select("id, nome");
   if (!teams) throw new Error("Times não encontrados");
 
-  // Para cada grupo, achar os 4 times ordenados como aparecem em SELECOES
-  const porGrupo = new Map<Grupo, { id: string; idx: number }[]>();
-  for (const g of "ABCDEFGHIJKL".split("") as Grupo[]) {
-    const selecoesDoGrupo = SELECOES.filter((s) => s.grupo === g);
-    const times = selecoesDoGrupo.map((s, idx) => {
-      const dbTeam = teams.find((t) => t.nome === s.nome);
-      if (!dbTeam) throw new Error(`Time não encontrado: ${s.nome}`);
-      return { id: dbTeam.id, idx };
-    });
-    porGrupo.set(g, times);
-  }
+  // Confrontos + datas/horários OFICIAIS da FIFA 2026 (CALENDARIO_GRUPOS_2026).
+  // Os times são resolvidos por NOME (== teams.nome). `kickoff` é o horário
+  // local da sede com offset → toISOString() grava o UTC correto. Assim o
+  // seed já nasce com pareamentos e datas reais (sem precisar do script
+  // aplicar-datas-fifa.ts depois).
+  const idPorNome = new Map(teams.map((t) => [t.nome as string, t.id as string]));
 
-  const jogos = gerarJogosFaseGrupos();
-  const rows = jogos.map((j) => {
-    const times = porGrupo.get(j.grupo)!;
+  const rows = CALENDARIO_GRUPOS_2026.map((f) => {
+    const casaId = idPorNome.get(f.casa);
+    const foraId = idPorNome.get(f.fora);
+    if (!casaId || !foraId) {
+      throw new Error(`Time do calendário não encontrado em teams: "${f.casa}" ou "${f.fora}"`);
+    }
     return {
       fase: "grupos" as const,
-      rodada: j.rodada,
-      grupo: j.grupo,
-      time_casa_id: times[j.casaIdx].id,
-      time_fora_id: times[j.foraIdx].id,
-      data_hora: j.data,
+      rodada: f.rodada,
+      grupo: f.grupo,
+      time_casa_id: casaId,
+      time_fora_id: foraId,
+      data_hora: new Date(f.kickoff).toISOString(),
       status: "agendado" as const,
     };
   });
 
   const { error } = await supabase.from("matches").insert(rows as any);
   if (error) throw error;
-  console.log(`   ✓ ${rows.length} jogos da fase de grupos`);
+  console.log(`   ✓ ${rows.length} jogos da fase de grupos (confrontos + datas oficiais FIFA)`);
 }
 
 // =====================================================================
