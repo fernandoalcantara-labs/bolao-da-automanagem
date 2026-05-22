@@ -1,8 +1,7 @@
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-// formatarDataJogo removido temporariamente — datas do seed estão erradas
-// (ver discussao no CT-10 da QW3). Reativar quando o seed for corrigido.
+import { formatarDataRelativa } from "@/lib/datetime";
 
 type TeamInfo = { nome: string; bandeira_url: string };
 type Match = {
@@ -49,15 +48,22 @@ export function ConfrontosRodada({
                   <Image src={casa.bandeira_url} alt={casa.nome} width={24} height={18} className="rounded-sm" unoptimized />
                 )}
               </div>
-              <div className="flex flex-col items-center text-xs">
+              <div className="flex flex-col items-center gap-0.5 text-xs">
                 {m.status === "finalizado" ? (
                   <span className="font-mono font-bold text-primary">
                     {m.placar_casa} – {m.placar_fora}
                   </span>
                 ) : (
-                  <Badge variant={m.status === "andamento" ? "warning" : "muted"}>
-                    {m.status === "andamento" ? "AO VIVO" : "vs"}
-                  </Badge>
+                  <>
+                    <Badge variant={m.status === "andamento" ? "warning" : "muted"}>
+                      {m.status === "andamento" ? "AO VIVO" : "vs"}
+                    </Badge>
+                    {m.status === "agendado" && (
+                      <span className="whitespace-nowrap text-[10px] font-medium text-muted-foreground">
+                        {formatarDataRelativa(m.data_hora)}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               <div className="flex flex-1 items-center gap-2">

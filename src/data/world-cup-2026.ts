@@ -87,7 +87,7 @@ export const SELECOES: Selecao[] = [
 
   // Grupo K
   { nome: "Portugal", codigo: "pt", grupo: "K" },
-  { nome: "República Democrática do Congo", codigo: "cd", grupo: "K" }, // Intercontinental 1
+  { nome: "RD do Congo", codigo: "cd", grupo: "K" }, // Intercontinental 1 (nome curto = igual ao banco/produção)
   { nome: "Uzbequistão", codigo: "uz", grupo: "K" },
   { nome: "Colômbia", codigo: "co", grupo: "K" },
 

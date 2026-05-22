@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, Target, Calendar, Wallet, Share2 } from "lucide-react";
+import { Trophy, Target, Calendar, Wallet, Share2, BookOpen, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,25 @@ export default async function RegrasPage() {
           Valores atualizados em tempo real conforme o admin ajusta a configuração ✨
         </p>
       </header>
+
+      {/* Botão: guia "Como usar o Bolão" (abre HTML estático em nova aba) */}
+      <a
+        href="/como-usar.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center gap-3 rounded-2xl border-2 border-festive-green/30 bg-festive-green/5 p-4 transition-all hover:border-festive-green/60 hover:bg-festive-green/10"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-festive-green text-white shadow-stack">
+          <BookOpen className="h-5 w-5" />
+        </span>
+        <span className="flex-1">
+          <span className="block font-fredoka text-base font-extrabold">📖 Como usar o Bolão</span>
+          <span className="block text-xs text-muted-foreground">
+            Guia passo a passo com prints: criar conta, palpitar e acompanhar o ranking.
+          </span>
+        </span>
+        <ArrowRight className="h-5 w-5 shrink-0 text-festive-green transition-transform group-hover:translate-x-1" />
+      </a>
 
       {/* Resumo do prêmio */}
       <Card className="border-2 border-festive-gold-dark/40 gradient-gold shadow-stack-gold">

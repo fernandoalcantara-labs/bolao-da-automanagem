@@ -6,8 +6,9 @@ import { MataMataForm } from "./mata-mata-form";
 import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { resolverBracketR32, R32_PARES, detectarEmpateTerceiros } from "@/lib/bracket-2026";
-import type { Grupo } from "@/types/database";
+import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
+import { PONTUACAO_DEFAULT } from "@/lib/scoring";
+import type { Grupo, PontuacaoConfig } from "@/types/database";
 import type { JogoFinalizado } from "@/lib/classification";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function MataMataPage() {
   const user = await requireUser();
   const supabase = createClient();
 
-  const [{ data: teams }, { data: palpitesMata }, { data: matchesGrupos }, { data: palpitesGrupos }] = await Promise.all([
+  const [{ data: teams }, { data: palpitesMata }, { data: matchesGrupos }, { data: palpitesGrupos }, { data: cfgRow }] = await Promise.all([
     supabase
       .from("teams")
       .select("id, nome, codigo_fifa, bandeira_url, grupo, tbd")
@@ -41,7 +42,11 @@ export default async function MataMataPage() {
       .from("palpites_grupos")
       .select("match_id, placar_casa, placar_fora")
       .eq("user_id", user.id),
+    supabase.from("config").select("valor").eq("chave", "pontuacao").single(),
   ]);
+
+  // Pontos por fase vêm da config (não hardcodar — admin pode mudar).
+  const pontuacao: PontuacaoConfig = (cfgRow?.valor as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
 
   const fechado = Date.now() >= DEADLINE_FASE_GRUPOS.getTime();
 
@@ -82,9 +87,6 @@ export default async function MataMataPage() {
           foraOrigemTerceiro: null,
         }));
 
-  // Empate "relevante" entre 3os colocados — banner amarelo se houver
-  const empateTerceiros = todosPalpitados ? detectarEmpateTerceiros(jogosPalpitados) : null;
-
   return (
     <div className="space-y-5">
       <Card>
@@ -95,7 +97,11 @@ export default async function MataMataPage() {
               O R32 (16 avos) é montado dinamicamente pelos <strong className="text-foreground">seus palpites</strong> da fase de grupos. Marque quem você acha que ganha cada partida.
             </p>
             <p className="mt-1 text-xs font-bold text-muted-foreground">
-              Pontos: <span className="text-festive-green">8 · 12 · 16 · 20</span> · 24 (vice) · 40 (campeão)
+              Pontos:{" "}
+              <span className="text-festive-green">
+                {pontuacao.mata_16avos} · {pontuacao.mata_8avos} · {pontuacao.mata_quartas} · {pontuacao.mata_semi}
+              </span>{" "}
+              · {pontuacao.vice} (vice) · {pontuacao.campeao} (campeão)
             </p>
           </div>
           <Countdown target={DEADLINE_FASE_GRUPOS} label="Encerra em" />
@@ -131,7 +137,6 @@ export default async function MataMataPage() {
         r32={r32Resolvido}
         fechado={fechado}
         userId={user.id}
-        empateTerceiros={empateTerceiros}
       />
     </div>
   );
