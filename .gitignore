@@ -43,3 +43,6 @@ next-env.d.ts
 
 # Prompt original (interno)
 PROMPT_CLAUDE_CODE.md
+
+# Roteiros de teste locais (rascunho do Fernando — nao versionados)
+ROTEIRO_TESTE_*.md
