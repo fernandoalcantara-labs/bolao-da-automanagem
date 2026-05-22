@@ -36,7 +36,7 @@ export function shareMessageCompleto(info: ShareInfoCompleto): string {
     `*Pontuação*:`,
     `🎯 Placar exato: ${info.pontuacao.placar_exato} pts`,
     `✅ Acertou vencedor/empate: ${info.pontuacao.vencedor_ou_empate} pts`,
-    `⚽ Mata-mata: 8 / 12 / 16 / 20 pts por fase`,
+    `⚽ Mata-mata: ${info.pontuacao.mata_16avos} / ${info.pontuacao.mata_8avos} / ${info.pontuacao.mata_quartas} / ${info.pontuacao.mata_semi} pts por fase`,
     `🥇 Campeão: ${info.pontuacao.campeao} pts | 🥈 Vice: ${info.pontuacao.vice} pts`,
     `⚽ Artilheiro: ${info.pontuacao.artilheiro} pts`,
     "",

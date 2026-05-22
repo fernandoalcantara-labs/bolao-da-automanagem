@@ -3,7 +3,6 @@
 import * as React from "react";
 import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
@@ -11,7 +10,7 @@ import type { FasePalpiteMata } from "@/types/database";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti, bigConfetti } from "@/lib/confetti";
 import { BracketView, type Team as BracketTeam } from "./bracket-view";
-import type { ParR32Resolvido, EmpateTerceiros } from "@/lib/bracket-2026";
+import type { ParR32Resolvido } from "@/lib/bracket-2026";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 import { aplicarPick, ORDEM_FASES } from "@/lib/mata-mata-picks";
@@ -43,14 +42,12 @@ export function MataMataForm({
   r32,
   fechado,
   userId,
-  empateTerceiros,
 }: {
   teams: Team[];
   palpites: Palpite[];
   r32: ParR32Resolvido[];
   fechado: boolean;
   userId: string;
-  empateTerceiros?: EmpateTerceiros | null;
 }) {
   const storageKey = `bolao:palpites:mata:${userId}`;
 
@@ -186,26 +183,6 @@ export function MataMataForm({
           fechado={fechado}
         />
       </div>
-
-      {/* QW5 T3+T4: Banner de empate entre 3os colocados — movido pra
-          DEPOIS do bracket, sem ícone de alerta, tom informativo neutro.
-          Texto reescrito pra explicar o critério real (cartões amarelos
-          durante a Copa) e tranquilizar o user (não afeta palpites). */}
-      {empateTerceiros && (
-        <Card className="border-2 border-border bg-festive-page">
-          <CardContent className="p-3">
-            <p className="text-sm text-muted-foreground">
-              Pelos seus palpites,{" "}
-              <strong className="text-festive-green">{empateTerceiros.quantidade}</strong>{" "}
-              seleções estão empatadas em pontos/saldo/gols pró na disputa pelos 8 melhores
-              terceiros. Durante a Copa, o critério de desempate vai ser número de cartões
-              amarelos, o que não conseguimos simular por agora. No nosso bolão, estamos usando
-              ordem alfabética para desempatar — não se preocupe, pois isso não vai impactar
-              nos próximos palpites.
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {!fechado && (
         <div className="sticky bottom-20 z-10 flex justify-end lg:bottom-4">

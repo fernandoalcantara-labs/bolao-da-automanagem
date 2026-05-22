@@ -47,7 +47,7 @@ export function MobileHeader({
           pixNome={pixNome}
           compact
         />
-        <DesignedBySorriso compact />
+        <DesignedBySorriso shortText />
       </div>
     </header>
   );

@@ -140,14 +140,58 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
     setZoom(Math.max(0.35, Math.min(1, +target.toFixed(2))));
   }
 
+  // ─── Pinch-to-zoom (Tarefa 2 QW6) ───
+  // Pinça nativa com 2 dedos no mobile. O container usa
+  // touch-action: pan-x pan-y → scroll de 1 dedo funciona normal e o
+  // gesto de 2 dedos NÃO dispara o zoom da página (cai nos handlers
+  // abaixo). Rastreamos os 2 ponteiros e ajustamos o `zoom` pela razão
+  // entre a distância atual e a inicial.
+  const ponteiros = React.useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchInicio = React.useRef<{ dist: number; zoom: number } | null>(null);
+
+  function distanciaPonteiros() {
+    const pts = [...ponteiros.current.values()];
+    if (pts.length < 2) return 0;
+    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+  }
+  function onPointerDown(e: React.PointerEvent) {
+    if (e.pointerType !== "touch") return;
+    ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ponteiros.current.size === 2) {
+      pinchInicio.current = { dist: distanciaPonteiros(), zoom };
+    }
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!ponteiros.current.has(e.pointerId)) return;
+    ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ponteiros.current.size === 2 && pinchInicio.current) {
+      const dist = distanciaPonteiros();
+      if (pinchInicio.current.dist > 0) {
+        const ratio = dist / pinchInicio.current.dist;
+        const next = Math.max(0.35, Math.min(1, +(pinchInicio.current.zoom * ratio).toFixed(2)));
+        setZoom(next);
+      }
+    }
+  }
+  function onPointerUp(e: React.PointerEvent) {
+    ponteiros.current.delete(e.pointerId);
+    if (ponteiros.current.size < 2) pinchInicio.current = null;
+  }
+
   // Altura do wrapper externo = altura natural × zoom (encolhe junto)
   const alturaContainer = naturalHeight > 0 ? naturalHeight * zoom + 24 : undefined;
 
   return (
     <div
       ref={containerRef}
-      className="relative overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
-      style={{ WebkitOverflowScrolling: "touch", height: alturaContainer }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      className="relative snap-x snap-proximity overflow-x-auto overscroll-x-contain rounded-2xl bg-gradient-to-br from-festive-page to-white p-3 shadow-stack scrollbar-thin sm:p-4"
+      // touch-action pan-x pan-y: scroll de 1 dedo OK; pinça de 2 dedos
+      // não vira zoom de página → cai nos handlers de pinch acima.
+      style={{ WebkitOverflowScrolling: "touch", height: alturaContainer, touchAction: "pan-x pan-y" }}
     >
       {/* Controles flutuantes de zoom (não escalam — ficam fixos no canto). */}
       <div className="absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full border border-border bg-white/95 p-1 shadow-stack backdrop-blur">
@@ -316,7 +360,9 @@ function ColunaRound({
     altura === 2 ? "gap-[10rem]" :
     "";
   return (
-    <div className="flex flex-col" style={{ minWidth: 180 }}>
+    // QW6 T2: snap-start faz o scroll horizontal "parar" alinhado em cada
+    // coluna (combina com snap-proximity no container).
+    <div className="flex snap-start flex-col" style={{ minWidth: 180 }}>
       <div className={cn("flex flex-1 flex-col justify-center", spacing)}>{matches}</div>
     </div>
   );
@@ -465,7 +511,9 @@ function MatchSlot({
       disabled={!onClick}
       style={{ WebkitTapHighlightColor: "transparent" }}
       className={cn(
-        "flex w-full items-center gap-1.5 rounded-md px-2 py-2 text-left text-xs font-bold transition-all touch-manipulation",
+        // QW6 T2: min-h-[44px] = alvo de toque confortável no mobile
+        // (recomendação Apple/Google). Antes ~32px, fácil errar o clique.
+        "flex min-h-[44px] w-full items-center gap-1.5 rounded-md px-2 py-2 text-left text-xs font-bold transition-all touch-manipulation",
         // Escolhido (passa de fase): verde Brasil com texto branco
         escolhido && "bg-gradient-to-br from-festive-green to-festive-green-light text-white ring-1 ring-festive-green-deep",
         // Não escolhido + clicável: hover amarelo claro
@@ -529,7 +577,8 @@ function CentroBracket({
                   disabled={!podeClicar}
                   style={{ WebkitTapHighlightColor: "transparent" }}
                   className={cn(
-                    "flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-xs font-extrabold transition-all touch-manipulation",
+                    // QW6 T2: min-h-[44px] alvo de toque confortável (idem MatchSlot)
+                    "flex min-h-[44px] w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-xs font-extrabold transition-all touch-manipulation",
                     // Não escolhido (estado normal): fundo branco, texto escuro
                     !isCampeao && tid && "text-zinc-900 hover:bg-festive-gold/15",
                     // Escolhido como CAMPEÃO: gradient dourado, texto escuro forte (contraste alto)

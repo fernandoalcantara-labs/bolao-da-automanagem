@@ -8,10 +8,15 @@ const SORRISO_URL = "https://share.google/AVyw1Z4DE6Cw2c3uT";
 export function DesignedBySorriso({
   className,
   compact = false,
+  shortText = false,
   onLight = false,
 }: {
   className?: string;
+  /** Só o avatar, sem texto (espaço muito apertado). */
   compact?: boolean;
+  /** Texto curto "by Sorriso" em vez de "Designed by Sorriso" — pro
+   *  header mobile, onde o nome do bolão divide espaço. */
+  shortText?: boolean;
   onLight?: boolean;
 }) {
   return (
@@ -31,7 +36,7 @@ export function DesignedBySorriso({
       title="Designed by Sorriso"
     >
       <SorrisoAvatar className="h-6 w-6" />
-      {!compact && <span>Designed by Sorriso</span>}
+      {!compact && <span>{shortText ? "by Sorriso" : "Designed by Sorriso"}</span>}
     </a>
   );
 }
