@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Como usar o Bolão da AutoManagem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --green: #1f9d57;
+    --green-deep: #157a42;
+    --gold: #ffc83d;
+    --gold-deep: #f59e0b;
+    --orange: #fb7a3c;
+    --purple: #8b5cf6;
+    --blue: #4a9eff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --page: #fdf8ee;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Nunito", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--page);
+    line-height: 1.55;
+  }
+  h1, h2, h3, .fred { font-family: "Fredoka", system-ui, sans-serif; }
+  a { color: inherit; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+  /* ───── Header ───── */
+  header.hero {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-deep) 55%, #0f5f33 100%);
+    color: white;
+    padding: 40px 16px 56px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header.hero::after {
+    content: "⚽ 🏆 🥅 🎉 ⚽ 🏆 🥅 🎉";
+    position: absolute;
+    inset: 0;
+    font-size: 64px;
+    opacity: 0.06;
+    letter-spacing: 24px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .hero h1 { font-size: clamp(26px, 6vw, 42px); font-weight: 700; }
+  .hero p { margin-top: 10px; font-size: 16px; opacity: 0.92; max-width: 620px; margin-left: auto; margin-right: auto; }
+
+  /* ───── Índice ───── */
+  .indice {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: -32px;
+    margin-bottom: 40px;
+  }
+  .indice a {
+    background: white;
+    border-radius: 16px;
+    padding: 16px 12px;
+    text-decoration: none;
+    box-shadow: 0 6px 0 rgba(0,0,0,0.06), 0 10px 24px rgba(0,0,0,0.08);
+    border-bottom: 4px solid var(--c);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .indice a:hover { transform: translateY(-4px); box-shadow: 0 10px 0 rgba(0,0,0,0.06), 0 16px 30px rgba(0,0,0,0.12); }
+  .indice .n {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--c);
+    color: white;
+    font-weight: 800;
+    font-family: "Fredoka";
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .indice .t { font-weight: 800; font-size: 14px; }
+  .indice .s { font-size: 12px; color: var(--muted); }
+
+  /* ───── Passo ───── */
+  .passo {
+    background: white;
+    border-radius: 22px;
+    padding: 26px;
+    margin-bottom: 28px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.04), 0 12px 30px rgba(0,0,0,0.06);
+    border-top: 6px solid var(--c);
+    scroll-margin-top: 16px;
+  }
+  .passo-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .passo-head .n {
+    width: 46px; height: 46px; flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--c);
+    color: white; font-family: "Fredoka"; font-weight: 700; font-size: 22px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.12);
+  }
+  .passo-head h2 { font-size: clamp(20px, 4.5vw, 26px); font-weight: 700; }
+  .passo-head .tag { font-size: 13px; color: var(--muted); font-weight: 700; }
+
+  .passo-body { display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+
+  .instr ol { list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 12px; }
+  .instr li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 40px;
+    font-size: 15.5px;
+  }
+  .instr li::before {
+    content: counter(step);
+    position: absolute; left: 0; top: -1px;
+    width: 26px; height: 26px;
+    background: var(--c); color: white;
+    border-radius: 50%;
+    font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0.9;
+  }
+  .instr strong { color: var(--c); }
+
+  .dica {
+    margin-top: 18px;
+    background: color-mix(in srgb, var(--c) 9%, white);
+    border: 1.5px solid color-mix(in srgb, var(--c) 28%, white);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+  .dica b { font-family: "Fredoka"; }
+
+  /* Phone frame com print real */
+  .phone {
+    border: 7px solid #1f2937;
+    border-radius: 30px;
+    overflow: hidden;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.22);
+    background: #1f2937;
+    margin: 0 auto;
+    max-width: 280px;
+  }
+  .phone img { width: 100%; display: block; }
+  .phone-cap { text-align: center; font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 700; }
+
+  /* ───── Resumão ───── */
+  .resumao {
+    background: linear-gradient(135deg, #fff7e6, #fff);
+    border: 2px dashed var(--gold-deep);
+    border-radius: 22px;
+    padding: 26px;
+    margin: 40px 0 28px;
+    text-align: center;
+  }
+  .resumao h2 { font-size: 22px; margin-bottom: 18px; }
+  .resumao-steps { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+  .resumao .chip {
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 800;
+    font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .resumao .chip .dot { width: 22px; height: 22px; border-radius: 50%; color: white; font-size: 12px; display: flex; align-items: center; justify-content: center; font-family: "Fredoka"; font-weight: 700; }
+  .resumao .arrow { color: var(--gold-deep); font-weight: 900; font-size: 18px; }
+
+  footer.credits {
+    text-align: center;
+    padding: 28px 16px 48px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  footer.credits .brand { font-family: "Fredoka"; font-weight: 700; color: var(--ink); }
+  footer.credits .sorriso { color: var(--gold-deep); }
+
+  @media (max-width: 720px) {
+    .indice { grid-template-columns: repeat(2, 1fr); }
+    .passo-body { grid-template-columns: 1fr; }
+    .phone { max-width: 240px; margin-top: 8px; }
+    .instr { order: 2; }
+    .phone-wrap { order: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <span class="badge">🇧🇷 Copa do Mundo FIFA 2026</span>
+  <h1>Como usar o Bolão da AutoManagem</h1>
+  <p>Em 4 passos rápidos você cria sua conta, manda os palpites e acompanha sua posição no ranking. Bora! ⚽</p>
+</header>
+
+<div class="wrap">
+
+  <!-- Índice -->
+  <nav class="indice">
+    <a href="#passo1" style="--c: var(--green)"><span class="n">1</span><span class="t">Criar conta</span><span class="s">Entre no bolão</span></a>
+    <a href="#passo2" style="--c: var(--blue)"><span class="n">2</span><span class="t">Colocar resultados</span><span class="s">72 jogos de grupo</span></a>
+    <a href="#passo3" style="--c: var(--orange)"><span class="n">3</span><span class="t">Apostar no mata-mata</span><span class="s">Monte o chaveamento</span></a>
+    <a href="#passo4" style="--c: var(--purple)"><span class="n">4</span><span class="t">Verificar apostas</span><span class="s">Pontos e ranking</span></a>
+  </nav>
+
+  <!-- Passo 1 -->
+  <section class="passo" id="passo1" style="--c: var(--green)">
+    <div class="passo-head">
+      <div class="n">1</div>
+      <div><h2>🟢 Criar conta</h2><div class="tag">Leva menos de 1 minuto</div></div>
+    </div>
+    <div class="passo-body">
+      <div class="instr">
+        <ol>
+          <li>Abra o link do bolão e toque em <strong>Criar conta</strong>.</li>
+          <li>Preencha <strong>nome completo</strong>, <strong>email</strong> e <strong>senha</strong>.</li>
+          <li>Se quiser, coloque seu <strong>telefone</strong> (opcional, só pra contato sobre o PIX).</li>
+          <li>Toque em <strong>Tô dentro! 🎉</strong> e pronto, você já está no bolão.</li>
+        </ol>
+        <div class="dica">💡 <b>Fica ligado:</b> as vagas são limitadas a <b>30 participantes</b>. Faça o <b>PIX</b> pra confirmar — só quem está pago aparece no ranking público.</div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone"><img src="/guia/01-cadastro.png" alt="Tela de cadastro do Bolão" loading="lazy" /></div>
+        <p class="phone-cap">Tela de cadastro</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passo 2 -->
+  <section class="passo" id="passo2" style="--c: var(--blue)">
+    <div class="passo-head">
+      <div class="n">2</div>
+      <div><h2>🔵 Colocar resultados</h2><div class="tag">Fase de grupos · 72 jogos</div></div>
+    </div>
+    <div class="passo-body">
+      <div class="instr">
+        <ol>
+          <li>No menu de baixo, toque em <strong>Grupos</strong>.</li>
+          <li>Em cada jogo, digite o <strong>placar que você acha</strong> que vai acontecer (ex.: México 1 × 2 África do Sul).</li>
+          <li>No celular, dá pra <strong>recolher cada grupo</strong> (toque no cabeçalho) pra navegar mais fácil.</li>
+          <li>Não precisa salvar à mão: aparece <strong>"Tudo salvo"</strong> — o app guarda sozinho.</li>
+        </ol>
+        <div class="dica">💡 <b>Pontuação:</b> <b>5 pts</b> no placar exato e <b>2 pts</b> se você acertar só o vencedor (ou o empate). Dá pra palpitar até o <b>início da Copa (11/jun)</b>.</div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone"><img src="/guia/02-grupos.png" alt="Tela de palpites da fase de grupos" loading="lazy" /></div>
+        <p class="phone-cap">Palpites · Fase de grupos</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passo 3 -->
+  <section class="passo" id="passo3" style="--c: var(--orange)">
+    <div class="passo-head">
+      <div class="n">3</div>
+      <div><h2>🟠 Apostar no mata-mata</h2><div class="tag">Do 16 avos até o campeão</div></div>
+    </div>
+    <div class="passo-body">
+      <div class="instr">
+        <ol>
+          <li>Toque em <strong>Mata-mata</strong>. O chaveamento (16 avos) é montado <strong>automaticamente</strong> a partir dos seus palpites de grupos.</li>
+          <li>Toque nos times que você acha que <strong>avançam</strong> em cada fase — eles ficam <strong>verdes com ✓</strong>.</li>
+          <li>No celular, use os <strong>botões de zoom (– / +)</strong> ou a <strong>pinça de 2 dedos</strong> pra ver o bracket inteiro.</li>
+          <li>No centro, escolha o seu <strong>campeão</strong> (card dourado 🏆).</li>
+        </ol>
+        <div class="dica">💡 <b>Pontos sobem por fase:</b> 8 → 16 → 20 → 24 por acerto, mais <b>30</b> pro vice e <b>50</b> pro campeão. Aqui você só escolhe quem passa — não precisa cravar placar.</div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone"><img src="/guia/03-bracket.png" alt="Tela do bracket de mata-mata" loading="lazy" /></div>
+        <p class="phone-cap">Mata-mata · seu chaveamento</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passo 4 -->
+  <section class="passo" id="passo4" style="--c: var(--purple)">
+    <div class="passo-head">
+      <div class="n">4</div>
+      <div><h2>🟣 Verificar apostas</h2><div class="tag">Pontos, ranking e export</div></div>
+    </div>
+    <div class="passo-body">
+      <div class="instr">
+        <ol>
+          <li>Toque em <strong>Meus Resultados</strong>.</li>
+          <li>Veja seu <strong>total de pontos</strong> e a sua <strong>posição no ranking</strong> em destaque.</li>
+          <li>Acompanhe jogo a jogo com as tags: <strong>exato (+5)</strong> e <strong>vencedor (+2)</strong>.</li>
+          <li>Se quiser, <strong>exporte em CSV</strong> ou <strong>copie como texto</strong> pra mandar no grupo do WhatsApp.</li>
+        </ol>
+        <div class="dica">💡 <b>Tudo ao vivo:</b> conforme os resultados reais saem, seus pontos e a sua posição no ranking se atualizam sozinhos.</div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone"><img src="/guia/04-resultados.png" alt="Tela de Meus Resultados" loading="lazy" /></div>
+        <p class="phone-cap">Meus Resultados</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resumão -->
+  <section class="resumao">
+    <h2>📋 Resumão</h2>
+    <div class="resumao-steps">
+      <span class="chip"><span class="dot" style="background: var(--green)">1</span> Criar conta</span>
+      <span class="arrow">→</span>
+      <span class="chip"><span class="dot" style="background: var(--blue)">2</span> Colocar resultados</span>
+      <span class="arrow">→</span>
+      <span class="chip"><span class="dot" style="background: var(--orange)">3</span> Apostar no mata-mata</span>
+      <span class="arrow">→</span>
+      <span class="chip"><span class="dot" style="background: var(--purple)">4</span> Verificar apostas</span>
+    </div>
+  </section>
+
+</div>
+
+<footer class="credits">
+  <p>🏆 <span class="brand">Bolão da AutoManagem</span> · Copa do Mundo FIFA 2026</p>
+  <p style="margin-top:6px">Powered by <span class="brand">Claudio</span> · Designed by <span class="brand sorriso">Sorriso</span> 😀</p>
+</footer>
+
+</body>
+</html>
