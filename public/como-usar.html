@@ -68,10 +68,15 @@
   /* ───── Índice ───── */
   .indice {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 12px;
     margin-top: -32px;
     margin-bottom: 40px;
+    /* z-index: o header.hero é position:relative e pintaria por cima
+       dos cards (que sobem com margin-top negativo). Posicionar o
+       índice acima resolve o "card tampado pelo banner". */
+    position: relative;
+    z-index: 2;
   }
   .indice a {
     background: white;
@@ -211,7 +216,7 @@
 <header class="hero">
   <span class="badge">🇧🇷 Copa do Mundo FIFA 2026</span>
   <h1>Como usar o Bolão da AutoManagem</h1>
-  <p>Em 4 passos rápidos você cria sua conta, manda os palpites e acompanha sua posição no ranking. Bora! ⚽</p>
+  <p>Em 5 passos rápidos você cria sua conta, manda os palpites e acompanha sua posição no ranking. Bora! ⚽</p>
 </header>
 
 <div class="wrap">
@@ -221,7 +226,8 @@
     <a href="#passo1" style="--c: var(--green)"><span class="n">1</span><span class="t">Criar conta</span><span class="s">Entre no bolão</span></a>
     <a href="#passo2" style="--c: var(--blue)"><span class="n">2</span><span class="t">Colocar resultados</span><span class="s">72 jogos de grupo</span></a>
     <a href="#passo3" style="--c: var(--orange)"><span class="n">3</span><span class="t">Apostar no mata-mata</span><span class="s">Monte o chaveamento</span></a>
-    <a href="#passo4" style="--c: var(--purple)"><span class="n">4</span><span class="t">Verificar apostas</span><span class="s">Pontos e ranking</span></a>
+    <a href="#passo4" style="--c: var(--gold-deep)"><span class="n">4</span><span class="t">Apostar no artilheiro</span><span class="s">O goleador da Copa</span></a>
+    <a href="#passo5" style="--c: var(--purple)"><span class="n">5</span><span class="t">Verificar apostas</span><span class="s">Pontos e ranking</span></a>
   </nav>
 
   <!-- Passo 1 -->
@@ -294,9 +300,32 @@
   </section>
 
   <!-- Passo 4 -->
-  <section class="passo" id="passo4" style="--c: var(--purple)">
+  <section class="passo" id="passo4" style="--c: var(--gold-deep)">
     <div class="passo-head">
       <div class="n">4</div>
+      <div><h2>🟡 Apostar no artilheiro</h2><div class="tag">O goleador da Copa</div></div>
+    </div>
+    <div class="passo-body">
+      <div class="instr">
+        <ol>
+          <li>No menu de baixo, toque em <strong>Artilheiro</strong>.</li>
+          <li>Use a <strong>busca</strong> pra achar o jogador que você acha que vai ser o <strong>goleador</strong> da Copa.</li>
+          <li>Toque no nome pra escolher — aparece <strong>"Seu palpite de artilheiro"</strong> no topo.</li>
+          <li>Pra trocar, é só escolher outro (ou tocar no ✕ pra limpar). Salva sozinho.</li>
+        </ol>
+        <div class="dica">💡 <b>Vale 24 pts</b> no ranking se você acertar o artilheiro. Dá pra escolher 1 jogador só — capricha no palpite!</div>
+      </div>
+      <div class="phone-wrap">
+        <div class="phone"><img src="/guia/05-artilheiro.png" alt="Tela de palpite de artilheiro" loading="lazy" /></div>
+        <p class="phone-cap">Palpite · Artilheiro da Copa</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Passo 5 -->
+  <section class="passo" id="passo5" style="--c: var(--purple)">
+    <div class="passo-head">
+      <div class="n">5</div>
       <div><h2>🟣 Verificar apostas</h2><div class="tag">Pontos, ranking e export</div></div>
     </div>
     <div class="passo-body">
@@ -326,7 +355,9 @@
       <span class="arrow">→</span>
       <span class="chip"><span class="dot" style="background: var(--orange)">3</span> Apostar no mata-mata</span>
       <span class="arrow">→</span>
-      <span class="chip"><span class="dot" style="background: var(--purple)">4</span> Verificar apostas</span>
+      <span class="chip"><span class="dot" style="background: var(--gold-deep)">4</span> Apostar no artilheiro</span>
+      <span class="arrow">→</span>
+      <span class="chip"><span class="dot" style="background: var(--purple)">5</span> Verificar apostas</span>
     </div>
   </section>
 
