@@ -7,6 +7,7 @@ import { DesignedBySorriso } from "@/components/layout/designed-by-sorriso";
 import { Toaster } from "@/components/ui/toaster";
 import { getCurrentUser } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { PONTUACAO_DEFAULT } from "@/lib/scoring";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
 import type { PontuacaoConfig, RateioConfig } from "@/types/database";
@@ -29,6 +30,10 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
+  // Contagem de pagantes via admin client (service_role): a RLS de `users`
+  // restringe SELECT ao próprio usuário (fix F1), então um count público
+  // com o client comum traria 0. O admin client roda só no servidor.
+  const admin = createAdminClient();
   const [perfil, configRes, pagosRes] = await Promise.all([
     getCurrentUser(),
     supabase
@@ -42,7 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         "pix_chave",
         "pix_nome",
       ]),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
+    admin.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
   ]);
   const conf = Object.fromEntries(
     ((configRes.data ?? []) as any[]).map((c: any) => [c.chave, c.valor]),
