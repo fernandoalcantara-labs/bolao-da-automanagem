@@ -144,6 +144,48 @@ export function encontrarAdversario(
   return null;
 }
 
+/** Conjunto de time_ids que estão no R32 resolvido (casa + fora de cada par). */
+export function timesValidosR32(r32: ParR32Resolvido[]): Set<string> {
+  const s = new Set<string>();
+  for (const p of r32) {
+    if (p.casaTime?.time_id) s.add(p.casaTime.time_id);
+    if (p.foraTime?.time_id) s.add(p.foraTime.time_id);
+  }
+  return s;
+}
+
+/**
+ * Remove picks "fantasma": times marcados em alguma fase do mata-mata que
+ * NÃO estão mais no R32 atual do usuário. Isso acontece quando o user troca
+ * palpites de grupos DEPOIS de ter marcado um vencedor — o time sai do R32
+ * mas o pick fica órfão em `palpites_mata`, inflando a contagem e travando
+ * o limite da fase (bug: "Limite atingido em Oitavas" com só 15 válidos).
+ *
+ * Como o usuário só consegue clicar em times que ESTÃO no R32 resolvido,
+ * qualquer pick fora desse conjunto é necessariamente órfão. "16avos" é
+ * mantido intacto (não é palpitado). Se o R32 ainda não resolveu nenhum
+ * time (size 0, palpites de grupos vazios), não filtra nada.
+ */
+export function filtrarPicksPorR32(picks: PicksMata, r32: ParR32Resolvido[]): PicksMata {
+  const validos = timesValidosR32(r32);
+  if (validos.size === 0) return picks;
+  const out: PicksMata = {
+    "16avos": new Set(picks["16avos"]),
+    "8avos": new Set(),
+    "quartas": new Set(),
+    "semi": new Set(),
+    "final": new Set(),
+    "campeao": new Set(),
+  };
+  for (const fase of ORDEM_FASES) {
+    if (fase === "16avos") continue;
+    for (const t of picks[fase]) {
+      if (validos.has(t)) out[fase].add(t);
+    }
+  }
+  return out;
+}
+
 export type ResultadoPick =
   | { ok: true; picks: PicksMata }
   | { ok: false; motivo: "limite_atingido"; fase: FasePalpiteMata; quantidade: number };

@@ -11,16 +11,82 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { PontuacaoConfig, FasePalpiteMata } from "@/types/database";
+import type { PontuacaoConfig, FasePalpiteMata, Grupo } from "@/types/database";
 import {
   PONTUACAO_DEFAULT,
   classificarPalpiteMata,
   pontosPalpiteGrupo,
   pontosPalpiteMata,
 } from "./scoring";
+import { resolverBracketR32 } from "./bracket-2026";
+import { timesValidosR32 } from "./mata-mata-picks";
+import type { JogoFinalizado } from "./classification";
 
 // Cliente sem generic de schema — chamadas usam type assertions.
 type SB = SupabaseClient;
+
+/**
+ * R32 (32 classificados) de CADA usuário, derivado dos palpites de grupos
+ * dele — Map<user_id, Set<time_id>>. Usado pra ignorar, na pontuação,
+ * picks de mata "fantasma": times que saíram do R32 do user depois de
+ * marcados (ele trocou palpites de grupos). Sem isso, um pick órfão de
+ * um time que avança na vida real renderia pontos indevidos.
+ *
+ * Se não dá pra resolver o R32 de um user (palpites de grupos vazios ou
+ * incompletos a ponto de o resolver falhar), ele fica FORA do mapa →
+ * `pickDeMataValido` devolve true (não penaliza na dúvida).
+ */
+async function calcularR32PorUsuario(supabase: SB): Promise<Map<string, Set<string>>> {
+  const { data: matchesG } = await supabase
+    .from("matches")
+    .select("id, grupo, time_casa_id, time_fora_id")
+    .eq("fase", "grupos");
+  const minfo = new Map((matchesG ?? []).map((m: any) => [m.id, m]));
+
+  const { data: palpitesG } = await supabase
+    .from("palpites_grupos")
+    .select("user_id, match_id, placar_casa, placar_fora");
+
+  const porUser = new Map<string, JogoFinalizado[]>();
+  for (const p of (palpitesG ?? []) as any[]) {
+    const m = minfo.get(p.match_id) as any;
+    if (!m || !m.grupo || !m.time_casa_id || !m.time_fora_id) continue;
+    const arr = porUser.get(p.user_id) ?? [];
+    arr.push({
+      grupo: m.grupo as Grupo,
+      time_casa_id: m.time_casa_id,
+      time_fora_id: m.time_fora_id,
+      placar_casa: p.placar_casa,
+      placar_fora: p.placar_fora,
+    });
+    porUser.set(p.user_id, arr);
+  }
+
+  const out = new Map<string, Set<string>>();
+  for (const [userId, jogos] of porUser) {
+    try {
+      const set = timesValidosR32(resolverBracketR32(jogos));
+      if (set.size > 0) out.set(userId, set);
+    } catch {
+      // sem R32 confiável → não entra no mapa (não filtra esse user)
+    }
+  }
+  return out;
+}
+
+/**
+ * Um pick de mata pontua? Só se o time estiver no R32 do usuário. Se não
+ * temos o R32 dele no mapa (incompleto/erro), devolve true (não penaliza).
+ */
+function pickDeMataValido(
+  r32PorUser: Map<string, Set<string>>,
+  userId: string,
+  timeId: string,
+): boolean {
+  const set = r32PorUser.get(userId);
+  if (!set) return true;
+  return set.has(timeId);
+}
 
 const ROUND_LABELS = [
   { ordem: 1, label: "Grupos R1", filtro: { fase: "grupos" as const, rodada: 1 } },
@@ -69,9 +135,12 @@ export async function recalcularTudo(
   const cfg = await carregarPontuacao(supabase);
   await recalcularPalpitesGrupos(supabase, cfg);
   const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase);
-  await recalcularPalpitesMata(supabase, cfg, faseAlcancada);
+  // R32 por usuário (dos palpites de grupos) — pra ignorar picks fantasma
+  // na pontuação do mata-mata.
+  const r32PorUser = await calcularR32PorUsuario(supabase);
+  await recalcularPalpitesMata(supabase, cfg, faseAlcancada, r32PorUser);
   await recalcularPalpiteArtilheiro(supabase);
-  await gerarSnapshots(supabase, cfg, faseAlcancada);
+  await gerarSnapshots(supabase, cfg, faseAlcancada, r32PorUser);
 
   // Captura pontos totais DEPOIS + diff
   const pontosDepois = await capturarPontosTotais(supabase);
@@ -260,16 +329,22 @@ async function recalcularPalpitesMata(
   supabase: SB,
   cfg: PontuacaoConfig,
   faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
+  r32PorUser: Map<string, Set<string>>,
 ) {
   const { data: palpites } = await supabase
     .from("palpites_mata")
-    .select("id, time_id, fase");
+    .select("id, user_id, time_id, fase");
   if (!palpites) return;
 
   // Agrupa por valor de acertou (true/false) e atualiza em massa
   const acertaram: string[] = [];
   const erraram: string[] = [];
   for (const p of palpites) {
+    // Pick fantasma (time fora do R32 do user) NUNCA acerta.
+    if (!pickDeMataValido(r32PorUser, (p as any).user_id, p.time_id)) {
+      erraram.push(p.id);
+      continue;
+    }
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const r = classificarPalpiteMata(p.fase as FasePalpiteMata, real);
     if (r.acertou) acertaram.push(p.id);
@@ -332,9 +407,12 @@ function pontosMataPorUsuario(
   palpites: { user_id: string; time_id: string; fase: FasePalpiteMata }[],
   faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
   cfg: PontuacaoConfig,
+  r32PorUser: Map<string, Set<string>>,
 ): Map<string, Map<FasePalpiteMata, number>> {
   const out = new Map<string, Map<FasePalpiteMata, number>>();
   for (const p of palpites) {
+    // Ignora picks fantasma (time fora do R32 do usuário) — não pontuam.
+    if (!pickDeMataValido(r32PorUser, p.user_id, p.time_id)) continue;
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const cls = classificarPalpiteMata(p.fase, real);
     if (!cls.acertou || !cls.faseEfetiva) continue;
@@ -360,6 +438,7 @@ async function gerarSnapshots(
   supabase: SB,
   cfg: PontuacaoConfig,
   faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
+  r32PorUser: Map<string, Set<string>>,
 ) {
   // 1) Apaga snapshots antigas
   await supabase.from("ranking_snapshots").delete().neq("user_id", "00000000-0000-0000-0000-000000000000");
@@ -403,6 +482,7 @@ async function gerarSnapshots(
     })),
     faseAlcancada,
     cfg,
+    r32PorUser,
   );
   // Pontos creditados na rodada em que o palpite é validado.
   // "8avos" = palpitou que time chega às oitavas → validado quando o R32 acaba (rodada 4).

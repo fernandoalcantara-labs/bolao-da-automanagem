@@ -291,6 +291,13 @@ export async function calcularBreakdown(
   }
 
   // ─────────────── Mata-mata: monta items dos palpites ──
+  // Set dos times que estão no R32 do usuário. Picks de mata pra times
+  // FORA desse conjunto são "fantasma" (sobraram de quando ele tinha
+  // outros palpites de grupos) e não devem aparecer nem pontuar — bate
+  // com a regra do recalc/ranking. Só filtra se o R32 resolveu (size>0).
+  const r32TimeIds = new Set(r32Items.map((t) => t.time_id));
+  const filtrarFantasmaMata = r32TimeIds.size > 0;
+
   const ordemFase: Record<FasePalpiteMata, number> = {
     "16avos": 0,
     "8avos": 1,
@@ -302,6 +309,8 @@ export async function calcularBreakdown(
   const mataItems: BreakdownMataItem[] = [];
   let mataSubtotal = 0;
   for (const p of (palpitesM ?? []) as any[]) {
+    // Pula picks fantasma (time fora do R32 atual do usuário).
+    if (filtrarFantasmaMata && !r32TimeIds.has(p.time_id)) continue;
     const time = teamMap.get(p.time_id) as any;
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const cls = classificarPalpiteMata(p.fase as FasePalpiteMata, real as any);

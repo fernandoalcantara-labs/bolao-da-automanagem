@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { aplicarPick, type PicksMata, ORDEM_FASES } from "../src/lib/mata-mata-picks";
+import {
+  aplicarPick,
+  type PicksMata,
+  ORDEM_FASES,
+  filtrarPicksPorR32,
+  timesValidosR32,
+} from "../src/lib/mata-mata-picks";
 import type { ParR32Resolvido } from "../src/lib/bracket-2026";
 import type { FasePalpiteMata } from "../src/types/database";
 
@@ -207,6 +213,66 @@ describe("aplicarPick — toggle off remove de fase atual e posteriores", () => 
     for (const fase of ORDEM_FASES) {
       expect(picks[fase].has("Brasil"), `Brasil ainda em ${fase}`).toBe(false);
     }
+  });
+});
+
+describe("filtrarPicksPorR32 — remove picks fantasma (bug do vitorbaracho)", () => {
+  it("remove pick de time que saiu do R32 (Senegal) e mantém os válidos", () => {
+    const r32 = [par(73, "Brasil", "Argentina"), par(74, "França", "Croácia")];
+    const picks = picksVazio();
+    picks["8avos"].add("Brasil");
+    picks["8avos"].add("França");
+    picks["8avos"].add("Senegal"); // fantasma: não está no R32
+    const limpo = filtrarPicksPorR32(picks, r32);
+    expect(limpo["8avos"].has("Brasil")).toBe(true);
+    expect(limpo["8avos"].has("França")).toBe(true);
+    expect(limpo["8avos"].has("Senegal")).toBe(false);
+    expect(limpo["8avos"].size).toBe(2);
+  });
+
+  it("filtra fantasmas em TODAS as fases (não só 8avos)", () => {
+    const r32 = [par(73, "Brasil", "Argentina")];
+    const picks = picksVazio();
+    for (const f of ["8avos", "quartas", "semi", "final", "campeao"] as FasePalpiteMata[]) {
+      picks[f].add("Brasil");
+      picks[f].add("Senegal"); // fantasma em toda fase
+    }
+    const limpo = filtrarPicksPorR32(picks, r32);
+    for (const f of ["8avos", "quartas", "semi", "final", "campeao"] as FasePalpiteMata[]) {
+      expect(limpo[f].has("Brasil"), `Brasil sumiu de ${f}`).toBe(true);
+      expect(limpo[f].has("Senegal"), `Senegal fantasma em ${f}`).toBe(false);
+    }
+  });
+
+  it("após filtrar, dá pra marcar o 16º válido (o fantasma não conta mais no limite)", () => {
+    // 16 pares R32 → 32 times. Marca 15 casas + 1 fantasma = 16 no set.
+    const r32 = Array.from({ length: 16 }, (_, i) => par(73 + i, `C${i}`, `F${i}`));
+    const picks = picksVazio();
+    for (let i = 0; i < 15; i++) picks["8avos"].add(`C${i}`);
+    picks["8avos"].add("FANTASMA"); // 16º é órfão (fora do R32)
+    expect(picks["8avos"].size).toBe(16);
+
+    const limpo = filtrarPicksPorR32(picks, r32);
+    expect(limpo["8avos"].size).toBe(15); // fantasma removido
+
+    // agora marcar o 16º válido (C15) deve funcionar (não estoura limite)
+    const res = aplicarPick(limpo, "8avos", "C15", r32);
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.picks["8avos"].size).toBe(16);
+  });
+
+  it("R32 vazio (sem palpites de grupos) → não filtra nada", () => {
+    const picks = picksVazio();
+    picks["8avos"].add("Brasil");
+    const limpo = filtrarPicksPorR32(picks, []);
+    expect(limpo["8avos"].has("Brasil")).toBe(true);
+  });
+
+  it("timesValidosR32 coleta casa+fora de cada par", () => {
+    const r32 = [par(73, "Brasil", "Argentina"), par(74, "França", "Croácia")];
+    const s = timesValidosR32(r32);
+    expect(s.size).toBe(4);
+    expect(s.has("Brasil") && s.has("Croácia")).toBe(true);
   });
 });
 

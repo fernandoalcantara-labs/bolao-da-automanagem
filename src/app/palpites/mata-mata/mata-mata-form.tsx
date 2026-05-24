@@ -13,7 +13,7 @@ import { BracketView, type Team as BracketTeam } from "./bracket-view";
 import type { ParR32Resolvido } from "@/lib/bracket-2026";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
-import { aplicarPick, ORDEM_FASES } from "@/lib/mata-mata-picks";
+import { aplicarPick, ORDEM_FASES, filtrarPicksPorR32 } from "@/lib/mata-mata-picks";
 
 type Team = {
   id: string;
@@ -82,7 +82,11 @@ export function MataMataForm({
         }
       }
     }
-    return init;
+    // Remove picks fantasma (times que sairam do R32 depois de marcados).
+    // Sem isso, um pick orfao em "8avos" inflava a contagem e travava o
+    // limite ("Limite atingido em Oitavas" com so 15 validos). O proximo
+    // autosave persiste o estado ja limpo.
+    return filtrarPicksPorR32(init, r32);
   });
 
   // Versao serializavel pro hook de autosave (Set nao serializa em JSON)
