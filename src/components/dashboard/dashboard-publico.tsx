@@ -19,13 +19,15 @@ import { contarPalpitesUsuario } from "@/lib/palpites-stats";
 
 export async function DashboardPublico() {
   const supabase = createClient();
-  // Admin client (service_role, bypass RLS) usado APENAS pra ler os
-  // palpites agregados das pies (campeao + artilheiro). Pre-deadline,
-  // as policies de palpites_mata/artilheiro restringem SELECT ao proprio
-  // user_id, oque causava as pies aparecerem vazias/parciais pra
-  // visitantes e users novos. Bug encontrado no CT-21 da QW4.
-  // Como so' usamos os campos time_id/player_id (agregados pra contagem),
-  // nao vazamos quem palpitou no quê — só os totais por time/jogador.
+  // Admin client (service_role, bypass RLS) usado pra ler dados agregados
+  // que o dashboard PÚBLICO precisa de TODOS os participantes:
+  //  - lista de pagantes (ranking, KPIs, gráficos, prêmio, nomes das pies)
+  //  - palpites de campeão + artilheiro (distribuição das pies)
+  // Essas leituras NÃO podem usar o client comum: a RLS restringe
+  // palpites ao próprio user_id (pré-deadline) e `users` à própria linha
+  // (fix F1) — então sem o admin client o dashboard apareceria vazio pra
+  // visitante/usuário comum. Só EXPOMOS campos públicos (nome_exibicao,
+  // pontos, contagens por time/jogador) — nunca email/telefone/role.
   const supabaseAdmin = createAdminClient();
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser?.id ?? null;
@@ -43,7 +45,7 @@ export async function DashboardPublico() {
     { data: players },
     { data: config },
   ] = await Promise.all([
-    supabase.from("users").select("id, nome, nome_exibicao, pago").eq("pago", true),
+    supabaseAdmin.from("users").select("id, nome, nome_exibicao, pago").eq("pago", true),
     supabase
       .from("ranking_snapshots")
       .select("user_id, rodada_label, rodada_ordem, posicao, pontos_totais, pontos_rodada")

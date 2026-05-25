@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Trophy, Target, Calendar, Wallet, Share2, BookOpen, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, DEADLINE_FASE_GRUPOS } from "@/lib/utils";
@@ -14,12 +15,16 @@ export const dynamic = "force-dynamic";
 
 export default async function RegrasPage() {
   const supabase = createClient();
+  // Contagem de pagantes via admin client (service_role) — a RLS de `users`
+  // (fix F1) restringe SELECT ao próprio usuário; um count público com o
+  // client comum traria 0. Admin client roda só no servidor.
+  const admin = createAdminClient();
   const [{ data: config }, { count: pagos }] = await Promise.all([
     supabase
       .from("config")
       .select("chave, valor")
       .in("chave", ["pontuacao", "rateio", "pix_chave", "pix_nome", "valor_aposta", "nome_bolao"]),
-    supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
+    admin.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
   ]);
 
   const conf = Object.fromEntries((config ?? []).map((c) => [c.chave, c.valor]));
