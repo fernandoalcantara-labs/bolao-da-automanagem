@@ -159,21 +159,6 @@ export async function DashboardPublico() {
         />
       )}
 
-      <PremiosCard
-        ranking={snapsUltima.map((s) => ({
-          user_id: s.user_id,
-          nome: usersById.get(s.user_id)?.nome ?? "—",
-          pontos: s.pontos_totais,
-        }))}
-        acertaramArtilheiro={(palpitesArtilheiro ?? [])
-          .filter((p) => usersById.has(p.user_id))
-          .map((p) => p.user_id)
-          .filter((id, i, arr) => arr.indexOf(id) === i)}
-        rateio={rateio}
-        totalArrecadado={totalArrecadado}
-        bolaoIniciou={bolaoIniciou}
-      />
-
       {bolaoIniciou ? (
         <>
           <KpiCards
@@ -288,6 +273,22 @@ export async function DashboardPublico() {
         teams={Object.fromEntries(
           (teams ?? []).map((t) => [t.id, { nome: t.nome, bandeira_url: t.bandeira_url }]),
         )}
+      />
+
+      {/* Prêmios estimados — por último no painel (decisão do Fernando). */}
+      <PremiosCard
+        ranking={snapsUltima.map((s) => ({
+          user_id: s.user_id,
+          nome: usersById.get(s.user_id)?.nome ?? "—",
+          pontos: s.pontos_totais,
+        }))}
+        acertaramArtilheiro={(palpitesArtilheiro ?? [])
+          .filter((p) => usersById.has(p.user_id))
+          .map((p) => p.user_id)
+          .filter((id, i, arr) => arr.indexOf(id) === i)}
+        rateio={rateio}
+        totalArrecadado={totalArrecadado}
+        bolaoIniciou={bolaoIniciou}
       />
     </div>
   );
