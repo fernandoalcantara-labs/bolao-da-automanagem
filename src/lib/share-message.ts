@@ -9,6 +9,7 @@
  */
 
 import { formatCurrency } from "@/lib/utils";
+import { normalizarPontuacao } from "@/lib/scoring";
 import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 export type ShareInfoCompleto = {
@@ -27,18 +28,22 @@ export type ShareInfoCompleto = {
  * Inclui pontuação, rateio, pix + link do site.
  */
 export function shareMessageCompleto(info: ShareInfoCompleto): string {
+  const p = normalizarPontuacao(info.pontuacao);
   return [
     `🏆 *${info.nomeBolao}* · Copa do Mundo FIFA 2026`,
     "",
     `💰 *Prêmio estimado*: ${formatCurrency(info.totalArrecadado)}`,
     `💵 *Valor da aposta*: ${formatCurrency(info.valorAposta)}`,
     "",
-    `*Pontuação*:`,
-    `🎯 Placar exato: ${info.pontuacao.placar_exato} pts`,
-    `✅ Acertou vencedor/empate: ${info.pontuacao.vencedor_ou_empate} pts`,
-    `⚽ Mata-mata: ${info.pontuacao.mata_16avos} / ${info.pontuacao.mata_8avos} / ${info.pontuacao.mata_quartas} / ${info.pontuacao.mata_semi} pts por fase`,
-    `🥇 Campeão: ${info.pontuacao.campeao} pts | 🥈 Vice: ${info.pontuacao.vice} pts`,
-    `⚽ Artilheiro: ${info.pontuacao.artilheiro} pts`,
+    `*Pontuação (fase de grupos)*:`,
+    `🎯 Placar exato: ${p.placar_exato} pts`,
+    `✅ Acertou vencedor/empate: ${p.vencedor_ou_empate} pts`,
+    "",
+    `*Mata-mata*:`,
+    `🎫 16 Avos: ${p.pts_r32} pts por acerto`,
+    `⚽ Oitavas / Quartas / Semi / Final: ${p.pts_oitavas} / ${p.pts_quartas} / ${p.pts_semi} / ${p.pts_final} pts`,
+    `🥇 Campeão: ${p.campeao} pts | 🥈 Vice: ${p.vice} pts`,
+    `⚽ Artilheiro: ${p.artilheiro} pts`,
     "",
     `*Rateio*:`,
     `🥇 1º: ${info.rateio.primeiro}%  |  🥈 2º: ${info.rateio.segundo}%  |  🥉 3º: ${info.rateio.terceiro}%`,

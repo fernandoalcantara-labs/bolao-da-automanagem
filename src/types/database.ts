@@ -13,13 +13,22 @@ export type Role = "admin" | "user";
 export interface PontuacaoConfig {
   placar_exato: number;
   vencedor_ou_empate: number;
-  mata_16avos: number;
-  mata_8avos: number;
-  mata_quartas: number;
-  mata_semi: number;
+  // Pontuação do mata por "fase alcançada" (padrão novo — pts_*).
+  // pts_r32 = classificou ao R32 (16 Avos). Os demais = chegou à fase.
+  pts_r32: number;
+  pts_oitavas: number;
+  pts_quartas: number;
+  pts_semi: number;
+  pts_final: number;
   vice: number;
   campeao: number;
   artilheiro: number;
+  // Campos legados (backward-compat / rollback). Deslocados uma fase em
+  // relação ao significado — NÃO usar direto; use normalizarPontuacao().
+  mata_16avos?: number;
+  mata_8avos?: number;
+  mata_quartas?: number;
+  mata_semi?: number;
 }
 
 export interface RateioConfig {

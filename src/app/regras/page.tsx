@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { RATEIO_DEFAULT } from "@/lib/prizes";
-import { PONTUACAO_DEFAULT } from "@/lib/scoring";
-import type { PontuacaoConfig, RateioConfig } from "@/types/database";
+import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
+import type { RateioConfig } from "@/types/database";
 import { CompartilharRegras } from "./compartilhar";
 import { shareMessageCompleto } from "@/lib/share-message";
 
@@ -28,7 +28,7 @@ export default async function RegrasPage() {
   ]);
 
   const conf = Object.fromEntries((config ?? []).map((c) => [c.chave, c.valor]));
-  const pontuacao = (conf.pontuacao as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+  const pontuacao = normalizarPontuacao((conf.pontuacao as any) ?? PONTUACAO_DEFAULT);
   const rateio = (conf.rateio as RateioConfig) ?? RATEIO_DEFAULT;
   const valorAposta = Number(conf.valor_aposta ?? 50);
   const pixChave = String(conf.pix_chave ?? "—");
@@ -98,12 +98,13 @@ export default async function RegrasPage() {
           </div>
 
           <div>
-            <h3 className="mb-2 font-semibold">Mata-mata <span className="text-xs font-normal text-muted-foreground">(pontos por cada seleção classificada acertada)</span></h3>
+            <h3 className="mb-2 font-semibold">Mata-mata <span className="text-xs font-normal text-muted-foreground">(pontos por cada seleção que alcança a fase)</span></h3>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              <li>16 avos de final: <Pts>{pontuacao.mata_16avos}</Pts> por acerto · até 16 acertos</li>
-              <li>Oitavas: <Pts>{pontuacao.mata_8avos}</Pts> por acerto · até 8</li>
-              <li>Quartas: <Pts>{pontuacao.mata_quartas}</Pts> por acerto · até 4</li>
-              <li>Semifinal: <Pts>{pontuacao.mata_semi}</Pts> por acerto · até 2</li>
+              <li>🎫 16 Avos: <Pts>{pontuacao.pts_r32}</Pts> por acerto · até 32 acertos</li>
+              <li>Oitavas: <Pts>{pontuacao.pts_oitavas}</Pts> por acerto · até 16</li>
+              <li>Quartas: <Pts>{pontuacao.pts_quartas}</Pts> por acerto · até 8</li>
+              <li>Semi: <Pts>{pontuacao.pts_semi}</Pts> por acerto · até 4</li>
+              <li>Final: <Pts>{pontuacao.pts_final}</Pts> por acerto · até 2</li>
               <li>🥈 Vice-campeão: <Pts>{pontuacao.vice}</Pts></li>
               <li>🥇 Campeão: <Pts>{pontuacao.campeao}</Pts></li>
             </ul>

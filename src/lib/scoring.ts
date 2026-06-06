@@ -21,14 +21,54 @@ import type { PontuacaoConfig, FasePalpiteMata } from "@/types/database";
 export const PONTUACAO_DEFAULT: PontuacaoConfig = {
   placar_exato: 5,
   vencedor_ou_empate: 2,
+  // Padrão "fase alcançada" (pts_*). pts_r32 = classificou ao R32 (16 Avos).
+  pts_r32: 2,
+  pts_oitavas: 8,
+  pts_quartas: 12,
+  pts_semi: 16,
+  pts_final: 20,
+  vice: 24,
+  campeao: 40,
+  artilheiro: 24,
+  // Legados preservados (rollback / configs antigas).
   mata_16avos: 8,
   mata_8avos: 12,
   mata_quartas: 16,
   mata_semi: 20,
-  vice: 24,
-  campeao: 40,
-  artilheiro: 24,
 };
+
+/**
+ * Normaliza uma config de pontuação pro padrão pts_* (fase alcançada),
+ * preenchendo a partir dos campos legados POR SIGNIFICADO (os legados estão
+ * deslocados uma fase). Idempotente: configs já no padrão novo passam intactas.
+ *
+ * Mapa semântico:
+ *   pts_oitavas ← mata_16avos   (chegou às oitavas)
+ *   pts_quartas ← mata_8avos    (chegou às quartas)
+ *   pts_semi    ← mata_quartas  (chegou à semi)
+ *   pts_final   ← mata_semi     (chegou à final)
+ *   pts_r32     ← (novo)        default 2
+ */
+export function normalizarPontuacao(cfg: Partial<PontuacaoConfig> | null | undefined): PontuacaoConfig {
+  const c = cfg ?? {};
+  return {
+    placar_exato: c.placar_exato ?? PONTUACAO_DEFAULT.placar_exato,
+    vencedor_ou_empate: c.vencedor_ou_empate ?? PONTUACAO_DEFAULT.vencedor_ou_empate,
+    pts_r32: c.pts_r32 ?? 2,
+    pts_oitavas: c.pts_oitavas ?? c.mata_16avos ?? 8,
+    pts_quartas: c.pts_quartas ?? c.mata_8avos ?? 12,
+    pts_semi: c.pts_semi ?? c.mata_quartas ?? 16,
+    pts_final: c.pts_final ?? c.mata_semi ?? 20,
+    vice: c.vice ?? PONTUACAO_DEFAULT.vice,
+    campeao: c.campeao ?? PONTUACAO_DEFAULT.campeao,
+    artilheiro: c.artilheiro ?? PONTUACAO_DEFAULT.artilheiro,
+    // mantém legados pra rollback/compat
+    mata_16avos: c.mata_16avos,
+    mata_8avos: c.mata_8avos,
+    mata_quartas: c.mata_quartas,
+    mata_semi: c.mata_semi,
+  };
+}
 
 export type Placar = { casa: number; fora: number };
 export type ResultadoPalpite = "exato" | "vencedor_ou_empate" | "errado";
@@ -78,21 +118,24 @@ export function pontosPalpiteMata(
   fase: FasePalpiteMata | "vice",
   cfg: PontuacaoConfig = PONTUACAO_DEFAULT,
 ): number {
+  // Normaliza defensivamente — garante pts_* mesmo se vier config legada.
+  const c = normalizarPontuacao(cfg);
+  // Mapeamento 1:1 por "fase alcançada":
   switch (fase) {
     case "16avos":
-      return cfg.mata_16avos; // raramente usado — 16avos é a classificação direta
+      return c.pts_r32;     // classificou ao R32 (16 Avos)
     case "8avos":
-      return cfg.mata_16avos; // 8 pts: time passou do R32 e chegou às oitavas
+      return c.pts_oitavas; // chegou às oitavas
     case "quartas":
-      return cfg.mata_8avos;  // 12 pts: time passou das oitavas
+      return c.pts_quartas; // chegou às quartas
     case "semi":
-      return cfg.mata_quartas; // 16 pts: time passou das quartas
+      return c.pts_semi;    // chegou à semi
     case "final":
-      return cfg.mata_semi;   // 20 pts: time passou da semi (= chegou à final)
+      return c.pts_final;   // chegou à final
     case "vice":
-      return cfg.vice;        // 24 pts: time foi vice
+      return c.vice;        // foi vice
     case "campeao":
-      return cfg.campeao;     // 40 pts: time foi campeão
+      return c.campeao;     // foi campeão
   }
 }
 
@@ -131,14 +174,14 @@ export function classificarPalpiteMata(
   palpiteFase: FasePalpiteMata,
   faseAlcancadaReal: FasePalpiteMata | "grupos",
 ): { acertou: boolean; faseEfetiva: FasePalpiteMata | "vice" | null } {
-  // Caso especial: palpitou "campeao" → acerta se o time foi campeão (40 pts)
-  // ou vice (24 pts). Senão, errou.
+  // Palpite de "campeao" acerta SOMENTE se o time foi o campeão REAL.
+  // (3D) NÃO existe mais downgrade campeão→vice: se o time só chegou à
+  // final (virou vice), o palpite de campeão vale 0. O vice do usuário é
+  // tratado à parte (timeVicePalpitado + award aditivo), pois é o SEGUNDO
+  // finalista — não o campeão "rebaixado".
   if (palpiteFase === "campeao") {
     if (faseAlcancadaReal === "campeao") {
       return { acertou: true, faseEfetiva: "campeao" };
-    }
-    if (faseAlcancadaReal === "final") {
-      return { acertou: true, faseEfetiva: "vice" };
     }
     return { acertou: false, faseEfetiva: null };
   }
@@ -149,6 +192,25 @@ export function classificarPalpiteMata(
     return { acertou: false, faseEfetiva: null };
   }
   return { acertou: true, faseEfetiva: palpiteFase };
+}
+
+/**
+ * (3D) Vice do APOSTADOR = o seu SEGUNDO finalista: o time que ele marcou
+ * em "final" e que NÃO é o seu palpite de "campeao". Só existe quando ele
+ * tem exatamente 2 finalistas E definiu 1 campeão (entre eles). Caso
+ * contrário, indefinido (null).
+ *
+ * O award de vice é ADITIVO (não substitui nada) e só pontua se esse time
+ * for o vice REAL — calculado fora daqui (precisa de faseAlcancada + trava
+ * "campeão decidido").
+ */
+export function timeVicePalpitado(
+  finalPicks: string[],
+  campeaoPick: string | null,
+): string | null {
+  if (!campeaoPick) return null;
+  const candidatos = finalPicks.filter((t) => t !== campeaoPick);
+  return candidatos.length === 1 ? candidatos[0] : null;
 }
 
 export type TotaisUsuario = {

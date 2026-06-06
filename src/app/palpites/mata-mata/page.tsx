@@ -7,8 +7,8 @@ import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
-import { PONTUACAO_DEFAULT } from "@/lib/scoring";
-import type { Grupo, PontuacaoConfig } from "@/types/database";
+import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
+import type { Grupo } from "@/types/database";
 import type { JogoFinalizado } from "@/lib/classification";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +46,8 @@ export default async function MataMataPage() {
   ]);
 
   // Pontos por fase vêm da config (não hardcodar — admin pode mudar).
-  const pontuacao: PontuacaoConfig = (cfgRow?.valor as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+  // Normaliza pro padrão pts_* (fase alcançada).
+  const pontuacao = normalizarPontuacao((cfgRow?.valor as any) ?? PONTUACAO_DEFAULT);
 
   const fechado = Date.now() >= DEADLINE_FASE_GRUPOS.getTime();
 
@@ -99,7 +100,7 @@ export default async function MataMataPage() {
             <p className="mt-1 text-xs font-bold text-muted-foreground">
               Pontos:{" "}
               <span className="text-festive-green">
-                {pontuacao.mata_16avos} · {pontuacao.mata_8avos} · {pontuacao.mata_quartas} · {pontuacao.mata_semi}
+                16 Avos {pontuacao.pts_r32} · Oitavas {pontuacao.pts_oitavas} · Quartas {pontuacao.pts_quartas} · Semi {pontuacao.pts_semi} · Final {pontuacao.pts_final}
               </span>{" "}
               · {pontuacao.vice} (vice) · {pontuacao.campeao} (campeão)
             </p>
