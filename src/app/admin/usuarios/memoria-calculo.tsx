@@ -196,9 +196,9 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                       </tr>
                     </thead>
                     <tbody>
-                      {/* 16 avos — 32 classificados derivados dos palpites de grupos.
+                      {/* 16 Avos — 32 classificados derivados dos palpites de grupos.
                           Cada linha mostra a origem (1ºA / 2ºB / Nº melhor 3º) na
-                          coluna Seleção. Não pontua → pts = 0 sempre. */}
+                          coluna Seleção. PONTUA pts_r32 por classificado certo. */}
                       {data.r32.map((t) => (
                         <tr
                           key={`r32-${t.time_id}`}
@@ -207,7 +207,7 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                             t.acertou && "bg-festive-green/10",
                           )}
                         >
-                          <td className="p-2 font-bold">16 avos</td>
+                          <td className="p-2 font-bold">16 Avos</td>
                           <td className="p-2">
                             <div className="flex items-center gap-1">
                               {t.time_bandeira && (
@@ -231,7 +231,11 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                             )}
                           </td>
                           <td className="p-2 text-right font-extrabold">
-                            <span className="text-muted-foreground">0</span>
+                            {t.pontos > 0 ? (
+                              <span className="text-festive-green">+{t.pontos}</span>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -271,7 +275,43 @@ export function MemoriaCalculoToggle({ userId, nome }: { userId: string; nome: s
                           </td>
                         </tr>
                       ))}
-                      {data.r32.length === 0 && data.mata.items.length === 0 && (
+                      {/* Vice (2º finalista) — award aditivo */}
+                      {data.vice && (
+                        <tr
+                          className={cn(
+                            "border-t border-border/40",
+                            data.vice.acertou && "bg-festive-green/10",
+                          )}
+                        >
+                          <td className="p-2 font-bold">Vice</td>
+                          <td className="p-2">
+                            <div className="flex items-center gap-1">
+                              {data.vice.time_bandeira && (
+                                <Image src={data.vice.time_bandeira} alt={data.vice.time_nome} width={18} height={13} unoptimized className="rounded-sm" />
+                              )}
+                              <span className="font-medium">{data.vice.time_nome}</span>
+                              <span className="ml-1 text-[10px] font-bold text-muted-foreground">(2º finalista)</span>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center">
+                            {data.vice.pendente ? (
+                              <span className="text-xs text-muted-foreground">⏳</span>
+                            ) : data.vice.acertou ? (
+                              <Badge variant="success">✅ Sim</Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">❌ Não</span>
+                            )}
+                          </td>
+                          <td className="p-2 text-right font-extrabold">
+                            {data.vice.pontos > 0 ? (
+                              <span className="text-festive-green">+{data.vice.pontos}</span>
+                            ) : (
+                              <span className="text-muted-foreground">0</span>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                      {data.r32.length === 0 && data.mata.items.length === 0 && !data.vice && (
                         <tr>
                           <td colSpan={4} className="p-3 text-center text-muted-foreground">
                             Sem palpites de mata-mata.

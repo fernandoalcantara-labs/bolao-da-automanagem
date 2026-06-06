@@ -199,7 +199,7 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                         t.acertou && "bg-festive-green/10",
                       )}
                     >
-                      <td className="p-2 font-bold">16 avos</td>
+                      <td className="p-2 font-bold">16 Avos</td>
                       <td className="p-2">
                         <div className="flex items-center gap-1">
                           {t.time_bandeira && (
@@ -217,7 +217,11 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                         {t.pendente ? "⏳" : t.acertou ? "✅" : "❌"}
                       </td>
                       <td className="p-2 text-right font-extrabold">
-                        <span className="text-muted-foreground">0</span>
+                        {t.pontos > 0 ? (
+                          <span className="text-festive-green">+{t.pontos}</span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -251,6 +255,36 @@ export function MeusResultadosContent({ breakdown }: { breakdown: Breakdown }) {
                       </td>
                     </tr>
                   ))}
+                  {/* Vice (2º finalista) — award aditivo */}
+                  {breakdown.vice && (
+                    <tr
+                      className={cn(
+                        "border-t border-border/40",
+                        breakdown.vice.acertou && "bg-festive-green/10",
+                      )}
+                    >
+                      <td className="p-2 font-bold">Vice</td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-1">
+                          {breakdown.vice.time_bandeira && (
+                            <Image src={breakdown.vice.time_bandeira} alt={breakdown.vice.time_nome} width={16} height={11} unoptimized className="rounded-sm" />
+                          )}
+                          <span className="team-name">{breakdown.vice.time_nome}</span>
+                          <span className="ml-1 text-[10px] font-bold text-muted-foreground">(2º finalista)</span>
+                        </div>
+                      </td>
+                      <td className="p-2 text-center">
+                        {breakdown.vice.pendente ? "⏳" : breakdown.vice.acertou ? "✅" : "❌"}
+                      </td>
+                      <td className="p-2 text-right font-extrabold">
+                        {breakdown.vice.pontos > 0 ? (
+                          <span className="text-festive-green">+{breakdown.vice.pontos}</span>
+                        ) : (
+                          <span className="text-muted-foreground">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
