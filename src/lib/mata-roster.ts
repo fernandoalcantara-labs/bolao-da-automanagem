@@ -216,3 +216,58 @@ export async function getPoolDaFase(
   const { efetivo } = await getRosterEfetivo(sb, faseAnterior);
   return efetivo;
 }
+
+export type TimeRosterUI = { id: string; nome: string; bandeira_url: string; grupo: string };
+
+export type RosterUIPayload = {
+  /** Todos os 48 times (uma vez). */
+  times: TimeRosterUI[];
+  /** ids efetivos (verdes) por fase. */
+  porFase: Record<FasePalpiteMata, string[]>;
+  /** ids com override manual (cadeado) por fase. */
+  cadeados: Record<FasePalpiteMata, string[]>;
+  /** time_id → origem ("1º Grupo A" / "Nº melhor 3º") — só 16avos. */
+  origem: Record<string, string>;
+  /** quantos jogos de grupo já finalizados (monitor provisório dos 16 avos). */
+  gruposFinalizados: number;
+  gruposTotal: number;
+};
+
+/**
+ * Payload data-oriented pra UI do admin do roster (uma leitura só, sem N
+ * consultas na tela).
+ */
+export async function montarRosterUI(sb: SB): Promise<RosterUIPayload> {
+  const [teamsRes, todas, cntFin, cntTot] = await Promise.all([
+    sb.from("teams").select("id, nome, bandeira_url, grupo").order("grupo").order("nome"),
+    getRosterTodasFases(sb),
+    sb.from("matches").select("id", { count: "exact", head: true }).eq("fase", "grupos").eq("status", "finalizado"),
+    sb.from("matches").select("id", { count: "exact", head: true }).eq("fase", "grupos"),
+  ]);
+
+  const times = ((teamsRes.data ?? []) as any[]).map((t) => ({
+    id: t.id,
+    nome: t.nome,
+    bandeira_url: t.bandeira_url ?? "",
+    grupo: t.grupo ?? "",
+  }));
+
+  const porFase = {} as Record<FasePalpiteMata, string[]>;
+  const cadeados = {} as Record<FasePalpiteMata, string[]>;
+  for (const fase of FASES_MATA) {
+    porFase[fase] = [...(todas.rosters.get(fase) ?? new Set())];
+    cadeados[fase] = [...(todas.cadeados.get(fase) ?? new Set())];
+  }
+
+  const origem: Record<string, string> = {};
+  for (const c of todas.r32Auto) origem[c.time_id] = c.origem;
+
+  return {
+    times,
+    porFase,
+    cadeados,
+    origem,
+    gruposFinalizados: cntFin.count ?? 0,
+    gruposTotal: cntTot.count ?? 0,
+  };
+}

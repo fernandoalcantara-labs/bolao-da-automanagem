@@ -3,7 +3,10 @@
 import * as React from "react";
 import { Loader2, RefreshCw, Calculator, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toaster";
+import { setSyncAutomatico } from "./sync-actions";
 import {
   Dialog,
   DialogContent,
@@ -27,11 +30,32 @@ type RecalcLog = {
   }>;
 };
 
-export function AdminActions() {
+export function AdminActions({ syncAutomaticoInicial = true }: { syncAutomaticoInicial?: boolean }) {
   const [syncing, setSyncing] = React.useState(false);
   const [recalcing, setRecalcing] = React.useState(false);
   const [logOpen, setLogOpen] = React.useState(false);
   const [log, setLog] = React.useState<RecalcLog | null>(null);
+  const [syncAuto, setSyncAuto] = React.useState(syncAutomaticoInicial);
+  const [savingAuto, setSavingAuto] = React.useState(false);
+
+  async function alternarSyncAuto(v: boolean) {
+    setSyncAuto(v); // otimista
+    setSavingAuto(true);
+    const res = await setSyncAutomatico(v);
+    setSavingAuto(false);
+    if (!res.ok) {
+      setSyncAuto(!v); // reverte
+      toast({ title: "Erro", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: v ? "Atualização automática LIGADA" : "Atualização automática DESLIGADA",
+      description: v
+        ? "O cron volta a sincronizar resultados."
+        : "O cron não vai mais sobrescrever resultados (sync manual segue funcionando).",
+      variant: "success",
+    });
+  }
 
   async function sync() {
     setSyncing(true);
@@ -75,6 +99,20 @@ export function AdminActions() {
           {recalcing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Calculator className="mr-2 h-4 w-4" />}
           Recalcular pontuações
         </Button>
+      </div>
+
+      {/* Freio do cron (4B) — atualização automática de resultados */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Switch checked={syncAuto} onCheckedChange={alternarSyncAuto} disabled={savingAuto} />
+          <span className="font-medium">Atualização automática de resultados</span>
+          {!syncAuto && <Badge variant="destructive">DESLIGADA</Badge>}
+          {savingAuto && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Quando desligada, o cron não sobrescreve resultados. A sincronização manual (botão acima)
+          continua funcionando.
+        </p>
       </div>
 
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
