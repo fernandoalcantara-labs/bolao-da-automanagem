@@ -701,8 +701,11 @@ export type ParR32Resolvido = ParR32 & {
  * pode ser determinado), retorna alocações parciais (com `null` nos
  * slots não-resolvíveis).
  */
-export function resolverBracketR32(jogos: JogoFinalizado[]): ParR32Resolvido[] {
-  const c = classificadosParaMataMata(jogos);
+export function resolverBracketR32(
+  jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
+): ParR32Resolvido[] {
+  const c = classificadosParaMataMata(jogos, rankingFifa);
   const primeiros = new Map(c.primeiros.map((t) => [t.grupo, t]));
   const segundos = new Map(c.segundos.map((t) => [t.grupo, t]));
   const terceirosPorGrupo = new Map(c.terceirosClassificados.map((t) => [t.grupo, t]));
@@ -783,8 +786,11 @@ export type EmpateTerceiros = {
  * função só exponha os 8 classificados + os eliminados separadamente, usamos
  * a concatenação [classificados, eliminados] preservando a ordem.
  */
-export function detectarEmpateTerceiros(jogos: JogoFinalizado[]): EmpateTerceiros | null {
-  const c = classificadosParaMataMata(jogos);
+export function detectarEmpateTerceiros(
+  jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
+): EmpateTerceiros | null {
+  const c = classificadosParaMataMata(jogos, rankingFifa);
   const todosTerceiros: StatsTime[] = [
     ...c.terceirosClassificados,
     ...c.terceirosEliminados,

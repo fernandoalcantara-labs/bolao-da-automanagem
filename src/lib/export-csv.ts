@@ -93,7 +93,7 @@ export async function gerarCsvCompleto(
         "id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora",
         "data_hora",
       ),
-      fetchAll<any>(supabase, "teams", "id, nome, codigo_fifa, grupo"),
+      fetchAll<any>(supabase, "teams", "id, nome, codigo_fifa, grupo, ranking_fifa"),
       fetchAll<any>(supabase, "players", "id, nome, time_id, gols_torneio"),
       fetchAll<any>(
         supabase,
@@ -115,6 +115,12 @@ export async function gerarCsvCompleto(
 
   // ============== Lookups ==============
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  // Ranking FIFA pro desempate do R32 — o CSV tem que mostrar o mesmo R32
+  // que o app/realidade. (item 52 estendido ao apostador)
+  const rankingFifa = new Map<string, number>();
+  for (const t of teams) {
+    if (t.ranking_fifa != null) rankingFifa.set(t.id, t.ranking_fifa);
+  }
   const playerById = new Map(players.map((p) => [p.id, p]));
   // palpite grupos: chave = `${user_id}|${match_id}`
   const pgKey = (uid: string, mid: string) => `${uid}|${mid}`;
@@ -209,7 +215,7 @@ export async function gerarCsvCompleto(
     const jogos = jogosVirtuaisDoUser(u.id);
     if (jogos.length === 0) return csvEscape("-");
     try {
-      const r = classificadosParaMataMata(jogos);
+      const r = classificadosParaMataMata(jogos, rankingFifa);
       const nomes = r.todosClassificados
         .map((t) => teamById.get(t.time_id)?.nome ?? "?")
         .join(", ");

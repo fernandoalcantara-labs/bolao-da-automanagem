@@ -22,7 +22,7 @@ import {
 } from "./scoring";
 import { resolverBracketR32 } from "./bracket-2026";
 import { timesValidosR32 } from "./mata-mata-picks";
-import { getRosterTodasFases, faseAlcancadaDeRosters } from "./mata-roster";
+import { getRosterTodasFases, faseAlcancadaDeRosters, carregarRankingFifa } from "./mata-roster";
 import type { JogoFinalizado } from "./classification";
 
 // Cliente sem generic de schema — chamadas usam type assertions.
@@ -50,6 +50,11 @@ async function calcularR32PorUsuario(supabase: SB): Promise<Map<string, Set<stri
     .from("palpites_grupos")
     .select("user_id, match_id, placar_casa, placar_fora");
 
+  // Ranking FIFA pro desempate — o R32 do usuário tem que desempatar igual à
+  // realidade (que usa ranking), senão num grupo empatado o user "erraria" o
+  // R32 por causa do UUID. (item 52 estendido ao apostador)
+  const ranking = await carregarRankingFifa(supabase);
+
   const porUser = new Map<string, JogoFinalizado[]>();
   for (const p of (palpitesG ?? []) as any[]) {
     const m = minfo.get(p.match_id) as any;
@@ -68,7 +73,7 @@ async function calcularR32PorUsuario(supabase: SB): Promise<Map<string, Set<stri
   const out = new Map<string, Set<string>>();
   for (const [userId, jogos] of porUser) {
     try {
-      const set = timesValidosR32(resolverBracketR32(jogos));
+      const set = timesValidosR32(resolverBracketR32(jogos, ranking));
       if (set.size > 0) out.set(userId, set);
     } catch {
       // sem R32 confiável → não entra no mapa (não filtra esse user)

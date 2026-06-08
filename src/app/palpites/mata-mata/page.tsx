@@ -7,6 +7,7 @@ import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
+import { carregarRankingFifa } from "@/lib/mata-roster";
 import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
 import { calcularBreakdown } from "@/lib/scoring-breakdown";
 import type { Grupo } from "@/types/database";
@@ -76,11 +77,16 @@ export default async function MataMataPage() {
   const palpitados = jogosPalpitados.length;
   const todosPalpitados = palpitados === totalGrupos && totalGrupos > 0;
 
+  // Ranking FIFA: penúltimo critério de desempate. Sem ele, num grupo
+  // empatado (ex.: tudo 0×0) a previsão do apostador desempataria por UUID
+  // e NÃO bateria com a realidade (que usa ranking). (item 52 estendido)
+  const rankingFifa = await carregarRankingFifa(supabase as any);
+
   // Mesmo com palpites parciais, computa o que dá pra resolver
   const r32Resolvido = todosPalpitados
-    ? resolverBracketR32(jogosPalpitados)
+    ? resolverBracketR32(jogosPalpitados, rankingFifa)
     : palpitados > 0
-      ? resolverBracketR32(jogosPalpitados) // parcial — alguns slots ficam null
+      ? resolverBracketR32(jogosPalpitados, rankingFifa) // parcial — alguns slots ficam null
       : R32_PARES.map((p) => ({
           ...p,
           casaTime: null,

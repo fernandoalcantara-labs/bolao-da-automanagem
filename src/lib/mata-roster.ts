@@ -140,8 +140,13 @@ async function lerJogosGruposReais(sb: SB): Promise<{ jogos: JogoFinalizado[]; f
   return { jogos, finalizados };
 }
 
-/** Mapa time_id → ranking_fifa (pro desempate dos 3ºs). */
-async function lerRankingFifa(sb: SB): Promise<Map<string, number>> {
+/**
+ * Mapa time_id → ranking_fifa. Usado como penúltimo critério de desempate
+ * (antes do time_id/UUID). Carregado tanto no caminho REAL (roster) quanto
+ * no do APOSTADOR (bracket/breakdown/csv), pra a previsão bater com a
+ * realidade num grupo empatado (item 52 estendido). Exportado.
+ */
+export async function carregarRankingFifa(sb: SB): Promise<Map<string, number>> {
   const { data } = await sb.from("teams").select("id, ranking_fifa");
   const m = new Map<string, number>();
   for (const t of (data ?? []) as any[]) {
@@ -156,7 +161,7 @@ async function lerRankingFifa(sb: SB): Promise<Map<string, number>> {
  * de grupo finalizado ainda.
  */
 export async function calcularR32Automatico(sb: SB): Promise<ClassificadoProvisorio[]> {
-  const [{ jogos }, ranking] = await Promise.all([lerJogosGruposReais(sb), lerRankingFifa(sb)]);
+  const [{ jogos }, ranking] = await Promise.all([lerJogosGruposReais(sb), carregarRankingFifa(sb)]);
   if (jogos.length === 0) return [];
   return classificadosProvisoriosR32(jogos, ranking);
 }
