@@ -86,26 +86,36 @@ export function MultiLineChart({
 
   return (
     <div className="space-y-2">
-      <div className="h-[420px] w-full">
+      {/* 41A: scroll horizontal no mobile (mesmo padrão do heatmap) — o
+          gráfico tem largura mínima pra não espremer as 9 colunas. */}
+      <div
+        className="-mx-2 overflow-x-auto px-2 scrollbar-thin"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="h-[420px]" style={{ minWidth: 680 }}>
         <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
             <XAxis
               dataKey="rodada"
               stroke="hsl(var(--muted-foreground))"
+              interval={0}
               tick={(props: any) => {
                 const { x, y, payload } = props;
+                const isFinal = payload?.value === "Final";
                 const isArtilheiro = payload?.value === "Artilheiro";
+                const destaque = isFinal || isArtilheiro;
+                const prefixo = isFinal ? "🏆 " : isArtilheiro ? "⚽ " : "";
                 return (
                   <text
                     x={x}
                     y={y + 12}
                     textAnchor="middle"
-                    fill={isArtilheiro ? "#FF9F1C" : "hsl(var(--muted-foreground))"}
+                    fill={destaque ? "#FF9F1C" : "hsl(var(--muted-foreground))"}
                     fontSize={11}
-                    fontWeight={isArtilheiro ? 800 : 400}
+                    fontWeight={destaque ? 800 : 400}
                   >
-                    {isArtilheiro ? "🏆 " : ""}{payload?.value}
+                    {prefixo}{payload?.value}
                   </text>
                 );
               }}
@@ -175,6 +185,7 @@ export function MultiLineChart({
             })}
           </LineChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Aviso quando user logado está fora do top N */}

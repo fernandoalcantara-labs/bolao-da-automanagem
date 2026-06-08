@@ -95,7 +95,7 @@ const ROUND_LABELS = [
   { ordem: 1, label: "Grupos R1", filtro: { fase: "grupos" as const, rodada: 1 } },
   { ordem: 2, label: "Grupos R2", filtro: { fase: "grupos" as const, rodada: 2 } },
   { ordem: 3, label: "Grupos R3", filtro: { fase: "grupos" as const, rodada: 3 } },
-  { ordem: 4, label: "16 avos", filtro: { fase: "16avos" as const } },
+  { ordem: 4, label: "16 Avos", filtro: { fase: "16avos" as const } },
   { ordem: 5, label: "Oitavas", filtro: { fase: "8avos" as const } },
   { ordem: 6, label: "Quartas", filtro: { fase: "quartas" as const } },
   { ordem: 7, label: "Semi", filtro: { fase: "semi" as const } },
@@ -450,14 +450,18 @@ async function gerarSnapshots(
     cfg,
     r32PorUser,
   );
-  // Pontos creditados na rodada em que o palpite é validado.
-  // "8avos" = palpitou que time chega às oitavas → validado quando o R32 acaba (rodada 4).
+  // (43-45) Cada coluna contém a fase que ela NOMEIA (alinha com a memória
+  // de cálculo do admin): pick "8avos" (chegou às oitavas) → coluna Oitavas
+  // (5), "quartas" → Quartas (6), "semi" → Semi (7), "final" → Final (8).
+  // O pts_r32 cai na col 4 (16 Avos) e o campeão/vice na col 8 (Final),
+  // creditados nos blocos abaixo. Total acumulado inalterado — muda só a
+  // coluna onde cada ponto aparece.
   const faseParaOrdem: Record<FasePalpiteMata, number> = {
-    "16avos": 4, // raramente usado
-    "8avos": 4,
-    "quartas": 5,
-    "semi": 6,
-    "final": 7,
+    "16avos": 4, // não há pick de 16avos; pts_r32 é creditado à parte (col 4)
+    "8avos": 5,  // chegou às oitavas → coluna Oitavas
+    "quartas": 6,
+    "semi": 7,
+    "final": 8,  // chegou à final → coluna Final
     "campeao": 8,
   };
   for (const [userId, fasesMap] of ptsMata) {
