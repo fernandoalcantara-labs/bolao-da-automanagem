@@ -86,36 +86,37 @@ export function MultiLineChart({
 
   return (
     <div className="space-y-2">
-      {/* 41A: scroll horizontal no mobile (mesmo padrão do heatmap) — o
-          gráfico tem largura mínima pra não espremer as 9 colunas. */}
-      <div
-        className="-mx-2 overflow-x-auto px-2 scrollbar-thin"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="h-[420px]" style={{ minWidth: 680 }}>
+      {/* 41A/41B (corrigido pós-teste VPC): o gráfico CABE no painel — sem
+          min-width/scroll (que estourava a largura no mobile e abria barra
+          horizontal no desktop). ResponsiveContainer a 100% + interval={0}
+          (mostra as 9 colunas) + rótulos do eixo X inclinados -30° pra caber. */}
+      <div className="h-[420px] w-full">
         <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
+          <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 26 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
             <XAxis
               dataKey="rodada"
-              stroke="hsl(var(--muted-foreground))"
               interval={0}
+              height={50}
+              tickMargin={4}
+              stroke="hsl(var(--muted-foreground))"
               tick={(props: any) => {
                 const { x, y, payload } = props;
-                const isFinal = payload?.value === "Final";
-                const isArtilheiro = payload?.value === "Artilheiro";
-                const destaque = isFinal || isArtilheiro;
-                const prefixo = isFinal ? "🏆 " : isArtilheiro ? "⚽ " : "";
+                const v = payload?.value;
+                const isFinal = v === "Final";
+                const isArtilheiro = v === "Artilheiro";
+                const prefixo = isFinal ? "🏆 " : isArtilheiro ? "👟 " : "";
                 return (
                   <text
                     x={x}
-                    y={y + 12}
-                    textAnchor="middle"
-                    fill={destaque ? "#FF9F1C" : "hsl(var(--muted-foreground))"}
-                    fontSize={11}
-                    fontWeight={destaque ? 800 : 400}
+                    y={y + 8}
+                    textAnchor="end"
+                    transform={`rotate(-30, ${x}, ${y + 8})`}
+                    fill={isFinal ? "#E0B000" : "hsl(var(--muted-foreground))"}
+                    fontSize={10}
+                    fontWeight={isFinal ? 800 : 400}
                   >
-                    {prefixo}{payload?.value}
+                    {prefixo}{v}
                   </text>
                 );
               }}
@@ -136,12 +137,15 @@ export function MultiLineChart({
                 fontSize: 12,
               }}
               labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
-              formatter={(value: number, name: string) => {
+              formatter={(value: number, name: string, item: any) => {
                 const userId = name;
                 const userName = userMap.get(userId) ?? userId;
-                const ord = data.findIndex((d) => d[userId] === value);
+                // Corrigido pós-teste VPC: usa a rodada do ponto SOB O CURSOR
+                // (item.payload.rodada). O findIndex por posição pegava a
+                // rodada errada — a posição se repete entre rodadas.
+                const rodadaLabel = item?.payload?.rodada;
                 const snap = snapshots.find(
-                  (s) => s.user_id === userId && s.rodada_ordem === ord + 1,
+                  (s) => s.user_id === userId && s.rodada_label === rodadaLabel,
                 );
                 const isMe = currentUserId === userId ? " (Você)" : "";
                 return [
@@ -185,7 +189,6 @@ export function MultiLineChart({
             })}
           </LineChart>
         </ResponsiveContainer>
-        </div>
       </div>
 
       {/* Aviso quando user logado está fora do top N */}

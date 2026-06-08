@@ -91,7 +91,7 @@ function pickDeMataValido(
   return set.has(timeId);
 }
 
-const ROUND_LABELS = [
+export const ROUND_LABELS = [
   { ordem: 1, label: "Grupos R1", filtro: { fase: "grupos" as const, rodada: 1 } },
   { ordem: 2, label: "Grupos R2", filtro: { fase: "grupos" as const, rodada: 2 } },
   { ordem: 3, label: "Grupos R3", filtro: { fase: "grupos" as const, rodada: 3 } },
@@ -105,6 +105,22 @@ const ROUND_LABELS = [
   // acertou=true via marcação manual).
   { ordem: 9, label: "Artilheiro", filtro: { fase: "artilheiro" as const } },
 ];
+
+/**
+ * Coluna (ordem em ROUND_LABELS) em que cada fase do palpite de mata é
+ * creditada — ALINHADA à fase que a coluna NOMEIA (item 43/45). pick "8avos"
+ * (chegou às oitavas) → col 5 (Oitavas), "final" → col 8 (Final). O campeão
+ * e o vice caem na col 8 (Final); o pts_r32 é creditado à parte na col 4.
+ * Exportado pra teste (tests/colunas-pontuacao.test.ts).
+ */
+export const faseParaOrdemMata: Record<FasePalpiteMata, number> = {
+  "16avos": 4, // não há pick de 16avos; pts_r32 é creditado à parte (col 4)
+  "8avos": 5, // chegou às oitavas → coluna Oitavas
+  "quartas": 6,
+  "semi": 7,
+  "final": 8, // chegou à final → coluna Final
+  "campeao": 8, // campeão + vice
+};
 
 /**
  * Resultado de um recálculo — usado pelo log do admin (QW3 item 17).
@@ -456,17 +472,9 @@ async function gerarSnapshots(
   // O pts_r32 cai na col 4 (16 Avos) e o campeão/vice na col 8 (Final),
   // creditados nos blocos abaixo. Total acumulado inalterado — muda só a
   // coluna onde cada ponto aparece.
-  const faseParaOrdem: Record<FasePalpiteMata, number> = {
-    "16avos": 4, // não há pick de 16avos; pts_r32 é creditado à parte (col 4)
-    "8avos": 5,  // chegou às oitavas → coluna Oitavas
-    "quartas": 6,
-    "semi": 7,
-    "final": 8,  // chegou à final → coluna Final
-    "campeao": 8,
-  };
   for (const [userId, fasesMap] of ptsMata) {
     for (const [fase, pts] of fasesMap) {
-      const ord = faseParaOrdem[fase];
+      const ord = faseParaOrdemMata[fase];
       const mapa = pontosPorRodada.get(ord)!;
       mapa.set(userId, (mapa.get(userId) ?? 0) + pts);
     }
