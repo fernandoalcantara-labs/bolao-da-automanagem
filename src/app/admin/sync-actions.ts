@@ -24,3 +24,25 @@ export async function setSyncAutomatico(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+/**
+ * Encerra/reabre TODAS as apostas (item 50). Quando encerradas, a RLS
+ * recusa qualquer gravação de palpite (grupos/mata/campeão/artilheiro).
+ * Freio manual caso a sincronização automática falhe.
+ */
+export async function setApostasEncerradas(
+  encerradas: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado" };
+  const { data: perfil } = await supabase.from("users").select("role").eq("id", user.id).single();
+  if ((perfil as any)?.role !== "admin") return { ok: false, error: "Apenas administradores" };
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("config")
+    .upsert({ chave: "apostas_encerradas", valor: encerradas as any }, { onConflict: "chave" });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

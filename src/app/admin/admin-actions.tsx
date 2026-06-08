@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toaster";
-import { setSyncAutomatico } from "./sync-actions";
+import { setSyncAutomatico, setApostasEncerradas } from "./sync-actions";
 import {
   Dialog,
   DialogContent,
@@ -30,13 +30,21 @@ type RecalcLog = {
   }>;
 };
 
-export function AdminActions({ syncAutomaticoInicial = true }: { syncAutomaticoInicial?: boolean }) {
+export function AdminActions({
+  syncAutomaticoInicial = true,
+  apostasEncerradasInicial = false,
+}: {
+  syncAutomaticoInicial?: boolean;
+  apostasEncerradasInicial?: boolean;
+}) {
   const [syncing, setSyncing] = React.useState(false);
   const [recalcing, setRecalcing] = React.useState(false);
   const [logOpen, setLogOpen] = React.useState(false);
   const [log, setLog] = React.useState<RecalcLog | null>(null);
   const [syncAuto, setSyncAuto] = React.useState(syncAutomaticoInicial);
   const [savingAuto, setSavingAuto] = React.useState(false);
+  const [encerradas, setEncerradas] = React.useState(apostasEncerradasInicial);
+  const [savingEnc, setSavingEnc] = React.useState(false);
 
   async function alternarSyncAuto(v: boolean) {
     setSyncAuto(v); // otimista
@@ -53,6 +61,25 @@ export function AdminActions({ syncAutomaticoInicial = true }: { syncAutomaticoI
       description: v
         ? "O cron volta a sincronizar resultados."
         : "O cron não vai mais sobrescrever resultados (sync manual segue funcionando).",
+      variant: "success",
+    });
+  }
+
+  async function alternarEncerradas(v: boolean) {
+    setEncerradas(v); // otimista
+    setSavingEnc(true);
+    const res = await setApostasEncerradas(v);
+    setSavingEnc(false);
+    if (!res.ok) {
+      setEncerradas(!v); // reverte
+      toast({ title: "Erro", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: v ? "Apostas ENCERRADAS" : "Apostas ABERTAS",
+      description: v
+        ? "Ninguém consegue mais salvar/alterar palpites (grupos, mata, artilheiro)."
+        : "Os palpites voltaram a aceitar gravação (respeitando o prazo).",
       variant: "success",
     });
   }
@@ -112,6 +139,26 @@ export function AdminActions({ syncAutomaticoInicial = true }: { syncAutomaticoI
         <p className="text-[11px] text-muted-foreground">
           Quando desligada, o cron não sobrescreve resultados. A sincronização manual (botão acima)
           continua funcionando.
+        </p>
+      </div>
+
+      {/* Item 50 — freio manual de TODOS os palpites */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Switch checked={encerradas} onCheckedChange={alternarEncerradas} disabled={savingEnc} />
+          <span className="font-medium">
+            Apostas:{" "}
+            {encerradas ? (
+              <Badge variant="destructive">ENCERRADAS</Badge>
+            ) : (
+              <Badge variant="success">ABERTAS</Badge>
+            )}
+          </span>
+          {savingEnc && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Encerrar bloqueia no servidor qualquer gravação de palpite (grupos, mata, artilheiro) —
+          freio manual caso a sincronização falhe.
         </p>
       </div>
 

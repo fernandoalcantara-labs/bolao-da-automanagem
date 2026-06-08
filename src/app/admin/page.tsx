@@ -25,6 +25,7 @@ export default async function AdminPage() {
     { count: jogosFinalizados },
     { data: backupsRaw },
     { data: syncCfg },
+    { data: apostasCfg },
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("pago", true),
@@ -36,8 +37,10 @@ export default async function AdminPage() {
       .order("gerado_em", { ascending: false })
       .limit(50),
     supabase.from("config").select("valor").eq("chave", "sync_automatico").maybeSingle(),
+    supabase.from("config").select("valor").eq("chave", "apostas_encerradas").maybeSingle(),
   ]);
   const syncAutomatico = (syncCfg?.valor as boolean | undefined) !== false; // default ligado
+  const apostasEncerradas = (apostasCfg?.valor as boolean | undefined) === true; // default aberto
 
   // Resolve nome dos admins que geraram backup manual (1 query batch)
   const adminIds = Array.from(
@@ -116,7 +119,7 @@ export default async function AdminPage() {
           <CardDescription>Sincronizar com a API e recalcular pontuações.</CardDescription>
         </CardHeader>
         <CardContent>
-          <AdminActions syncAutomaticoInicial={syncAutomatico} />
+          <AdminActions syncAutomaticoInicial={syncAutomatico} apostasEncerradasInicial={apostasEncerradas} />
         </CardContent>
       </Card>
 

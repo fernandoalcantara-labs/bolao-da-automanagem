@@ -117,9 +117,6 @@ export default async function RegrasPage() {
             <h3 className="mb-2 font-semibold">Artilheiro</h3>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>⚽ Acertar o artilheiro da Copa: <Pts>{pontuacao.artilheiro}</Pts></li>
-              {rateio.artilheiro === 0 && (
-                <li className="font-bold text-festive-orange">⚠️ Acertar o artilheiro <strong>NÃO dá prêmio em dinheiro</strong>, apenas pontos no ranking.</li>
-              )}
             </ul>
           </div>
         </CardContent>
@@ -175,8 +172,7 @@ export default async function RegrasPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-muted-foreground">
-          <p>📅 Palpites da fase de grupos encerram em: <strong className="text-foreground">{DEADLINE_FASE_GRUPOS.toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short", timeZone: "America/Sao_Paulo" })}</strong></p>
-          <p>🏟️ Mata-mata: palpitar até o início, mesmas regras de validação.</p>
+          <p>📅 Palpites da fase de grupos, mata-mata e artilheiro encerram em: <strong className="text-foreground">{DEADLINE_FASE_GRUPOS.toLocaleString("pt-BR", { dateStyle: "long", timeStyle: "short", timeZone: "America/Sao_Paulo" })}</strong></p>
           <p>🏆 Final: <strong>19/07/2026</strong> · MetLife Stadium (NY/NJ)</p>
         </CardContent>
       </Card>
