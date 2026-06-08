@@ -8,6 +8,7 @@ import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
 import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
+import { calcularBreakdown } from "@/lib/scoring-breakdown";
 import type { Grupo } from "@/types/database";
 import type { JogoFinalizado } from "@/lib/classification";
 
@@ -88,6 +89,33 @@ export default async function MataMataPage() {
           foraOrigemTerceiro: null,
         }));
 
+  // Item 46 — pontos por pick no bracket. Reusa o breakdown (mesma conta do
+  // admin), evitando reinventar. Chave `${fase}:${time_id}` → label; e
+  // `centro:${time_id}` = soma do caso da final (pts_final + campeão|vice).
+  const pontosMata: Record<string, string> = {};
+  try {
+    const bd = await calcularBreakdown(supabase as any, user.id);
+    for (const it of bd.mata.items) {
+      pontosMata[`${it.fase}:${it.time_id}`] = it.pendente ? "⏳" : it.pontos > 0 ? `+${it.pontos}` : "0";
+    }
+    const campItem = bd.mata.items.find((i) => i.fase === "campeao");
+    for (const fi of bd.mata.items.filter((i) => i.fase === "final")) {
+      let total = fi.pontos;
+      let pend = fi.pendente;
+      if (campItem && campItem.time_id === fi.time_id) {
+        total += campItem.pontos;
+        pend = pend || campItem.pendente;
+      }
+      if (bd.vice && bd.vice.time_id === fi.time_id) {
+        total += bd.vice.pontos;
+        pend = pend || bd.vice.pendente;
+      }
+      pontosMata[`centro:${fi.time_id}`] = total > 0 ? `+${total}` : pend ? "⏳" : "0";
+    }
+  } catch {
+    // se o breakdown falhar, o bracket cai no ✓ (pontosMata vazio)
+  }
+
   return (
     <div className="space-y-5">
       <Card>
@@ -138,6 +166,7 @@ export default async function MataMataPage() {
         r32={r32Resolvido}
         fechado={fechado}
         userId={user.id}
+        pontosMata={pontosMata}
       />
     </div>
   );

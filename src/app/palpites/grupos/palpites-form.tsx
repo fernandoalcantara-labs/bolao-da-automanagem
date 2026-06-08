@@ -14,6 +14,8 @@ import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
+import { pontosPalpiteGrupo } from "@/lib/scoring";
+import type { PontuacaoConfig } from "@/types/database";
 
 type Team = { id: string; nome: string; codigo_fifa: string; bandeira_url: string; grupo: string };
 type Match = {
@@ -36,12 +38,43 @@ type Props = {
   palpites: Record<string, Palpite>;
   fechado: boolean;
   userId: string;
+  pontuacao: PontuacaoConfig;
 };
 
 type Modo = "grupo" | "rodada";
 type FormState = Record<string, { c: string; f: string }>;
 
-export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId }: Props) {
+/**
+ * Item 46 — pontos que o palpite rendeu num jogo de grupos. Retorna null
+ * enquanto o jogo não finalizou (mostra ⏳ na UI).
+ */
+export function pontosDoJogoGrupo(
+  m: Match,
+  v: { c: string; f: string } | undefined,
+  cfg: PontuacaoConfig,
+): number | null {
+  if (m.status !== "finalizado" || m.placar_casa === null || m.placar_fora === null) return null;
+  if (!v || v.c === "" || v.f === "") return 0; // finalizado mas não palpitou
+  return pontosPalpiteGrupo(
+    { casa: Number(v.c), fora: Number(v.f) },
+    { casa: m.placar_casa, fora: m.placar_fora },
+    cfg,
+  );
+}
+
+/** Badge de pontos por jogo (✅+5 / ⚠️+2 / ❌0 / ⏳). */
+function PontosJogo({ pts }: { pts: number | null }) {
+  if (pts === null) return <span className="text-[10px] font-bold text-muted-foreground">⏳ aguardando</span>;
+  if (pts <= 0) return <span className="text-[10px] font-bold text-muted-foreground">❌ 0 pts</span>;
+  const exato = pts >= 5;
+  return (
+    <span className={cn("text-[10px] font-extrabold", exato ? "text-festive-green" : "text-festive-gold-dark")}>
+      {exato ? "✅" : "⚠️"} +{pts} pts
+    </span>
+  );
+}
+
+export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId, pontuacao }: Props) {
   const storageKey = `bolao:palpites:grupos:${userId}`;
 
   const [state, setState] = React.useState<FormState>(() => {
@@ -180,6 +213,7 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId }
           state={state}
           update={update}
           fechado={fechado}
+          pontuacao={pontuacao}
         />
       ) : (
         <PorRodada
@@ -188,6 +222,7 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId }
           state={state}
           update={update}
           fechado={fechado}
+          pontuacao={pontuacao}
         />
       )}
 
@@ -206,13 +241,14 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId }
 // ───────────────────────────────────────── Por grupo ─────────────────────────────────────────
 
 function PorGrupo({
-  matches, teams, state, update, fechado,
+  matches, teams, state, update, fechado, pontuacao,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
   state: Record<string, { c: string; f: string }>;
   update: (id: string, side: "c" | "f", value: string) => void;
   fechado: boolean;
+  pontuacao: PontuacaoConfig;
 }) {
   const porGrupo = React.useMemo(() => {
     const m = new Map<string, Match[]>();
@@ -342,8 +378,9 @@ function PorGrupo({
                             </div>
                           </div>
                           {m.status === "finalizado" && (
-                            <p className="mt-1 text-center text-[10px] text-emerald-400">
-                              Resultado: {m.placar_casa}-{m.placar_fora}
+                            <p className="mt-1 flex items-center justify-center gap-2 text-center text-[10px] text-emerald-400">
+                              <span>Resultado: {m.placar_casa}-{m.placar_fora}</span>
+                              <PontosJogo pts={pontosDoJogoGrupo(m, v, pontuacao)} />
                             </p>
                           )}
                         </div>
@@ -362,13 +399,14 @@ function PorGrupo({
 // ───────────────────────────────────────── Por rodada ─────────────────────────────────────────
 
 function PorRodada({
-  matches, teams, state, update, fechado,
+  matches, teams, state, update, fechado, pontuacao,
 }: {
   matches: Match[];
   teams: Record<string, Team>;
   state: Record<string, { c: string; f: string }>;
   update: (id: string, side: "c" | "f", value: string) => void;
   fechado: boolean;
+  pontuacao: PontuacaoConfig;
 }) {
   const porRodada = React.useMemo(() => {
     const m = new Map<number, Match[]>();
@@ -397,7 +435,14 @@ function PorRodada({
                   <CardContent className="flex items-center gap-3 p-3">
                     <div className="flex w-16 flex-col gap-0.5 text-[10px] text-muted-foreground">
                       <Badge variant="muted" className="text-[10px]">{m.grupo}</Badge>
-                      <span className="font-medium leading-tight">{formatarDataRelativa(m.data_hora)}</span>
+                      {m.status === "finalizado" ? (
+                        <>
+                          <span className="font-medium leading-tight text-emerald-400">{m.placar_casa}-{m.placar_fora}</span>
+                          <PontosJogo pts={pontosDoJogoGrupo(m, v, pontuacao)} />
+                        </>
+                      ) : (
+                        <span className="font-medium leading-tight">{formatarDataRelativa(m.data_hora)}</span>
+                      )}
                     </div>
                     <div className="flex flex-1 items-center justify-end gap-1.5 text-right">
                       <span className="team-name text-sm font-medium">{casa.nome}</span>

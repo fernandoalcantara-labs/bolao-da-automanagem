@@ -42,12 +42,14 @@ export function MataMataForm({
   r32,
   fechado,
   userId,
+  pontosMata,
 }: {
   teams: Team[];
   palpites: Palpite[];
   r32: ParR32Resolvido[];
   fechado: boolean;
   userId: string;
+  pontosMata?: Record<string, string>;
 }) {
   const storageKey = `bolao:palpites:mata:${userId}`;
 
@@ -185,6 +187,7 @@ export function MataMataForm({
           picks={picks}
           onPick={pickInMatch}
           fechado={fechado}
+          pontosMata={pontosMata}
         />
       </div>
 
