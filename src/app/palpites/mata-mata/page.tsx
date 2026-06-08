@@ -8,6 +8,7 @@ import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { resolverBracketR32, R32_PARES } from "@/lib/bracket-2026";
 import { carregarRankingFifa } from "@/lib/mata-roster";
+import { apostasFechadas } from "@/lib/apostas";
 import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
 import { calcularBreakdown } from "@/lib/scoring-breakdown";
 import type { Grupo } from "@/types/database";
@@ -51,7 +52,8 @@ export default async function MataMataPage() {
   // Normaliza pro padrão pts_* (fase alcançada).
   const pontuacao = normalizarPontuacao((cfgRow?.valor as any) ?? PONTUACAO_DEFAULT);
 
-  const fechado = Date.now() >= DEADLINE_FASE_GRUPOS.getTime();
+  // fechado no modelo B2 (override ? encerradas : prazo) — igual ao trigger.
+  const fechado = await apostasFechadas(supabase as any);
 
   // Constrói os "jogos finalizados" a partir dos PALPITES do usuário,
   // não dos resultados reais. Cada palpite vira um JogoFinalizado virtual.

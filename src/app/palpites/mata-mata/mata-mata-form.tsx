@@ -14,6 +14,7 @@ import type { ParR32Resolvido } from "@/lib/bracket-2026";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 import { aplicarPick, ORDEM_FASES, filtrarPicksPorR32 } from "@/lib/mata-mata-picks";
+import { ehErroApostasEncerradas } from "@/lib/palpites-bloqueio";
 
 type Team = {
   id: string;
@@ -40,7 +41,7 @@ export function MataMataForm({
   teams,
   palpites,
   r32,
-  fechado,
+  fechado: fechadoInicial,
   userId,
   pontosMata,
 }: {
@@ -52,6 +53,9 @@ export function MataMataForm({
   pontosMata?: Record<string, string>;
 }) {
   const storageKey = `bolao:palpites:mata:${userId}`;
+  // "Sombra" do fechado: o trigger barra (encerrado/prazo) → trava sem reload.
+  const [bloqueado, setBloqueado] = React.useState(false);
+  const fechado = fechadoInicial || bloqueado;
 
   // Estado de picks — fonte de verdade local
   const [picks, setPicks] = React.useState<Record<FasePalpiteMata, Set<string>>>(() => {
@@ -110,7 +114,24 @@ export function MataMataForm({
     enabled: !fechado,
     saveRemote: async (snapshot) => {
       const supabase = createClient();
-      await supabase.from("palpites_mata").delete().eq("user_id", userId);
+      // Trava a UI e avisa quando o trigger barra. Captura no DELETE também:
+      // sem isso, com apostas encerradas o delete passaria e o insert seria
+      // barrado → apagaria os picks sem reinserir (perda de dados).
+      const tratar = (error: { message?: string } | null) => {
+        if (error && ehErroApostasEncerradas(error)) {
+          setBloqueado(true);
+          toast({
+            title: "Apostas encerradas",
+            description: "Não dá mais pra editar palpites (encerrado pelo admin ou prazo vencido).",
+            variant: "destructive",
+          });
+        }
+      };
+      const { error: delErr } = await supabase.from("palpites_mata").delete().eq("user_id", userId);
+      if (delErr) {
+        tratar(delErr);
+        throw delErr;
+      }
       const rows: { user_id: string; time_id: string; fase: FasePalpiteMata }[] = [];
       for (const fase of ORDEM_FASES) {
         for (const time_id of snapshot[fase] ?? []) {
@@ -119,7 +140,10 @@ export function MataMataForm({
       }
       if (rows.length === 0) return;
       const { error } = await supabase.from("palpites_mata").insert(rows);
-      if (error) throw error;
+      if (error) {
+        tratar(error);
+        throw error;
+      }
     },
   });
   const [saving, setSaving] = React.useState(false);

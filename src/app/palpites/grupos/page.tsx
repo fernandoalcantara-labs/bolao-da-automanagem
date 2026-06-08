@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PalpitesGruposForm } from "./palpites-form";
 import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
+import { apostasFechadas } from "@/lib/apostas";
 import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -33,7 +34,8 @@ export default async function PalpitesGruposPage() {
   const teamMap = new Map(teams.map((t) => [t.id, t]));
   const palpitesMap = new Map(palpites?.map((p) => [p.match_id, p]) ?? []);
   const deadline = DEADLINE_FASE_GRUPOS;
-  const fechado = Date.now() >= deadline.getTime();
+  // fechado no modelo B2 (override ? encerradas : prazo) — igual ao trigger.
+  const fechado = await apostasFechadas(supabase as any);
 
   return (
     <div className="space-y-6">

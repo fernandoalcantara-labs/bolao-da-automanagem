@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ArtilheiroForm } from "./artilheiro-form";
 import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
+import { apostasFechadas } from "@/lib/apostas";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,8 @@ export default async function ArtilheiroPage() {
   ]);
 
   const teamMap = new Map((teams ?? []).map((t) => [t.id, t]));
-  const fechado = Date.now() >= DEADLINE_FASE_GRUPOS.getTime();
+  // fechado no modelo B2 (override ? encerradas : prazo) — igual ao trigger.
+  const fechado = await apostasFechadas(supabase as any);
 
   return (
     <div className="space-y-6">

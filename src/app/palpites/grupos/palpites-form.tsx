@@ -15,6 +15,7 @@ import { miniConfetti } from "@/lib/confetti";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 import { pontosPalpiteGrupo } from "@/lib/scoring";
+import { ehErroApostasEncerradas } from "@/lib/palpites-bloqueio";
 import type { PontuacaoConfig } from "@/types/database";
 
 type Team = { id: string; nome: string; codigo_fifa: string; bandeira_url: string; grupo: string };
@@ -74,7 +75,11 @@ function PontosJogo({ pts }: { pts: number | null }) {
   );
 }
 
-export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId, pontuacao }: Props) {
+export function PalpitesGruposForm({ matches, teams, palpites, fechado: fechadoInicial, userId, pontuacao }: Props) {
+  // "Sombra" do fechado: se o trigger barrar (encerrado pelo admin/prazo),
+  // trava a UI em tempo real, sem reload. (Opção 2 / item 50)
+  const [bloqueado, setBloqueado] = React.useState(false);
+  const fechado = fechadoInicial || bloqueado;
   const storageKey = `bolao:palpites:grupos:${userId}`;
 
   const [state, setState] = React.useState<FormState>(() => {
@@ -126,7 +131,17 @@ export function PalpitesGruposForm({ matches, teams, palpites, fechado, userId, 
       const { error } = await supabase
         .from("palpites_grupos")
         .upsert(rows, { onConflict: "user_id,match_id" });
-      if (error) throw error;
+      if (error) {
+        if (ehErroApostasEncerradas(error)) {
+          setBloqueado(true);
+          toast({
+            title: "Apostas encerradas",
+            description: "Não dá mais pra editar palpites (encerrado pelo admin ou prazo vencido).",
+            variant: "destructive",
+          });
+        }
+        throw error;
+      }
     },
   });
 

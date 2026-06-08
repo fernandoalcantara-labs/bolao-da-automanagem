@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toaster";
-import { setSyncAutomatico, setApostasEncerradas } from "./sync-actions";
+import { setSyncAutomatico, setApostasEncerradas, setApostasAutomatico } from "./sync-actions";
+import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -33,9 +34,11 @@ type RecalcLog = {
 export function AdminActions({
   syncAutomaticoInicial = true,
   apostasEncerradasInicial = false,
+  apostasOverrideInicial = false,
 }: {
   syncAutomaticoInicial?: boolean;
   apostasEncerradasInicial?: boolean;
+  apostasOverrideInicial?: boolean;
 }) {
   const [syncing, setSyncing] = React.useState(false);
   const [recalcing, setRecalcing] = React.useState(false);
@@ -44,7 +47,15 @@ export function AdminActions({
   const [syncAuto, setSyncAuto] = React.useState(syncAutomaticoInicial);
   const [savingAuto, setSavingAuto] = React.useState(false);
   const [encerradas, setEncerradas] = React.useState(apostasEncerradasInicial);
+  const [override, setOverride] = React.useState(apostasOverrideInicial);
   const [savingEnc, setSavingEnc] = React.useState(false);
+  // Prazo vencido: só no client (evita mismatch de hidratação com Date.now).
+  const [prazoVencido, setPrazoVencido] = React.useState(false);
+  React.useEffect(() => {
+    setPrazoVencido(Date.now() >= DEADLINE_FASE_GRUPOS.getTime());
+  }, []);
+  // Estado EFETIVO (espelha o trigger): override ? encerradas : prazo.
+  const efetivoEncerradas = override ? encerradas : prazoVencido;
 
   async function alternarSyncAuto(v: boolean) {
     setSyncAuto(v); // otimista
@@ -66,20 +77,42 @@ export function AdminActions({
   }
 
   async function alternarEncerradas(v: boolean) {
+    const prevEnc = encerradas;
+    const prevOv = override;
     setEncerradas(v); // otimista
+    setOverride(true); // mexer = controle manual
     setSavingEnc(true);
     const res = await setApostasEncerradas(v);
     setSavingEnc(false);
     if (!res.ok) {
-      setEncerradas(!v); // reverte
+      setEncerradas(prevEnc); // reverte
+      setOverride(prevOv);
       toast({ title: "Erro", description: res.error, variant: "destructive" });
       return;
     }
     toast({
-      title: v ? "Apostas ENCERRADAS" : "Apostas ABERTAS",
+      title: v ? "Apostas ENCERRADAS (manual)" : "Apostas ABERTAS (manual)",
       description: v
         ? "Ninguém consegue mais salvar/alterar palpites (grupos, mata, artilheiro)."
-        : "Os palpites voltaram a aceitar gravação (respeitando o prazo).",
+        : "Os palpites voltaram a aceitar gravação — controle manual, ignora o prazo.",
+      variant: "success",
+    });
+  }
+
+  async function voltarAoAutomatico() {
+    const prevOv = override;
+    setOverride(false); // otimista
+    setSavingEnc(true);
+    const res = await setApostasAutomatico();
+    setSavingEnc(false);
+    if (!res.ok) {
+      setOverride(prevOv); // reverte
+      toast({ title: "Erro", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Apostas no AUTOMÁTICO",
+      description: "Voltou a seguir o prazo (encerra sozinho no fim da fase de grupos).",
       variant: "success",
     });
   }
@@ -142,24 +175,45 @@ export function AdminActions({
         </p>
       </div>
 
-      {/* Item 50 — freio manual de TODOS os palpites */}
+      {/* Item 50 — freio manual de TODOS os palpites (modelo B2) */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
         <div className="flex items-center gap-2 text-sm">
-          <Switch checked={encerradas} onCheckedChange={alternarEncerradas} disabled={savingEnc} />
+          {/* Switch representa ABERTAS: ON/verde/direita = abertas. */}
+          <Switch
+            checked={!efetivoEncerradas}
+            onCheckedChange={(aberto) => alternarEncerradas(!aberto)}
+            disabled={savingEnc}
+            className="data-[state=checked]:bg-festive-green"
+            aria-label="Apostas abertas"
+          />
           <span className="font-medium">
             Apostas:{" "}
-            {encerradas ? (
-              <Badge variant="destructive">ENCERRADAS</Badge>
+            {efetivoEncerradas ? (
+              <Badge variant="destructive">
+                ENCERRADAS{!override && prazoVencido ? " (prazo)" : " (manual)"}
+              </Badge>
             ) : (
-              <Badge variant="success">ABERTAS</Badge>
+              <Badge variant="success">ABERTAS{override ? " (manual)" : ""}</Badge>
             )}
           </span>
           {savingEnc && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Encerrar bloqueia no servidor qualquer gravação de palpite (grupos, mata, artilheiro) —
-          freio manual caso a sincronização falhe.
-        </p>
+        <div className="flex flex-col items-end gap-1">
+          <p className="text-[11px] text-muted-foreground">
+            ON = abertas. Encerrar bloqueia no servidor (trigger) qualquer gravação de palpite —
+            freio manual caso a sincronização falhe.
+          </p>
+          {override && (
+            <button
+              type="button"
+              onClick={voltarAoAutomatico}
+              disabled={savingEnc}
+              className="text-[11px] font-bold text-primary underline disabled:opacity-50"
+            >
+              ↩ voltar ao automático (seguir o prazo)
+            </button>
+          )}
+        </div>
       </div>
 
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
