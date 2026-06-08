@@ -46,6 +46,22 @@ describe("faseAlcancadaDeRosters — fase verde mais profunda", () => {
     expect(fa.get("C")).toBe("16avos");
     expect(fa.get("D")).toBe("grupos"); // nunca apareceu
   });
+
+  it("time em fase profunda mas FORA dos 16 avos → grupos (anti-fantasma)", () => {
+    // Cenário do bug CT-R8: "Recalcular automático" esvaziou os 16 avos,
+    // mas sobraram overrides em 8avos. Sem estar nos 16 avos, NÃO classificou.
+    const r = rosters({ "16avos": [], "8avos": ["X"], "quartas": ["X"] });
+    const fa = faseAlcancadaDeRosters(r, ["X"]);
+    expect(fa.get("X")).toBe("grupos");
+  });
+
+  it("16 avos vazio → ninguém classificou (todos grupos)", () => {
+    const r = rosters({ "8avos": ["A", "B"], "final": ["A"] });
+    const fa = faseAlcancadaDeRosters(r, ["A", "B", "C"]);
+    expect(fa.get("A")).toBe("grupos");
+    expect(fa.get("B")).toBe("grupos");
+    expect(fa.get("C")).toBe("grupos");
+  });
 });
 
 describe("faseDecidida — roster atingiu o alvo", () => {

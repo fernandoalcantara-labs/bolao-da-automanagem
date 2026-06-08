@@ -71,11 +71,20 @@ export function faseAlcancadaDeRosters(
   rosters: Map<FasePalpiteMata, Set<string>>,
   todosTimeIds: string[],
 ): Map<string, FasePalpiteMata | "grupos"> {
+  // Os 16 avos são a PORTA DE ENTRADA do mata: um time só conta como
+  // classificado se estiver no roster dos 16 avos. Sem essa trava, sobras
+  // de override em fases profundas (ex.: após "Recalcular automático"
+  // esvaziar os 16 avos sem limpar as fases seguintes) gerariam
+  // "classificados fantasma" pontuando indevidamente. No fluxo normal a
+  // cascata na escrita mantém 8avos⊆16avos, então a trava não muda nada.
+  const r16 = rosters.get("16avos");
   const out = new Map<string, FasePalpiteMata | "grupos">();
   for (const id of todosTimeIds) {
     let alcancada: FasePalpiteMata | "grupos" = "grupos";
-    for (const fase of FASES_MATA) {
-      if (rosters.get(fase)?.has(id)) alcancada = fase;
+    if (r16?.has(id)) {
+      for (const fase of FASES_MATA) {
+        if (rosters.get(fase)?.has(id)) alcancada = fase;
+      }
     }
     out.set(id, alcancada);
   }
