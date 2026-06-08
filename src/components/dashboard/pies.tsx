@@ -1,26 +1,9 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { agruparPorContagem } from "@/lib/pie-data";
 
 const PALETTE = ["#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#A855F7", "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#8B5CF6"];
-
-/**
- * Agrupa por contagem. Ignora entradas com id/nome nulo, vazio ou "null"
- * (lixo de palpite órfão) — não viram fatia "null (1)" no donut. (53B)
- */
-function agruparPorContagem<T extends string>(ids: T[], nomes: Record<T, string>) {
-  const map = new Map<string, number>();
-  for (const id of ids) {
-    if (id == null || String(id).trim() === "") continue;
-    const bruto = nomes[id];
-    const nome = (bruto ?? "").trim();
-    if (nome === "" || nome.toLowerCase() === "null" || nome.toLowerCase() === "undefined") continue;
-    map.set(nome, (map.get(nome) ?? 0) + 1);
-  }
-  return [...map.entries()]
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value);
-}
 
 export function PieCampeao({ palpites, teams }: { palpites: string[]; teams: Record<string, string> }) {
   const data = agruparPorContagem(palpites, teams);
