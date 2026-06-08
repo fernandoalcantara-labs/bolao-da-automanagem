@@ -123,14 +123,11 @@ export function JogosTable({ matches, teams }: { matches: Match[]; teams: Team[]
     triggerRecalcDebounced();
   }
 
+  // Só a fase de grupos é editada por placar aqui. O mata-mata passou a ser
+  // gerenciado por ROSTER (componente RosterAdmin em /admin/jogos), não mais
+  // por confrontos — a edição de placar das fases de mata saiu daqui.
   const fases = [
-    { key: "grupos", label: "Grupos" },
-    { key: "16avos", label: "16 avos" },
-    { key: "8avos", label: "Oitavas" },
-    { key: "quartas", label: "Quartas" },
-    { key: "semi", label: "Semi" },
-    { key: "3lugar", label: "3º lugar" },
-    { key: "final", label: "Final" },
+    { key: "grupos", label: "Fase de grupos" },
   ];
 
   return (

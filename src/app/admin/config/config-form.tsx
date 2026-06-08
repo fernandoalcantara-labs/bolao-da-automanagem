@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
+import { normalizarPontuacao } from "@/lib/scoring";
 import type { PontuacaoConfig, RateioConfig } from "@/types/database";
 
 type Conf = {
@@ -22,11 +23,10 @@ type Conf = {
 
 export function ConfigForm({ conf }: { conf: Conf }) {
   const [saving, setSaving] = React.useState(false);
+  // Normaliza pro padrão pts_* (fase alcançada) ao carregar — converte
+  // configs legadas (mata_*) por significado.
   const [pontos, setPontos] = React.useState<PontuacaoConfig>(
-    conf.pontuacao ?? {
-      placar_exato: 5, vencedor_ou_empate: 2, mata_16avos: 8, mata_8avos: 12,
-      mata_quartas: 16, mata_semi: 20, vice: 24, campeao: 40, artilheiro: 24,
-    },
+    normalizarPontuacao(conf.pontuacao),
   );
   const [rateio, setRateio] = React.useState<RateioConfig>(
     conf.rateio ?? { primeiro: 65, segundo: 20, terceiro: 10, lanterninha: 5, artilheiro: 0 },
@@ -115,10 +115,11 @@ export function ConfigForm({ conf }: { conf: Conf }) {
           <NumberField label="Placar exato" v={pontos.placar_exato} onChange={(n) => setPontos({ ...pontos, placar_exato: n })} />
           <NumberField label="Vencedor / empate" v={pontos.vencedor_ou_empate} onChange={(n) => setPontos({ ...pontos, vencedor_ou_empate: n })} />
           <NumberField label="Artilheiro" v={pontos.artilheiro} onChange={(n) => setPontos({ ...pontos, artilheiro: n })} />
-          <NumberField label="16 avos" v={pontos.mata_16avos} onChange={(n) => setPontos({ ...pontos, mata_16avos: n })} />
-          <NumberField label="Oitavas" v={pontos.mata_8avos} onChange={(n) => setPontos({ ...pontos, mata_8avos: n })} />
-          <NumberField label="Quartas" v={pontos.mata_quartas} onChange={(n) => setPontos({ ...pontos, mata_quartas: n })} />
-          <NumberField label="Semi" v={pontos.mata_semi} onChange={(n) => setPontos({ ...pontos, mata_semi: n })} />
+          <NumberField label="16 Avos" v={pontos.pts_r32} onChange={(n) => setPontos({ ...pontos, pts_r32: n })} />
+          <NumberField label="Oitavas" v={pontos.pts_oitavas} onChange={(n) => setPontos({ ...pontos, pts_oitavas: n })} />
+          <NumberField label="Quartas" v={pontos.pts_quartas} onChange={(n) => setPontos({ ...pontos, pts_quartas: n })} />
+          <NumberField label="Semi" v={pontos.pts_semi} onChange={(n) => setPontos({ ...pontos, pts_semi: n })} />
+          <NumberField label="Final" v={pontos.pts_final} onChange={(n) => setPontos({ ...pontos, pts_final: n })} />
           <NumberField label="Vice" v={pontos.vice} onChange={(n) => setPontos({ ...pontos, vice: n })} />
           <NumberField label="Campeão" v={pontos.campeao} onChange={(n) => setPontos({ ...pontos, campeao: n })} />
         </CardContent>

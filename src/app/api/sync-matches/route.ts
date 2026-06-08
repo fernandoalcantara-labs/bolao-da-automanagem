@@ -17,6 +17,24 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // Freio do cron (4B): se a chamada veio pelo CRON (Bearer CRON_SECRET) e o
+  // admin desligou `sync_automatico`, não escreve nada. A sync MANUAL do
+  // admin (sessão autenticada) continua funcionando normalmente.
+  const viaCron =
+    request.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
+  if (viaCron) {
+    const { data: cfg } = await supabase
+      .from("config")
+      .select("valor")
+      .eq("chave", "sync_automatico")
+      .maybeSingle();
+    const ligado = cfg?.valor !== false; // default ligado se a chave não existir
+    if (!ligado) {
+      return NextResponse.json({ ok: true, skipped: "sync automático desligado pelo admin" });
+    }
+  }
+
   const partidas = await buscarPartidasWC();
 
   let atualizados = 0;

@@ -3,9 +3,22 @@ import {
   classificarPorGrupo,
   ordenarTimesDoGrupo,
   calcularStatsGrupos,
+  compararTerceiros,
+  classificarPorGrupoProvisorio,
+  classificadosProvisoriosR32,
+  type StatsTime,
 } from "../src/lib/classification";
 import type { JogoFinalizado } from "../src/lib/classification";
 import type { Grupo } from "../src/types/database";
+
+/** Helper p/ StatsTime sintético (testes de 3C). */
+function st(id: string, grupo: Grupo, pontos: number, saldo: number, gp: number): StatsTime {
+  return {
+    time_id: id, grupo,
+    jogos: 3, vitorias: 0, empates: 0, derrotas: 0,
+    gols_pro: gp, gols_contra: gp - saldo, saldo, pontos,
+  };
+}
 
 /**
  * Helper: monta os 6 jogos de um grupo a partir de 4 times + 6 resultados.
@@ -370,5 +383,75 @@ describe("ordenarTimesDoGrupo (helper exportado)", () => {
     expect(ordenado[0].time_id).toBe("X"); // 6 pts
     expect(ordenado[1].time_id).toBe("Y"); // 3 pts
     expect(ordenado[2].time_id).toBe("Z"); // 0 pts
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// (3C) compararTerceiros — desempate dos 3ºs por ranking FIFA
+// ────────────────────────────────────────────────────────────────────────
+
+describe("(3C) compararTerceiros — ranking FIFA como penúltimo critério", () => {
+  it("empate em pontos/saldo/gp → menor ranking FIFA vence o alfabético", () => {
+    const a = st("ZZZ", "A", 4, 1, 3); // alfabeticamente pior
+    const b = st("AAA", "B", 4, 1, 3);
+    const ranking = new Map([["ZZZ", 5], ["AAA", 40]]); // ZZZ melhor ranqueado
+    const ord = [b, a].sort((x, y) => compararTerceiros(x, y, ranking));
+    expect(ord[0].time_id).toBe("ZZZ");
+  });
+
+  it("PRIORIDADE: pontos vencem o ranking FIFA (6 pts > 3 pts, ranking pior)", () => {
+    const a = st("PIOR_RANK", "A", 6, 0, 2);
+    const b = st("MELHOR_RANK", "B", 3, 9, 9);
+    const ranking = new Map([["PIOR_RANK", 99], ["MELHOR_RANK", 1]]);
+    const ord = [b, a].sort((x, y) => compararTerceiros(x, y, ranking));
+    expect(ord[0].time_id).toBe("PIOR_RANK");
+  });
+
+  it("PRIORIDADE: saldo vence ranking (mesmos pontos)", () => {
+    const a = st("R_RUIM", "A", 4, 5, 6);
+    const b = st("R_BOM", "B", 4, 1, 6);
+    const ranking = new Map([["R_RUIM", 80], ["R_BOM", 2]]);
+    const ord = [b, a].sort((x, y) => compararTerceiros(x, y, ranking));
+    expect(ord[0].time_id).toBe("R_RUIM");
+  });
+
+  it("sem rankingFifa → fallback time_id (idêntico ao histórico)", () => {
+    const a = st("BBB", "A", 4, 1, 3);
+    const b = st("AAA", "B", 4, 1, 3);
+    const ord = [a, b].sort((x, y) => compararTerceiros(x, y));
+    expect(ord[0].time_id).toBe("AAA");
+  });
+
+  it("ranking ausente p/ um time → vai pro fim (+∞)", () => {
+    const a = st("SEM", "A", 4, 1, 3);
+    const b = st("COM", "B", 4, 1, 3);
+    const ranking = new Map([["COM", 50]]);
+    const ord = [a, b].sort((x, y) => compararTerceiros(x, y, ranking));
+    expect(ord[0].time_id).toBe("COM");
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// (3.1) Classificação provisória — grupos incompletos
+// ────────────────────────────────────────────────────────────────────────
+
+describe("(3.1) classificação provisória", () => {
+  it("ordena grupo parcial sem exigir 4 times", () => {
+    const jogos: JogoFinalizado[] = [
+      { grupo: "A", time_casa_id: "A", time_fora_id: "B", placar_casa: 2, placar_fora: 0 },
+    ];
+    const r = classificarPorGrupoProvisorio(jogos);
+    const grupoA = r.find((g) => g.grupo === "A")!;
+    expect(grupoA.times[0].time_id).toBe("A");
+    expect(grupoA.times.length).toBe(2);
+  });
+
+  it("classificadosProvisoriosR32 traz 1º/2º com origem", () => {
+    const jogos: JogoFinalizado[] = [
+      { grupo: "A", time_casa_id: "A1", time_fora_id: "A2", placar_casa: 3, placar_fora: 0 },
+    ];
+    const cls = classificadosProvisoriosR32(jogos);
+    expect(cls.find((c) => c.time_id === "A1")!.origem).toBe("1º Grupo A");
+    expect(cls.find((c) => c.time_id === "A2")!.origem).toBe("2º Grupo A");
   });
 });

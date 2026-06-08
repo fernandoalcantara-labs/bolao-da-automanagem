@@ -25,6 +25,7 @@ import {
   bandeiraUrl,
   ARTILHEIROS_CANDIDATOS,
   FASES_MATA_MATA,
+  RANKING_FIFA,
 } from "../src/data/world-cup-2026";
 import { CALENDARIO_GRUPOS_2026 } from "../src/data/world-cup-2026-schedule";
 import type { Database, FasePalpiteMata, Grupo } from "../src/types/database";
@@ -87,6 +88,7 @@ async function seedTeams() {
     bandeira_url: bandeiraUrl(s.codigo, 160),
     grupo: s.grupo,
     tbd: s.tbd ?? false,
+    ranking_fifa: RANKING_FIFA[s.nome] ?? null,
   }));
   const { error } = await supabase.from("teams").insert(rows as any);
   if (error) throw error;

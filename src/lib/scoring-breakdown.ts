@@ -13,8 +13,14 @@ import {
   pontosPalpiteGrupo,
   classificarPalpiteMata,
   pontosPalpiteMata,
+  normalizarPontuacao,
+  timeVicePalpitado,
 } from "./scoring";
-import { calcularFaseAlcancadaPorTime } from "./recalc";
+import {
+  getRosterTodasFases,
+  faseAlcancadaDeRosters,
+  faseDecidida,
+} from "./mata-roster";
 import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
 import type { Grupo } from "@/types/database";
 
@@ -73,6 +79,18 @@ export type BreakdownR32Item = {
   /** true quando a fase de grupos REAL ainda não terminou — o resultado
    *  desse palpite ainda não está decidido. Implica acertou=false. */
   pendente: boolean;
+  /** pts_r32 quando acertou (classificou ao R32); 0 caso contrário. */
+  pontos: number;
+};
+
+/** Vice do apostador = 2º finalista (não-campeão). Award aditivo (3D). */
+export type BreakdownViceItem = {
+  time_id: string;
+  time_nome: string;
+  time_bandeira: string;
+  acertou: boolean;
+  pendente: boolean;
+  pontos: number;
 };
 
 export type Breakdown = {
@@ -84,6 +102,8 @@ export type Breakdown = {
    *  de grupos incompletos. */
   r32: BreakdownR32Item[];
   mata: { items: BreakdownMataItem[]; subtotal: number };
+  /** Vice (2º finalista) — null se o usuário não definiu campeão + 2 finalistas. */
+  vice: BreakdownViceItem | null;
   artilheiro: BreakdownArtilheiro | null;
   total: number;
   posicao_atual: number | null;
@@ -108,7 +128,7 @@ export async function calcularBreakdown(
     .select("valor")
     .eq("chave", "pontuacao")
     .single();
-  const cfg: PontuacaoConfig = (cfgRow?.valor as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+  const cfg: PontuacaoConfig = normalizarPontuacao((cfgRow?.valor as any) ?? PONTUACAO_DEFAULT);
 
   // Dados básicos do user
   const { data: user } = await supabase
@@ -194,38 +214,20 @@ export async function calcularBreakdown(
     });
   }
 
-  // Fase de grupos REAL finalizada? Usado pra marcar palpites R32 como
-  // pendentes enquanto a fase de grupos ainda não terminou (todos os 72
-  // jogos finalizados).
   const matchesGList = (matchesG ?? []) as any[];
-  const todosGruposFinalizados =
-    matchesGList.length > 0 &&
-    matchesGList.every((m) => m.status === "finalizado");
 
-  // ─────────────── Mata-mata: dados auxiliares pra pendência ──
-  // Carregamos faseAlcancada + lista de jogos do mata-mata.
-  // `timesAindaAtivos` = times com pelo menos um jogo de mata-mata
-  // PENDENTE (status != finalizado) onde o time já foi alocado.
-  // Se um time não está no set, ou ele venceu a final (campeão) ou foi
-  // eliminado, ou simplesmente nunca foi pra mata-mata.
-  const faseAlcancada = await calcularFaseAlcancadaPorTime(supabase as any);
-  const [{ data: palpitesM }, { data: matchesM }] = await Promise.all([
-    supabase
-      .from("palpites_mata")
-      .select("time_id, fase")
-      .eq("user_id", userId),
-    supabase
-      .from("matches")
-      .select("fase, time_casa_id, time_fora_id, status")
-      .in("fase", ["16avos", "8avos", "quartas", "semi", "3lugar", "final"]),
-  ]);
-  const timesAindaAtivos = new Set<string>();
-  for (const m of (matchesM ?? []) as any[]) {
-    if (m.status === "finalizado") continue;
-    if (m.fase === "3lugar") continue; // 3o lugar não conta pra avanço
-    if (m.time_casa_id) timesAindaAtivos.add(m.time_casa_id);
-    if (m.time_fora_id) timesAindaAtivos.add(m.time_fora_id);
-  }
+  // ─────────────── Mata-mata: roster efetivo (fonte da verdade) ──
+  // faseAlcancada REAL e a pendência vêm dos ROSTERS do admin (base R32
+  // provisória dos grupos + overrides), não mais dos confrontos. Uma fase
+  // está "decidida" quando o roster dela atingiu o alvo (16avos:32, …).
+  const { rosters } = await getRosterTodasFases(supabase as any);
+  const todosTimeIds = (teams ?? []).map((t: any) => t.id as string);
+  const faseAlcancada = faseAlcancadaDeRosters(rosters, todosTimeIds);
+  const r32Decidido = faseDecidida(rosters, "16avos");
+  const { data: palpitesM } = await supabase
+    .from("palpites_mata")
+    .select("time_id, fase")
+    .eq("user_id", userId);
 
   // ─────────────── R32 (16 avos) — 32 classificados pelos palpites ──
   // Não rende pontos diretamente, mas o user e o admin querem ver quem
@@ -267,12 +269,13 @@ export async function calcularBreakdown(
           : isSegundo
             ? "2º"
             : "3º (melhor)";
-        // Acertou? o time realmente avançou ao mata-mata?
+        // Acertou? o time realmente classificou ao R32 (está em algum
+        // roster de mata, i.e. faseAlcancada !== "grupos").
         const faseReal = faseAlcancada.get(t.time_id) ?? "grupos";
         const acertou = faseReal !== "grupos";
-        // Pendente: enquanto a fase de grupos não terminar, não dá pra
-        // afirmar se o time avançou ou não na realidade.
-        const pendente = !todosGruposFinalizados && !acertou;
+        // Pendente enquanto o roster dos 16 avos não está decidido (cheio).
+        const pendente = !r32Decidido && !acertou;
+        const pontos = acertou ? cfg.pts_r32 : 0;
         r32Items.push({
           time_id: t.time_id,
           time_nome: time?.nome ?? "—",
@@ -283,6 +286,7 @@ export async function calcularBreakdown(
             !isPrimeiro && !isSegundo ? posTerceiroPorId.get(t.time_id) ?? null : null,
           acertou,
           pendente,
+          pontos,
         });
       }
     } catch {
@@ -315,25 +319,10 @@ export async function calcularBreakdown(
     const real = faseAlcancada.get(p.time_id) ?? "grupos";
     const cls = classificarPalpiteMata(p.fase as FasePalpiteMata, real as any);
     const pontos = cls.acertou && cls.faseEfetiva ? pontosPalpiteMata(cls.faseEfetiva, cfg) : 0;
-    // Pendente: ainda não dá pra afirmar se o palpite acertou OU errou.
-    // = !acertou E !timeJaEliminado
-    //
-    // Time foi DEFINITIVAMENTE eliminado?
-    //  - campeão → não, ganhou tudo
-    //  - faseReal === "grupos" → eliminado SE a fase de grupos REAL
-    //    inteira terminou (caso contrário ainda há jogos pra disputar)
-    //  - faseReal !== "grupos" && !== "campeao" → chegou ao mata e
-    //    parou em alguma fase. Se não há jogo futuro pra esse time no
-    //    bracket, foi eliminado.
-    let timeJaEliminado: boolean;
-    if (real === "campeao") {
-      timeJaEliminado = false;
-    } else if (real === "grupos") {
-      timeJaEliminado = todosGruposFinalizados;
-    } else {
-      timeJaEliminado = !timesAindaAtivos.has(p.time_id);
-    }
-    const pendente = !cls.acertou && !timeJaEliminado;
+    // Pendente: não acertou E a fase palpitada ainda NÃO foi decidida
+    // (roster daquela fase incompleto). Uma vez que a fase está cheia, um
+    // time que não está nela definitivamente não a alcançou → errou.
+    const pendente = !cls.acertou && !faseDecidida(rosters, p.fase as FasePalpiteMata);
     mataItems.push({
       fase: p.fase as FasePalpiteMata,
       time_id: p.time_id,
@@ -354,6 +343,39 @@ export async function calcularBreakdown(
     if (fdiff !== 0) return fdiff;
     return a.time_nome.localeCompare(b.time_nome);
   });
+
+  // R32 (16 Avos) agora PONTUA (pts_r32 por classificado certo) — soma no
+  // subtotal do mata.
+  mataSubtotal += r32Items.reduce((s, t) => s + t.pontos, 0);
+
+  // ─────────────── Vice (2º finalista) — award aditivo (3D) ──
+  // Mesma regra do recalc (incl. trava "campeão decidido"), pra os dois
+  // baterem. O vice do usuário = finalista que ele NÃO coroou campeão.
+  let vice: BreakdownViceItem | null = null;
+  {
+    const finalPicks = (palpitesM ?? [])
+      .filter((p: any) => p.fase === "final" && (!filtrarFantasmaMata || r32TimeIds.has(p.time_id)))
+      .map((p: any) => p.time_id);
+    const campeaoPick = (palpitesM ?? []).find((p: any) => p.fase === "campeao")?.time_id ?? null;
+    const viceId = timeVicePalpitado(finalPicks, campeaoPick);
+    if (viceId) {
+      const time = teamMap.get(viceId) as any;
+      const campeaoDecidido = faseDecidida(rosters, "campeao");
+      const realVice = faseAlcancada.get(viceId) ?? "grupos";
+      const acertou = campeaoDecidido && realVice === "final";
+      const pendente = !campeaoDecidido && realVice === "final";
+      const pontos = acertou ? cfg.vice : 0;
+      vice = {
+        time_id: viceId,
+        time_nome: time?.nome ?? "—",
+        time_bandeira: time?.bandeira_url ?? "",
+        acertou,
+        pendente,
+        pontos,
+      };
+      mataSubtotal += pontos;
+    }
+  }
 
   // ─────────────── Artilheiro ───────────────
   const { data: palpiteA } = await supabase
@@ -401,6 +423,7 @@ export async function calcularBreakdown(
     grupos: { items: gruposItems, subtotal: gruposSubtotal },
     r32: r32Items,
     mata: { items: mataItems, subtotal: mataSubtotal },
+    vice,
     artilheiro,
     total,
     posicao_atual: posicaoAtual,
@@ -446,19 +469,23 @@ export function breakdownParaTexto(b: Breakdown): string {
   // a parte de R32 — só os palpites de mata-mata mesmo.
   lines.push(`MATA-MATA: ${b.mata.subtotal} pts`);
   if (b.r32.length > 0) {
-    lines.push(`16 avos — ${b.r32.length} classificados (pelos palpites de grupos)`);
+    lines.push(`16 Avos — ${b.r32.length} classificados (pelos palpites de grupos)`);
     for (const t of b.r32) {
       const origem =
         t.posicao_terceiro !== null
           ? `${t.posicao_terceiro}º melhor 3º (grupo ${t.grupo})`
           : `${t.posicao_grupo} grupo ${t.grupo}`;
       const status = t.pendente ? "⏳" : t.acertou ? "✅" : "❌";
-      lines.push(`- 16 avos: ${t.time_nome} [${origem}] ${status} 0`);
+      lines.push(`- 16 Avos: ${t.time_nome} [${origem}] ${status} ${t.pontos > 0 ? `+${t.pontos}` : "0"}`);
     }
   }
   for (const it of b.mata.items) {
     const status = it.pendente ? "⏳" : it.acertou ? "✅" : "❌";
     lines.push(`- ${FASE_LABELS[it.fase]}: ${it.time_nome} ${status} ${it.pontos > 0 ? `+${it.pontos}` : "0"}`);
+  }
+  if (b.vice) {
+    const status = b.vice.pendente ? "⏳" : b.vice.acertou ? "✅" : "❌";
+    lines.push(`- Vice (2º finalista): ${b.vice.time_nome} ${status} ${b.vice.pontos > 0 ? `+${b.vice.pontos}` : "0"}`);
   }
   lines.push("");
 

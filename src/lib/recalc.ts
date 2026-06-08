@@ -17,9 +17,12 @@ import {
   classificarPalpiteMata,
   pontosPalpiteGrupo,
   pontosPalpiteMata,
+  normalizarPontuacao,
+  timeVicePalpitado,
 } from "./scoring";
 import { resolverBracketR32 } from "./bracket-2026";
 import { timesValidosR32 } from "./mata-mata-picks";
+import { getRosterTodasFases, faseAlcancadaDeRosters } from "./mata-roster";
 import type { JogoFinalizado } from "./classification";
 
 // Cliente sem generic de schema — chamadas usam type assertions.
@@ -217,7 +220,8 @@ async function capturarPontosTotais(supabase: SB): Promise<Map<string, number>> 
 
 async function carregarPontuacao(supabase: SB): Promise<PontuacaoConfig> {
   const { data } = await supabase.from("config").select("valor").eq("chave", "pontuacao").single();
-  return (data?.valor as PontuacaoConfig) ?? PONTUACAO_DEFAULT;
+  // Normaliza pro padrão pts_* (garante a faixa R32 e os campos novos).
+  return normalizarPontuacao((data?.valor as any) ?? PONTUACAO_DEFAULT);
 }
 
 async function recalcularPalpitesGrupos(supabase: SB, cfg: PontuacaoConfig) {
@@ -272,57 +276,19 @@ async function recalcularPalpitesGrupos(supabase: SB, cfg: PontuacaoConfig) {
 }
 
 /**
- * Determina a fase mais profunda alcançada por cada time.
- *  - Se time aparece em "final" e foi vencedor → "campeao"
- *  - Se time aparece em "final" mas perdeu → "final"
- *  - Senão, a fase mais profunda em que aparece (mesmo que tenha perdido)
- *  - Se nunca aparece no mata-mata → "grupos"
+ * Determina a fase mais profunda alcançada por cada time — agora derivada
+ * dos ROSTERS efetivos do mata (base R32 provisória dos grupos REAIS +
+ * overrides manuais do admin), não mais dos confrontos da tabela `matches`.
+ * A fase verde mais profunda do time vence: campeao > final(=vice) > semi >
+ * quartas > 8avos > 16avos > grupos. Mesma assinatura/retorno de antes.
  */
-const ORDEM_FASES = ["16avos", "8avos", "quartas", "semi", "final"] as const;
-
 export async function calcularFaseAlcancadaPorTime(
   supabase: SB,
 ): Promise<Map<string, FasePalpiteMata | "grupos">> {
-  const { data: matches } = await supabase
-    .from("matches")
-    .select("fase, time_casa_id, time_fora_id, placar_casa, placar_fora, status")
-    .in("fase", ["16avos", "8avos", "quartas", "semi", "3lugar", "final"])
-    .eq("status", "finalizado");
-  if (!matches) return new Map();
-
+  const { rosters } = await getRosterTodasFases(supabase);
   const { data: teams } = await supabase.from("teams").select("id");
-  const fases = new Map<string, FasePalpiteMata | "grupos">();
-  for (const t of teams ?? []) fases.set(t.id, "grupos");
-
-  function bump(timeId: string | null, fase: FasePalpiteMata) {
-    if (!timeId) return;
-    const atual = fases.get(timeId) ?? "grupos";
-    const idxAtual =
-      atual === "grupos" ? -1 : atual === "campeao" ? 99 : ORDEM_FASES.indexOf(atual);
-    if (fase === "campeao") {
-      fases.set(timeId, fase);
-      return;
-    }
-    const idxNovo = ORDEM_FASES.indexOf(fase as (typeof ORDEM_FASES)[number]);
-    if (idxNovo > idxAtual) fases.set(timeId, fase);
-  }
-
-  for (const m of matches) {
-    if (m.fase === "3lugar") continue;
-    bump(m.time_casa_id, m.fase as FasePalpiteMata);
-    bump(m.time_fora_id, m.fase as FasePalpiteMata);
-    if (m.fase === "final" && m.placar_casa !== null && m.placar_fora !== null) {
-      const vencedor =
-        m.placar_casa > m.placar_fora
-          ? m.time_casa_id
-          : m.placar_casa < m.placar_fora
-            ? m.time_fora_id
-            : null;
-      if (vencedor) fases.set(vencedor, "campeao");
-    }
-  }
-
-  return fases;
+  const todos = (teams ?? []).map((t: any) => t.id as string);
+  return faseAlcancadaDeRosters(rosters, todos);
 }
 
 async function recalcularPalpitesMata(
@@ -499,6 +465,47 @@ async function gerarSnapshots(
       const ord = faseParaOrdem[fase];
       const mapa = pontosPorRodada.get(ord)!;
       mapa.set(userId, (mapa.get(userId) ?? 0) + pts);
+    }
+  }
+
+  // (3B) Crédito do 16 Avos (pts_r32): cada time do R32 do usuário (dos
+  // palpites de grupos dele) que REALMENTE classificou (faseAlcancada !==
+  // "grupos") rende pts_r32. Creditado na rodada 4 ("16 avos").
+  if (cfg.pts_r32 > 0) {
+    const mapaR32 = pontosPorRodada.get(4)!;
+    for (const [userId, set] of r32PorUser) {
+      let pts = 0;
+      for (const teamId of set) {
+        if ((faseAlcancada.get(teamId) ?? "grupos") !== "grupos") pts += cfg.pts_r32;
+      }
+      if (pts > 0) mapaR32.set(userId, (mapaR32.get(userId) ?? 0) + pts);
+    }
+  }
+
+  // (3D) Vice ADITIVO: o 2º finalista do usuário (finalista que ele NÃO
+  // coroou), se for o vice REAL. Só conta quando há campeão REAL decidido.
+  // Creditado no bucket do campeão (rodada 8, "Final").
+  const campeaoDecidido = [...faseAlcancada.values()].some((f) => f === "campeao");
+  if (campeaoDecidido) {
+    const finalPorUser = new Map<string, string[]>();
+    const campeaoPorUser = new Map<string, string>();
+    for (const p of palpitesMata ?? []) {
+      if (p.fase === "final") {
+        const a = finalPorUser.get(p.user_id) ?? [];
+        a.push(p.time_id);
+        finalPorUser.set(p.user_id, a);
+      } else if (p.fase === "campeao") {
+        campeaoPorUser.set(p.user_id, p.time_id);
+      }
+    }
+    const mapaVice = pontosPorRodada.get(8)!;
+    for (const [userId, finals] of finalPorUser) {
+      const vice = timeVicePalpitado(finals, campeaoPorUser.get(userId) ?? null);
+      if (!vice) continue;
+      if (!pickDeMataValido(r32PorUser, userId, vice)) continue;
+      if ((faseAlcancada.get(vice) ?? "grupos") === "final") {
+        mapaVice.set(userId, (mapaVice.get(userId) ?? 0) + cfg.vice);
+      }
     }
   }
 

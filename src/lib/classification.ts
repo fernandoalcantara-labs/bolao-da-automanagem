@@ -247,7 +247,35 @@ export function classificarPorGrupo(jogos: JogoFinalizado[]): ClassificacaoGrupo
  * grupos diferentes que nunca se enfrentaram). Ordena por:
  *   pontos → saldo geral → gols pró geral → time_id.
  */
-export function classificadosParaMataMata(jogos: JogoFinalizado[]): {
+/**
+ * Comparador dos 3ºs colocados (entre grupos — sem h2h, pois nunca se
+ * enfrentaram). Cascata: pontos → saldo geral → gols pró → ranking FIFA
+ * (menor = melhor; ausente = +∞) → time_id (estabilidade final).
+ *
+ * `rankingFifa` é OPCIONAL: sem ele, comportamento idêntico ao histórico
+ * (cai direto no time_id) — por isso o bracket do apostador, que não passa
+ * o mapa, não muda. Só o lado REAL (recalc/roster) passa o ranking. (3C)
+ */
+export function compararTerceiros(
+  a: StatsTime,
+  b: StatsTime,
+  rankingFifa?: Map<string, number>,
+): number {
+  if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+  if (b.saldo !== a.saldo) return b.saldo - a.saldo;
+  if (b.gols_pro !== a.gols_pro) return b.gols_pro - a.gols_pro;
+  if (rankingFifa) {
+    const ra = rankingFifa.get(a.time_id) ?? Number.POSITIVE_INFINITY;
+    const rb = rankingFifa.get(b.time_id) ?? Number.POSITIVE_INFINITY;
+    if (ra !== rb) return ra - rb;
+  }
+  return a.time_id.localeCompare(b.time_id);
+}
+
+export function classificadosParaMataMata(
+  jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
+): {
   primeiros: StatsTime[];
   segundos: StatsTime[];
   terceirosClassificados: StatsTime[];
@@ -259,13 +287,8 @@ export function classificadosParaMataMata(jogos: JogoFinalizado[]): {
   const segundos = classif.map((c) => c.segundo);
   const terceiros = classif.map((c) => c.terceiro);
 
-  // Ordena os 12 terceiros pelo mesmo critério (sem h2h, pois são de grupos diferentes)
-  terceiros.sort((a, b) => {
-    if (b.pontos !== a.pontos) return b.pontos - a.pontos;
-    if (b.saldo !== a.saldo) return b.saldo - a.saldo;
-    if (b.gols_pro !== a.gols_pro) return b.gols_pro - a.gols_pro;
-    return a.time_id.localeCompare(b.time_id);
-  });
+  // Ordena os 12 terceiros (3C: usa ranking FIFA se fornecido)
+  terceiros.sort((a, b) => compararTerceiros(a, b, rankingFifa));
 
   const terceirosClassificados = terceiros.slice(0, 8);
   const terceirosEliminados = terceiros.slice(8);
@@ -277,4 +300,81 @@ export function classificadosParaMataMata(jogos: JogoFinalizado[]): {
     terceirosEliminados,
     todosClassificados: [...primeiros, ...segundos, ...terceirosClassificados],
   };
+}
+
+// =====================================================================
+// (3.1) Classificação PROVISÓRIA — funciona com grupos incompletos.
+// Usada SÓ pelo lado REAL (monitor dos 16 avos no admin do roster),
+// enquanto os 72 jogos de grupo ainda entram. NÃO substitui
+// classificarPorGrupo/classificadosParaMataMata (usadas pelo apostador).
+// =====================================================================
+
+/**
+ * Ordena, por grupo, os times que JÁ jogaram — pelos mesmos critérios FIFA
+ * (pontos → h2h → saldo → gp → time_id). Não exige os 4 times. Retorna a
+ * lista ordenada de cada grupo (tamanho variável conforme dados disponíveis).
+ */
+export function classificarPorGrupoProvisorio(
+  jogos: JogoFinalizado[],
+): { grupo: Grupo; times: StatsTime[] }[] {
+  const stats = calcularStatsGrupos(jogos);
+  const porGrupo = new Map<Grupo, StatsTime[]>();
+  for (const s of stats) {
+    const arr = porGrupo.get(s.grupo) ?? [];
+    arr.push(s);
+    porGrupo.set(s.grupo, arr);
+  }
+  const out: { grupo: Grupo; times: StatsTime[] }[] = [];
+  for (const [grupo, times] of porGrupo) {
+    const jogosDoGrupo = jogos.filter((j) => j.grupo === grupo);
+    out.push({ grupo, times: ordenarTimesDoGrupo(times, jogosDoGrupo) });
+  }
+  return out.sort((a, b) => a.grupo.localeCompare(b.grupo));
+}
+
+/** Classificado provisório ao R32, com a origem pra UI do admin. */
+export type ClassificadoProvisorio = {
+  time_id: string;
+  grupo: Grupo;
+  posicao: 1 | 2 | 3;
+  /** "1º Grupo A" / "2º Grupo B" / "Nº melhor 3º" */
+  origem: string;
+  /** posição (1-8) no ranking dos melhores 3ºs; null pra 1º/2º */
+  rankTerceiro: number | null;
+};
+
+/**
+ * Previsão provisória dos 32 do R32 a partir dos resultados reais de grupos
+ * (parciais ok): 1º + 2º de cada grupo COM dados + 8 melhores 3ºs. Quando
+ * um grupo ainda não tem a posição definida, o slot simplesmente não entra
+ * (a UI mostra "X/32"). `rankingFifa` é opcional (3C).
+ */
+export function classificadosProvisoriosR32(
+  jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
+): ClassificadoProvisorio[] {
+  const grupos = classificarPorGrupoProvisorio(jogos);
+  const primeiros: ClassificadoProvisorio[] = [];
+  const segundos: ClassificadoProvisorio[] = [];
+  const terceirosStats: StatsTime[] = [];
+  for (const g of grupos) {
+    if (g.times[0]) {
+      primeiros.push({ time_id: g.times[0].time_id, grupo: g.grupo, posicao: 1, origem: `1º Grupo ${g.grupo}`, rankTerceiro: null });
+    }
+    if (g.times[1]) {
+      segundos.push({ time_id: g.times[1].time_id, grupo: g.grupo, posicao: 2, origem: `2º Grupo ${g.grupo}`, rankTerceiro: null });
+    }
+    if (g.times[2]) terceirosStats.push(g.times[2]);
+  }
+  terceirosStats.sort((a, b) => compararTerceiros(a, b, rankingFifa));
+  const melhores3 = terceirosStats.slice(0, 8).map(
+    (t, i): ClassificadoProvisorio => ({
+      time_id: t.time_id,
+      grupo: t.grupo,
+      posicao: 3,
+      origem: `${i + 1}º melhor 3º`,
+      rankTerceiro: i + 1,
+    }),
+  );
+  return [...primeiros, ...segundos, ...melhores3];
 }
