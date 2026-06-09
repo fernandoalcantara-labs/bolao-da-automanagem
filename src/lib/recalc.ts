@@ -431,8 +431,15 @@ async function gerarSnapshots(
   await supabase.from("ranking_snapshots").delete().neq("user_id", "00000000-0000-0000-0000-000000000000");
 
   // 2) Para cada rodada 1..3 (grupos): soma pontos_calculados dos palpites cujos jogos estão na rodada
-  const { data: users } = await supabase.from("users").select("id, pago");
-  if (!users) return;
+  // Só participantes PAGOS entram no ranking/snapshots. Sem o filtro, os
+  // ~41 não-pagantes (inclui contas duplicadas/teste) eram rankeados junto:
+  // os pagos herdavam posição GLOBAL (até 62) e o eixo do gráfico ia até lá,
+  // além de gerar snapshot pra quem não devia aparecer. O dashboard já filtra
+  // na leitura, mas a `posicao` gravada vinha poluída — a correção é na fonte.
+  const { data: allUsers } = await supabase.from("users").select("id, pago");
+  if (!allUsers) return;
+  const users = allUsers.filter((u) => u.pago === true);
+  if (users.length === 0) return;
 
   // Estrutura: rodadaOrdem -> userId -> pontos_rodada
   const pontosPorRodada = new Map<number, Map<string, number>>();
