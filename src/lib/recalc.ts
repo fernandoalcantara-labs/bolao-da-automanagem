@@ -24,6 +24,7 @@ import { resolverBracketR32 } from "./bracket-2026";
 import { timesValidosR32 } from "./mata-mata-picks";
 import { getRosterTodasFases, faseAlcancadaDeRosters, carregarRankingFifa } from "./mata-roster";
 import type { JogoFinalizado } from "./classification";
+import { fetchAll } from "./supabase-fetch-all";
 
 // Cliente sem generic de schema — chamadas usam type assertions.
 type SB = SupabaseClient;
@@ -46,9 +47,13 @@ async function calcularR32PorUsuario(supabase: SB): Promise<Map<string, Set<stri
     .eq("fase", "grupos");
   const minfo = new Map((matchesG ?? []).map((m: any) => [m.id, m]));
 
-  const { data: palpitesG } = await supabase
-    .from("palpites_grupos")
-    .select("user_id, match_id, placar_casa, placar_fora");
+  // PAGINADO: palpites_grupos passa de 1000 linhas (cap do PostgREST). Sem
+  // isso, o R32 de parte dos usuários saía incompleto → mata/16 Avos errados.
+  const palpitesG = await fetchAll<{ user_id: string; match_id: string; placar_casa: number; placar_fora: number }>(
+    supabase,
+    "palpites_grupos",
+    "user_id, match_id, placar_casa, placar_fora",
+  );
 
   // Ranking FIFA pro desempate — o R32 do usuário tem que desempatar igual à
   // realidade (que usa ranking), senão num grupo empatado o user "erraria" o
@@ -256,10 +261,14 @@ async function recalcularPalpitesGrupos(supabase: SB, cfg: PontuacaoConfig) {
     .eq("fase", "grupos");
   if (!matches) return;
 
-  const { data: palpites } = await supabase
-    .from("palpites_grupos")
-    .select("id, match_id, placar_casa, placar_fora");
-  if (!palpites) return;
+  // PAGINADO (>1000 linhas): sem isso, só 1000 dos ~3700 palpites eram
+  // re-pontuados e o resto ficava com pontos_calculados velho/zerado.
+  const palpites = await fetchAll<{ id: string; match_id: string; placar_casa: number; placar_fora: number }>(
+    supabase,
+    "palpites_grupos",
+    "id, match_id, placar_casa, placar_fora",
+  );
+  if (palpites.length === 0) return;
 
   const matchMap = new Map(matches.map((m: any) => [m.id, m]));
 
@@ -318,10 +327,14 @@ async function recalcularPalpitesMata(
   faseAlcancada: Map<string, FasePalpiteMata | "grupos">,
   r32PorUser: Map<string, Set<string>>,
 ) {
-  const { data: palpites } = await supabase
-    .from("palpites_mata")
-    .select("id, user_id, time_id, fase");
-  if (!palpites) return;
+  // PAGINADO (defensivo): palpites_mata pode passar de 1000 conforme os
+  // brackets enchem (até ~31 picks × N usuários).
+  const palpites = await fetchAll<{ id: string; user_id: string; time_id: string; fase: string }>(
+    supabase,
+    "palpites_mata",
+    "id, user_id, time_id, fase",
+  );
+  if (palpites.length === 0) return;
 
   // Agrupa por valor de acertou (true/false) e atualiza em massa
   const acertaram: string[] = [];
@@ -445,29 +458,36 @@ async function gerarSnapshots(
   const pontosPorRodada = new Map<number, Map<string, number>>();
   for (let r = 1; r <= 9; r++) pontosPorRodada.set(r, new Map());
 
-  // Rodadas de grupos (1..3)
-  for (const r of [1, 2, 3]) {
-    const { data: matches } = await supabase
-      .from("matches")
-      .select("id")
-      .eq("fase", "grupos")
-      .eq("rodada", r);
-    const matchIds = (matches ?? []).map((m) => m.id);
-    if (matchIds.length === 0) continue;
-    const { data: palpites } = await supabase
-      .from("palpites_grupos")
-      .select("user_id, pontos_calculados")
-      .in("match_id", matchIds);
+  // Rodadas de grupos (1..3) — UMA leitura PAGINADA de todos os palpites de
+  // grupos (>1000 linhas) + mapa match→rodada em memória. A versão anterior
+  // fazia `.in("match_id", matchIds)` por rodada (1252 linhas) e truncava em
+  // 1000 → R1/R2/R3 subcontados no snapshot (painel divergia do admin).
+  const { data: matchesGrupos } = await supabase
+    .from("matches")
+    .select("id, rodada")
+    .eq("fase", "grupos");
+  const rodadaDoMatch = new Map<string, number>(
+    (matchesGrupos ?? []).map((m: any) => [m.id as string, m.rodada as number]),
+  );
+  const palpitesGrupos = await fetchAll<{ user_id: string; match_id: string; pontos_calculados: number | null }>(
+    supabase,
+    "palpites_grupos",
+    "user_id, match_id, pontos_calculados",
+  );
+  for (const p of palpitesGrupos) {
+    const r = rodadaDoMatch.get(p.match_id);
+    if (r == null || r < 1 || r > 3) continue;
     const mapa = pontosPorRodada.get(r)!;
-    for (const p of palpites ?? []) {
-      mapa.set(p.user_id, (mapa.get(p.user_id) ?? 0) + (p.pontos_calculados ?? 0));
-    }
+    mapa.set(p.user_id, (mapa.get(p.user_id) ?? 0) + (p.pontos_calculados ?? 0));
   }
 
   // Mata-mata: 4=16avos, 5=8avos, 6=quartas, 7=semi, 8=final
-  const { data: palpitesMata } = await supabase
-    .from("palpites_mata")
-    .select("user_id, time_id, fase");
+  // PAGINADO (defensivo, ver acima)
+  const palpitesMata = await fetchAll<{ user_id: string; time_id: string; fase: string }>(
+    supabase,
+    "palpites_mata",
+    "user_id, time_id, fase",
+  );
   const ptsMata = pontosMataPorUsuario(
     (palpitesMata ?? []).map((p) => ({
       user_id: p.user_id,

@@ -13,40 +13,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
+import { fetchAll } from "./supabase-fetch-all";
 import type { Grupo } from "@/types/database";
 
 type SB = SupabaseClient;
 
 const BOM = "﻿";
-
-/**
- * Helper de paginacao — busca TODAS as linhas de uma tabela em chunks
- * de 1000. Necessario porque o PostgREST do Supabase Cloud tem
- * max_rows=1000 hard cap (mesmo passando .limit(50000), ele corta).
- *
- * Bug encontrado no CT-21 da QW4: palpites_grupos tinha 2603 entries
- * mas o CSV so' pegava as primeiras 1000 → metade dos users aparecia
- * com '-' em jogos que eles palpitaram.
- */
-async function fetchAll<T = any>(
-  supabase: SB,
-  table: string,
-  select: string,
-  orderBy?: string,
-): Promise<T[]> {
-  const all: T[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    let q = supabase.from(table).select(select).range(from, from + pageSize - 1);
-    if (orderBy) q = q.order(orderBy, { ascending: true });
-    const { data, error } = await q;
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    all.push(...(data as T[]));
-    if (data.length < pageSize) break;
-  }
-  return all;
-}
 
 function csvEscape(v: string | number | null | undefined): string {
   if (v === null || v === undefined) return '""';
