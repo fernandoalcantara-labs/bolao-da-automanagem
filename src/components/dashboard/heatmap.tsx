@@ -14,10 +14,20 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
     new Map(snapshots.map((s) => [s.rodada_ordem, s.rodada_label])).entries(),
   ).sort(([a], [b]) => a - b);
 
-  const max = Math.max(...snapshots.map((s) => s.pontos_rodada), 1);
+  // Gradiente POR COLUNA (rodada): cada coluna é normalizada pelo SEU próprio
+  // máximo — o maior pontuador da R1 fica verde escuro e o menor claro, e a
+  // mesma escala se repete em cada coluna, independente das outras. Antes era
+  // um único máximo global, então colunas "caras" (ex.: Final, 128 pts)
+  // achatavam o contraste das "baratas" (R1, máx 65) → quase tudo claro.
+  const maxPorRodada = new Map<number, number>();
+  for (const s of snapshots) {
+    const atual = maxPorRodada.get(s.rodada_ordem) ?? 0;
+    if (s.pontos_rodada > atual) maxPorRodada.set(s.rodada_ordem, s.pontos_rodada);
+  }
 
-  function color(pts: number) {
-    const ratio = pts / max;
+  function color(pts: number, ord: number) {
+    const cmax = maxPorRodada.get(ord) ?? 0;
+    const ratio = cmax > 0 ? pts / cmax : 0; // coluna inteira zerada → tudo claro
     const alpha = 0.1 + ratio * 0.85;
     return `rgba(16, 185, 129, ${alpha})`;
   }
@@ -69,7 +79,7 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
                   <td
                     key={ord}
                     className="border border-border/20 p-1.5 text-center font-mono font-bold"
-                    style={{ backgroundColor: color(pts), minWidth: 48 }}
+                    style={{ backgroundColor: color(pts, ord), minWidth: 48 }}
                     title={`${u.nome}: ${pts} pts`}
                   >
                     {pts}
