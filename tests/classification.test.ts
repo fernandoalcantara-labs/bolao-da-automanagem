@@ -455,3 +455,79 @@ describe("(3.1) classificação provisória", () => {
     expect(cls.find((c) => c.time_id === "A2")!.origem).toBe("2º Grupo A");
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────
+// (52) Desempate INTRA-grupo por ranking FIFA — penúltimo critério,
+// antes do time_id. Estende o que já valia só pros 3ºs colocados.
+// ────────────────────────────────────────────────────────────────────────
+
+describe("(52) ranking FIFA desempata DENTRO do grupo (1º/2º/3º/4º)", () => {
+  // Cenário que zera TODOS os critérios anteriores entre ZEBRA e ALFA:
+  //  ZEBRA vs ALFA: 1×1  → h2h empata (mini: 1pt, saldo 0, gp 1 p/ ambos)
+  //  ZEBRA vs C: 2×0     ALFA vs C: 2×0   → mesmos gp/saldo gerais
+  //  ZEBRA vs D: 0×1     ALFA vs D: 0×1
+  //  C vs D: 0×0
+  // Pts: D=7, ZEBRA=4, ALFA=4, C=1. ZEBRA e ALFA idênticos em
+  // pontos/h2h/saldo(+1)/gp(3). Único critério restante: ranking → time_id.
+  const jogosEmpateTotal = (): JogoFinalizado[] =>
+    grupoJogos(
+      "A",
+      ["ZEBRA", "ALFA", "C", "D"],
+      [
+        [1, 1], // ZEBRA vs ALFA → empate (h2h não separa)
+        [2, 0], // ZEBRA vs C
+        [0, 1], // ZEBRA vs D
+        [2, 0], // ALFA vs C
+        [0, 1], // ALFA vs D
+        [0, 0], // C vs D
+      ],
+    );
+
+  it("com rankingFifa: melhor ranqueado (ZEBRA) fica em 2º apesar de 'ALFA' < 'ZEBRA' alfabético", () => {
+    const ranking = new Map([["ZEBRA", 3], ["ALFA", 50]]); // ZEBRA melhor
+    const classif = classificarPorGrupo(jogosEmpateTotal(), ranking);
+    const g = classif.find((c) => c.grupo === "A")!;
+    expect(g.primeiro.time_id).toBe("D"); // 7 pts, isolado
+    expect(g.segundo.time_id).toBe("ZEBRA"); // empate total → ranking decide
+    expect(g.terceiro.time_id).toBe("ALFA");
+    expect(g.quarto.time_id).toBe("C");
+  });
+
+  it("SEM rankingFifa: cai no time_id (ALFA antes de ZEBRA) — comportamento histórico", () => {
+    const classif = classificarPorGrupo(jogosEmpateTotal());
+    const g = classif.find((c) => c.grupo === "A")!;
+    expect(g.primeiro.time_id).toBe("D");
+    expect(g.segundo.time_id).toBe("ALFA"); // alfabético, ranking não passado
+    expect(g.terceiro.time_id).toBe("ZEBRA");
+  });
+
+  it("ranking só age como penúltimo: NÃO inverte quando saldo difere", () => {
+    // ZEBRA goleia C 5×0 (saldo geral maior); ranking favorece ALFA.
+    // Saldo tem prioridade sobre ranking → ZEBRA continua à frente.
+    const jogos = grupoJogos(
+      "A",
+      ["ZEBRA", "ALFA", "C", "D"],
+      [
+        [1, 1], // ZEBRA vs ALFA empate
+        [5, 0], // ZEBRA vs C (infla saldo do ZEBRA)
+        [0, 1], // ZEBRA vs D
+        [2, 0], // ALFA vs C
+        [0, 1], // ALFA vs D
+        [0, 0], // C vs D
+      ],
+    );
+    const ranking = new Map([["ALFA", 1], ["ZEBRA", 99]]); // ranking favorece ALFA
+    const g = classificarPorGrupo(jogos, ranking).find((c) => c.grupo === "A")!;
+    expect(g.segundo.time_id).toBe("ZEBRA"); // saldo (+4) > ranking
+    expect(g.terceiro.time_id).toBe("ALFA");
+  });
+
+  it("ordenarTimesDoGrupo expõe o mesmo desempate por ranking", () => {
+    const jogos = jogosEmpateTotal();
+    const stats = calcularStatsGrupos(jogos);
+    const ranking = new Map([["ZEBRA", 3], ["ALFA", 50]]);
+    const ord = ordenarTimesDoGrupo(stats, jogos, ranking);
+    // D, ZEBRA, ALFA, C
+    expect(ord.map((s) => s.time_id)).toEqual(["D", "ZEBRA", "ALFA", "C"]);
+  });
+});

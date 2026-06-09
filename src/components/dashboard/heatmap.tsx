@@ -42,14 +42,14 @@ export function Heatmap({ users, snapshots }: { users: User[]; snapshots: Snap[]
               Nome
             </th>
             {rodadas.map(([, label]) => {
-              const isFinal = label === "Final";
+              const prefixo = label === "Final" ? "🏆 " : label === "Artilheiro" ? "👟 " : "";
               return (
                 <th
                   key={label}
                   className="p-1.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
                   style={{ minWidth: 48 }}
                 >
-                  {isFinal ? "🏆 " : ""}
+                  {prefixo}
                   {label}
                 </th>
               );

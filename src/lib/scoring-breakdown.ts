@@ -20,6 +20,7 @@ import {
   getRosterTodasFases,
   faseAlcancadaDeRosters,
   faseDecidida,
+  carregarRankingFifa,
 } from "./mata-roster";
 import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
 import type { Grupo } from "@/types/database";
@@ -251,7 +252,10 @@ export async function calcularBreakdown(
       });
     }
     try {
-      const r = classificadosParaMataMata(jogosVirtuais);
+      // Ranking FIFA pro desempate — o R32 do breakdown tem que bater com o
+      // R32 real (que usa ranking). (item 52 estendido ao apostador)
+      const rankingFifa = await carregarRankingFifa(supabase as any);
+      const r = classificadosParaMataMata(jogosVirtuais, rankingFifa);
       const primeirosIds = new Set(r.primeiros.map((t) => t.time_id));
       const segundosIds = new Set(r.segundos.map((t) => t.time_id));
       // Mapa time_id → posição (1-8) no ranking dos melhores terceiros.

@@ -36,7 +36,20 @@ export type BracketProps = {
   /** Callback ao clicar pra escolher um vencedor numa partida. */
   onPick: (fase: FasePalpiteMata, timeId: string) => void;
   fechado: boolean;
+  /** Item 46: pontos por pick, chaveado `${fase}:${time_id}` → label
+   *  ("+8" / "0" / "⏳"). Vem do breakdown (mesma conta do admin). */
+  pontosMata?: Record<string, string>;
 };
+
+/** Label de pontos pra um slot (item 46). null = sem info (mostra ✓). */
+function labelPontos(
+  pontosMata: Record<string, string> | undefined,
+  fase: FasePalpiteMata,
+  timeId: string | null | undefined,
+): string | null {
+  if (!pontosMata || !timeId) return null;
+  return pontosMata[`${fase}:${timeId}`] ?? null;
+}
 
 /**
  * BracketView — chaveamento estilo Copa do Mundo (desktop ≥ lg).
@@ -48,7 +61,7 @@ export type BracketProps = {
  * `origemJogos` em `mata-mata-estrutura.ts` (Jogo 89 = vencedor de 73 ×
  * vencedor de 74, etc) — NÃO mais "pares adjacentes no array".
  */
-export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps) {
+export function BracketView({ r32, teams, picks, onPick, fechado, pontosMata }: BracketProps) {
   // Indexa R32 por matchNumber pra resolver vencedores recursivamente
   const r32PorJogo = React.useMemo(() => {
     const m = new Map<number, ParR32Resolvido>();
@@ -264,52 +277,52 @@ export function BracketView({ r32, teams, picks, onPick, fechado }: BracketProps
           {/* Lado esquerdo */}
           <ColunaRound
             altura={8}
-            matches={R32_ESQUERDO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+            matches={R32_ESQUERDO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado, pontosMata))}
           />
           <ColunaRound
             altura={4}
             matches={R16.filter((n) => n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
           <ColunaRound
             altura={2}
             matches={QF.filter((n) => n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
           <ColunaRound
             altura={1}
             matches={SF.filter((n) => n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
 
           {/* Centro */}
-          <CentroBracket teams={teams} picks={picks} onPick={onPick} fechado={fechado} />
+          <CentroBracket teams={teams} picks={picks} onPick={onPick} fechado={fechado} pontosMata={pontosMata} />
 
           {/* Lado direito (espelhado) */}
           <ColunaRound
             altura={1}
             matches={SF.filter((n) => !n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "semi", "final", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
           <ColunaRound
             altura={2}
             matches={QF.filter((n) => !n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "quartas", "semi", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
           <ColunaRound
             altura={4}
             matches={R16.filter((n) => !n.ladoEsquerdo).map((n) =>
-              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado),
+              renderCardFaseSuperior(n, "8avos", "quartas", vencedoresDoJogo, teams, picks, onPick, fechado, pontosMata),
             )}
           />
           <ColunaRound
             altura={8}
-            matches={R32_DIREITO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado))}
+            matches={R32_DIREITO_ORDEM.map((j) => renderCardR32(r32PorJogo.get(j), teams, picks, onPick, fechado, pontosMata))}
           />
         </div>
         </div>
@@ -414,6 +427,7 @@ function renderCardR32(
   picks: Record<FasePalpiteMata, Set<string>>,
   onPick: (fase: FasePalpiteMata, id: string) => void,
   fechado: boolean,
+  pontosMata?: Record<string, string>,
 ): React.ReactNode {
   if (!par) return null;
   const casaId = par.casaTime?.time_id;
@@ -430,6 +444,7 @@ function renderCardR32(
         team={casa}
         escolhido={palpiteCasa}
         onClick={casaId && !fechado ? () => onPick("8avos", casaId) : undefined}
+        pontosLabel={labelPontos(pontosMata, "8avos", casaId)}
       />
       <div className="my-1 h-px bg-border" />
       <MatchSlot
@@ -437,6 +452,7 @@ function renderCardR32(
         team={fora}
         escolhido={palpiteFora}
         onClick={foraId && !fechado ? () => onPick("8avos", foraId) : undefined}
+        pontosLabel={labelPontos(pontosMata, "8avos", foraId)}
       />
     </div>
   );
@@ -451,6 +467,7 @@ function renderCardFaseSuperior(
   picks: Record<FasePalpiteMata, Set<string>>,
   onPick: (fase: FasePalpiteMata, id: string) => void,
   fechado: boolean,
+  pontosMata?: Record<string, string>,
 ): React.ReactNode {
   // Candidatos = vencedores dos 2 origemJogos (1 de cada)
   if (!no.origemJogos) return null;
@@ -473,6 +490,7 @@ function renderCardFaseSuperior(
               team={team}
               escolhido={escolhido}
               onClick={tid && !fechado ? () => onPick(fasePicksDeste, tid) : undefined}
+              pontosLabel={labelPontos(pontosMata, fasePicksDeste, tid)}
             />
           </React.Fragment>
         );
@@ -498,11 +516,14 @@ function MatchSlot({
   team,
   escolhido,
   onClick,
+  pontosLabel,
 }: {
   label?: string;
   team: { nome: string; bandeira_url: string } | null;
   escolhido: boolean;
   onClick?: () => void;
+  /** Item 46: pontos do pick (ex.: "+8", "0", "⏳"). Substitui o ✓. */
+  pontosLabel?: string | null;
 }) {
   return (
     <button
@@ -533,7 +554,11 @@ function MatchSlot({
           <span className="text-[9px] font-medium opacity-70">{label}</span>
         )}
       </span>
-      {escolhido && <span className="text-white">✓</span>}
+      {escolhido && (
+        <span className="shrink-0 text-[10px] font-extrabold text-white">
+          {pontosLabel != null ? pontosLabel : "✓"}
+        </span>
+      )}
     </button>
   );
 }
@@ -545,11 +570,13 @@ function CentroBracket({
   picks,
   onPick,
   fechado,
+  pontosMata,
 }: {
   teams: Record<string, Team>;
   picks: Record<FasePalpiteMata, Set<string>>;
   onPick: (fase: FasePalpiteMata, id: string) => void;
   fechado: boolean;
+  pontosMata?: Record<string, string>;
 }) {
   // Os 2 finalistas vêm dos picks em "final" (= time chega à final).
   const finalistas = [...picks.final];
@@ -596,6 +623,10 @@ function CentroBracket({
                   <span className="team-name flex-1">
                     {team?.nome ?? "—"}
                   </span>
+                  {/* Item 46 — caso da final: soma pts_final + (campeão|vice). */}
+                  {tid && pontosMata?.[`centro:${tid}`] && (
+                    <span className="shrink-0 text-[10px] font-extrabold">{pontosMata[`centro:${tid}`]}</span>
+                  )}
                   {isCampeao && <span className="text-base">👑</span>}
                 </button>
               </React.Fragment>

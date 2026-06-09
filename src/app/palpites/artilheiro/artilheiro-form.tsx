@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { MICROCOPY } from "@/lib/microcopy";
 import { miniConfetti } from "@/lib/confetti";
 import { useAutosave, lerCachePalpites } from "@/hooks/use-autosave";
+import { ehErroApostasEncerradas } from "@/lib/palpites-bloqueio";
 import { AutosaveStatusBadge } from "@/components/palpites/autosave-status";
 
 type Player = {
@@ -31,7 +32,7 @@ export function ArtilheiroForm({
   players,
   atual,
   atualManual,
-  fechado,
+  fechado: fechadoInicial,
   userId,
 }: {
   players: Player[];
@@ -41,6 +42,9 @@ export function ArtilheiroForm({
   userId: string;
 }) {
   const storageKey = `bolao:palpites:artilheiro:${userId}`;
+  // "Sombra" do fechado: o trigger barra (encerrado/prazo) → trava sem reload.
+  const [bloqueado, setBloqueado] = React.useState(false);
+  const fechado = fechadoInicial || bloqueado;
   const [busca, setBusca] = React.useState("");
   const [modo, setModo] = React.useState<ModoPalpite | null>(() => {
     // 1. Default: estado do server
@@ -75,7 +79,17 @@ export function ArtilheiroForm({
       const { error } = await supabase
         .from("palpites_artilheiro")
         .upsert(payload as any, { onConflict: "user_id" });
-      if (error) throw error;
+      if (error) {
+        if (ehErroApostasEncerradas(error)) {
+          setBloqueado(true);
+          toast({
+            title: "Apostas encerradas",
+            description: "Não dá mais pra editar palpites (encerrado pelo admin ou prazo vencido).",
+            variant: "destructive",
+          });
+        }
+        throw error;
+      }
     },
   });
 

@@ -13,40 +13,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classificadosParaMataMata, type JogoFinalizado } from "./classification";
+import { fetchAll } from "./supabase-fetch-all";
 import type { Grupo } from "@/types/database";
 
 type SB = SupabaseClient;
 
 const BOM = "﻿";
-
-/**
- * Helper de paginacao — busca TODAS as linhas de uma tabela em chunks
- * de 1000. Necessario porque o PostgREST do Supabase Cloud tem
- * max_rows=1000 hard cap (mesmo passando .limit(50000), ele corta).
- *
- * Bug encontrado no CT-21 da QW4: palpites_grupos tinha 2603 entries
- * mas o CSV so' pegava as primeiras 1000 → metade dos users aparecia
- * com '-' em jogos que eles palpitaram.
- */
-async function fetchAll<T = any>(
-  supabase: SB,
-  table: string,
-  select: string,
-  orderBy?: string,
-): Promise<T[]> {
-  const all: T[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    let q = supabase.from(table).select(select).range(from, from + pageSize - 1);
-    if (orderBy) q = q.order(orderBy, { ascending: true });
-    const { data, error } = await q;
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    all.push(...(data as T[]));
-    if (data.length < pageSize) break;
-  }
-  return all;
-}
 
 function csvEscape(v: string | number | null | undefined): string {
   if (v === null || v === undefined) return '""';
@@ -93,7 +65,7 @@ export async function gerarCsvCompleto(
         "id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora",
         "data_hora",
       ),
-      fetchAll<any>(supabase, "teams", "id, nome, codigo_fifa, grupo"),
+      fetchAll<any>(supabase, "teams", "id, nome, codigo_fifa, grupo, ranking_fifa"),
       fetchAll<any>(supabase, "players", "id, nome, time_id, gols_torneio"),
       fetchAll<any>(
         supabase,
@@ -115,6 +87,12 @@ export async function gerarCsvCompleto(
 
   // ============== Lookups ==============
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  // Ranking FIFA pro desempate do R32 — o CSV tem que mostrar o mesmo R32
+  // que o app/realidade. (item 52 estendido ao apostador)
+  const rankingFifa = new Map<string, number>();
+  for (const t of teams) {
+    if (t.ranking_fifa != null) rankingFifa.set(t.id, t.ranking_fifa);
+  }
   const playerById = new Map(players.map((p) => [p.id, p]));
   // palpite grupos: chave = `${user_id}|${match_id}`
   const pgKey = (uid: string, mid: string) => `${uid}|${mid}`;
@@ -209,7 +187,7 @@ export async function gerarCsvCompleto(
     const jogos = jogosVirtuaisDoUser(u.id);
     if (jogos.length === 0) return csvEscape("-");
     try {
-      const r = classificadosParaMataMata(jogos);
+      const r = classificadosParaMataMata(jogos, rankingFifa);
       const nomes = r.todosClassificados
         .map((t) => teamById.get(t.time_id)?.nome ?? "?")
         .join(", ");

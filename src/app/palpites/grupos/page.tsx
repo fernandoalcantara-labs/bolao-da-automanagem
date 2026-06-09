@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PalpitesGruposForm } from "./palpites-form";
 import { Countdown } from "@/components/misc/countdown";
 import { DEADLINE_FASE_GRUPOS } from "@/lib/utils";
+import { apostasFechadas } from "@/lib/apostas";
+import { PONTUACAO_DEFAULT, normalizarPontuacao } from "@/lib/scoring";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +14,7 @@ export default async function PalpitesGruposPage() {
   const user = await requireUser();
   const supabase = createClient();
 
-  const [{ data: matches }, { data: teams }, { data: palpites }] = await Promise.all([
+  const [{ data: matches }, { data: teams }, { data: palpites }, { data: cfgRow }] = await Promise.all([
     supabase
       .from("matches")
       .select("id, fase, rodada, grupo, time_casa_id, time_fora_id, data_hora, status, placar_casa, placar_fora")
@@ -23,14 +25,17 @@ export default async function PalpitesGruposPage() {
       .from("palpites_grupos")
       .select("match_id, placar_casa, placar_fora")
       .eq("user_id", user.id),
+    supabase.from("config").select("valor").eq("chave", "pontuacao").maybeSingle(),
   ]);
 
   if (!matches || !teams) redirect("/");
+  const pontuacao = normalizarPontuacao((cfgRow?.valor as any) ?? PONTUACAO_DEFAULT);
 
   const teamMap = new Map(teams.map((t) => [t.id, t]));
   const palpitesMap = new Map(palpites?.map((p) => [p.match_id, p]) ?? []);
   const deadline = DEADLINE_FASE_GRUPOS;
-  const fechado = Date.now() >= deadline.getTime();
+  // fechado no modelo B2 (override ? encerradas : prazo) — igual ao trigger.
+  const fechado = await apostasFechadas(supabase as any);
 
   return (
     <div className="space-y-6">
@@ -53,6 +58,7 @@ export default async function PalpitesGruposPage() {
         palpites={Object.fromEntries(palpitesMap)}
         fechado={fechado}
         userId={user.id}
+        pontuacao={pontuacao}
       />
     </div>
   );

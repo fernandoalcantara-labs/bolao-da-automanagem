@@ -122,6 +122,7 @@ function calcularMiniTabela(
 function desempatarBloco(
   bloco: StatsTime[],
   jogosDoGrupo: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
 ): StatsTime[] {
   if (bloco.length === 1) return bloco;
 
@@ -158,24 +159,37 @@ function desempatarBloco(
       resultado.push(subBloco[0]);
     } else if (subBloco.length === bloco.length) {
       // Mini-tabela não desempatou nada — vai direto pros critérios gerais
-      resultado.push(...ordenarPorCriteriosGerais(subBloco));
+      resultado.push(...ordenarPorCriteriosGerais(subBloco, rankingFifa));
     } else {
       // Reaplica mini só com esses (jogos entre eles podem ser subconjunto
       // dos jogos do grupo, mas a mini desse subconjunto difere da mini
       // original em casos onde algum time do bloco original "absorveu"
       // pontos contra times agora excluídos).
-      resultado.push(...desempatarBloco(subBloco, jogosDoGrupo));
+      resultado.push(...desempatarBloco(subBloco, jogosDoGrupo, rankingFifa));
     }
     i = j;
   }
   return resultado;
 }
 
-/** Critérios gerais (após esgotar o h2h): saldo geral → gp geral → time_id. */
-function ordenarPorCriteriosGerais(bloco: StatsTime[]): StatsTime[] {
+/**
+ * Critérios gerais (após esgotar o h2h): saldo geral → gp geral →
+ * ranking FIFA (asc; ausente = +∞) → time_id (só estabilidade). (item 52)
+ * `rankingFifa` opcional: sem ele, cai direto no time_id (= comportamento
+ * histórico; o apostador não passa o mapa).
+ */
+function ordenarPorCriteriosGerais(
+  bloco: StatsTime[],
+  rankingFifa?: Map<string, number>,
+): StatsTime[] {
   return [...bloco].sort((a, b) => {
     if (b.saldo !== a.saldo) return b.saldo - a.saldo;
     if (b.gols_pro !== a.gols_pro) return b.gols_pro - a.gols_pro;
+    if (rankingFifa) {
+      const ra = rankingFifa.get(a.time_id) ?? Number.POSITIVE_INFINITY;
+      const rb = rankingFifa.get(b.time_id) ?? Number.POSITIVE_INFINITY;
+      if (ra !== rb) return ra - rb;
+    }
     return a.time_id.localeCompare(b.time_id);
   });
 }
@@ -189,6 +203,7 @@ function ordenarPorCriteriosGerais(bloco: StatsTime[]): StatsTime[] {
 export function ordenarTimesDoGrupo(
   times: StatsTime[],
   jogosDoGrupo: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
 ): StatsTime[] {
   // 1) ordena por pontos (desc) só pra formar os blocos
   const porPontos = [...times].sort((a, b) => b.pontos - a.pontos);
@@ -199,7 +214,7 @@ export function ordenarTimesDoGrupo(
     let j = i;
     while (j < porPontos.length && porPontos[j].pontos === porPontos[i].pontos) j++;
     const bloco = porPontos.slice(i, j);
-    resultado.push(...desempatarBloco(bloco, jogosDoGrupo));
+    resultado.push(...desempatarBloco(bloco, jogosDoGrupo, rankingFifa));
     i = j;
   }
   return resultado;
@@ -213,7 +228,10 @@ export type ClassificacaoGrupo = {
   quarto: StatsTime;
 };
 
-export function classificarPorGrupo(jogos: JogoFinalizado[]): ClassificacaoGrupo[] {
+export function classificarPorGrupo(
+  jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
+): ClassificacaoGrupo[] {
   const stats = calcularStatsGrupos(jogos);
   const porGrupo = new Map<Grupo, StatsTime[]>();
   for (const s of stats) {
@@ -224,7 +242,7 @@ export function classificarPorGrupo(jogos: JogoFinalizado[]): ClassificacaoGrupo
   const resultado: ClassificacaoGrupo[] = [];
   for (const [grupo, times] of porGrupo) {
     const jogosDoGrupo = jogos.filter((j) => j.grupo === grupo);
-    const ordenado = ordenarTimesDoGrupo(times, jogosDoGrupo);
+    const ordenado = ordenarTimesDoGrupo(times, jogosDoGrupo, rankingFifa);
     if (ordenado.length < 4) continue;
     resultado.push({
       grupo,
@@ -282,7 +300,7 @@ export function classificadosParaMataMata(
   terceirosEliminados: StatsTime[];
   todosClassificados: StatsTime[];
 } {
-  const classif = classificarPorGrupo(jogos);
+  const classif = classificarPorGrupo(jogos, rankingFifa);
   const primeiros = classif.map((c) => c.primeiro);
   const segundos = classif.map((c) => c.segundo);
   const terceiros = classif.map((c) => c.terceiro);
@@ -316,6 +334,7 @@ export function classificadosParaMataMata(
  */
 export function classificarPorGrupoProvisorio(
   jogos: JogoFinalizado[],
+  rankingFifa?: Map<string, number>,
 ): { grupo: Grupo; times: StatsTime[] }[] {
   const stats = calcularStatsGrupos(jogos);
   const porGrupo = new Map<Grupo, StatsTime[]>();
@@ -327,7 +346,7 @@ export function classificarPorGrupoProvisorio(
   const out: { grupo: Grupo; times: StatsTime[] }[] = [];
   for (const [grupo, times] of porGrupo) {
     const jogosDoGrupo = jogos.filter((j) => j.grupo === grupo);
-    out.push({ grupo, times: ordenarTimesDoGrupo(times, jogosDoGrupo) });
+    out.push({ grupo, times: ordenarTimesDoGrupo(times, jogosDoGrupo, rankingFifa) });
   }
   return out.sort((a, b) => a.grupo.localeCompare(b.grupo));
 }
@@ -353,7 +372,7 @@ export function classificadosProvisoriosR32(
   jogos: JogoFinalizado[],
   rankingFifa?: Map<string, number>,
 ): ClassificadoProvisorio[] {
-  const grupos = classificarPorGrupoProvisorio(jogos);
+  const grupos = classificarPorGrupoProvisorio(jogos, rankingFifa);
   const primeiros: ClassificadoProvisorio[] = [];
   const segundos: ClassificadoProvisorio[] = [];
   const terceirosStats: StatsTime[] = [];
