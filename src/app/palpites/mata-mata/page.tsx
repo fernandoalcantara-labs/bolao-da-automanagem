@@ -97,29 +97,23 @@ export default async function MataMataPage() {
           foraOrigemTerceiro: null,
         }));
 
-  // Item 46 — pontos por pick no bracket. Reusa o breakdown (mesma conta do
-  // admin), evitando reinventar. Chave `${fase}:${time_id}` → label; e
-  // `centro:${time_id}` = soma do caso da final (pts_final + campeão|vice).
+  // Item 46 — pontos por FASE ALCANÇADA no bracket, em TODOS os times da fase
+  // (não só no vencedor). Reusa o breakdown (mesma conta do admin). Cada coluna
+  // mostra os pontos da SUA fase: 16avos=pts_r32, oitavas=pts_oitavas,
+  // quartas=pts_quartas, semi=pts_semi, final=pts_final. Campeão/vice = bônus
+  // somado no slot da final (centro).
   const pontosMata: Record<string, string> = {};
   try {
     const bd = await calcularBreakdown(supabase as any, user.id);
-    for (const it of bd.mata.items) {
-      pontosMata[`${it.fase}:${it.time_id}`] = it.pendente ? "⏳" : it.pontos > 0 ? `+${it.pontos}` : "0";
-    }
-    const campItem = bd.mata.items.find((i) => i.fase === "campeao");
-    for (const fi of bd.mata.items.filter((i) => i.fase === "final")) {
-      let total = fi.pontos;
-      let pend = fi.pendente;
-      if (campItem && campItem.time_id === fi.time_id) {
-        total += campItem.pontos;
-        pend = pend || campItem.pendente;
-      }
-      if (bd.vice && bd.vice.time_id === fi.time_id) {
-        total += bd.vice.pontos;
-        pend = pend || bd.vice.pendente;
-      }
-      pontosMata[`centro:${fi.time_id}`] = total > 0 ? `+${total}` : pend ? "⏳" : "0";
-    }
+    const fmt = (pontos: number, pendente: boolean) =>
+      pendente ? "⏳" : pontos > 0 ? `+${pontos}` : "0";
+    // 16 Avos: cada time do R32 que classificou ganha pts_r32 (ambos do confronto).
+    for (const t of bd.r32) pontosMata[`16avos:${t.time_id}`] = fmt(t.pontos, t.pendente);
+    // Oitavas/Quartas/Semi/Final/Campeão: a chave já é a fase do pick = a fase
+    // que o time chega. Cada coluna lê a fase que ela representa.
+    for (const it of bd.mata.items) pontosMata[`${it.fase}:${it.time_id}`] = fmt(it.pontos, it.pendente);
+    // Bônus do vice (2º finalista) — exibido junto do pts_final no centro.
+    if (bd.vice) pontosMata[`vice:${bd.vice.time_id}`] = fmt(bd.vice.pontos, bd.vice.pendente);
   } catch {
     // se o breakdown falhar, o bracket cai no ✓ (pontosMata vazio)
   }
