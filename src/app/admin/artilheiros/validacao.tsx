@@ -5,9 +5,9 @@ import { Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toaster";
 import { triggerRecalcDebounced } from "@/lib/recalc-trigger";
+import { setArtilheiroAcertou } from "./actions";
 
 type Grupo = {
   chave: string;
@@ -23,14 +23,12 @@ export function ArtilheirosValidacao({ grupos }: { grupos: Grupo[] }) {
 
   async function toggle(palpiteId: string, novoValor: boolean) {
     setLoading(palpiteId);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("palpites_artilheiro")
-      .update({ acertou: novoValor })
-      .eq("id", palpiteId);
+    // Via server action (service_role) — funciona mesmo após o encerramento,
+    // já que o trigger não isenta mais o admin (só service_role).
+    const res = await setArtilheiroAcertou(palpiteId, novoValor);
     setLoading(null);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    if (!res.ok) {
+      toast({ title: "Erro", description: res.error, variant: "destructive" });
       return;
     }
     setState((s) =>
