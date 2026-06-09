@@ -444,7 +444,7 @@ function renderCardR32(
         team={casa}
         escolhido={palpiteCasa}
         onClick={casaId && !fechado ? () => onPick("8avos", casaId) : undefined}
-        pontosLabel={labelPontos(pontosMata, "8avos", casaId)}
+        pontosLabel={labelPontos(pontosMata, "16avos", casaId)}
       />
       <div className="my-1 h-px bg-border" />
       <MatchSlot
@@ -452,7 +452,7 @@ function renderCardR32(
         team={fora}
         escolhido={palpiteFora}
         onClick={foraId && !fechado ? () => onPick("8avos", foraId) : undefined}
-        pontosLabel={labelPontos(pontosMata, "8avos", foraId)}
+        pontosLabel={labelPontos(pontosMata, "16avos", foraId)}
       />
     </div>
   );
@@ -490,7 +490,7 @@ function renderCardFaseSuperior(
               team={team}
               escolhido={escolhido}
               onClick={tid && !fechado ? () => onPick(fasePicksDeste, tid) : undefined}
-              pontosLabel={labelPontos(pontosMata, fasePicksDeste, tid)}
+              pontosLabel={labelPontos(pontosMata, fasePicksAnterior, tid)}
             />
           </React.Fragment>
         );
@@ -554,10 +554,20 @@ function MatchSlot({
           <span className="text-[9px] font-medium opacity-70">{label}</span>
         )}
       </span>
-      {escolhido && (
-        <span className="shrink-0 text-[10px] font-extrabold text-white">
-          {pontosLabel != null ? pontosLabel : "✓"}
+      {/* Item 46 (corrigido): pontos da fase mostrados em TODOS os times do
+          confronto, não só no vencedor. Vencedor (verde) = texto branco; os
+          demais = cinza. ✓ fica só de fallback quando não há info de pontos. */}
+      {pontosLabel != null ? (
+        <span
+          className={cn(
+            "shrink-0 text-[10px] font-extrabold",
+            escolhido ? "text-white" : "text-zinc-500",
+          )}
+        >
+          {pontosLabel}
         </span>
+      ) : (
+        escolhido && <span className="shrink-0 text-[10px] font-extrabold text-white">✓</span>
       )}
     </button>
   );
@@ -623,10 +633,21 @@ function CentroBracket({
                   <span className="team-name flex-1">
                     {team?.nome ?? "—"}
                   </span>
-                  {/* Item 46 — caso da final: soma pts_final + (campeão|vice). */}
-                  {tid && pontosMata?.[`centro:${tid}`] && (
-                    <span className="shrink-0 text-[10px] font-extrabold">{pontosMata[`centro:${tid}`]}</span>
-                  )}
+                  {/* Item 46 — final: pts_final por finalista + bônus
+                      (campeão ou vice) como número à parte. */}
+                  {tid &&
+                    (pontosMata?.[`final:${tid}`] ||
+                      pontosMata?.[`campeao:${tid}`] ||
+                      pontosMata?.[`vice:${tid}`]) && (
+                      <span className="shrink-0 text-[10px] font-extrabold">
+                        {[
+                          pontosMata?.[`final:${tid}`],
+                          isCampeao ? pontosMata?.[`campeao:${tid}`] : pontosMata?.[`vice:${tid}`],
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </span>
+                    )}
                   {isCampeao && <span className="text-base">👑</span>}
                 </button>
               </React.Fragment>
